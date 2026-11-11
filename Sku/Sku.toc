@@ -1,5 +1,5 @@
 ﻿## Interface: 20506, 11508, 11509, 16001
-## Title: Sku v44.0 Forever 2.0
+## Title: Sku v44.0 Forever 2.1
 ## SavedVariables: SkuOptionsDB, SkuTranslatedData, SkuErrorLog, SkuDebugLog
 ## Version: 44.0
 
