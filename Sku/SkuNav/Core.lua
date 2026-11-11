@@ -1854,37 +1854,60 @@ function SkuNav:GetAllMetaTargetsFromWp5(aStartWpName, aMaxDistance, aMaxWPs, aR
 	local tFinalWpDistances = {}
 	tFinalWpDistances[WaypointCacheLookupAll[aStartWpName]] = tDistanceToStartWp
 
+	-- Shortest walking distances from the start waypoint, capped at aMaxDistance. Dijkstra with a binary heap: every waypoint is
+	-- expanded once. (The former round-by-round relaxation re-expanded waypoints again and again; with the big Forever packs
+	-- of 20,000+ waypoints that made opening a route list take seconds. Same result, 11.11.2026.)
 	do
 		local WaypointCache = WaypointCache
-		local tWpToCheckNextRound = {}
-		tWpToCheckNextRound[WaypointCacheLookupAll[aStartWpName]] = tDistanceToStartWp
-		local tStillWpToCheckNextRound = true
-		local tTempWpToCheckNextRound = {}
-		while tStillWpToCheckNextRound == true do
-			tStillWpToCheckNextRound = false
-			tTempWpToCheckNextRound = {}
-			for tWaypointCacheIndex, tDistance in pairs(tWpToCheckNextRound) do
+		local tHeapDist, tHeapId, tHeapSize = {}, {}, 0
+		local function tPush(aDist, aId)
+			tHeapSize = tHeapSize + 1
+			local i = tHeapSize
+			while i > 1 do
+				local tParent = floor(i / 2)
+				if tHeapDist[tParent] <= aDist then break end
+				tHeapDist[i], tHeapId[i] = tHeapDist[tParent], tHeapId[tParent]
+				i = tParent
+			end
+			tHeapDist[i], tHeapId[i] = aDist, aId
+		end
+		local function tPop()
+			local tTopDist, tTopId = tHeapDist[1], tHeapId[1]
+			local tLastDist, tLastId = tHeapDist[tHeapSize], tHeapId[tHeapSize]
+			tHeapDist[tHeapSize], tHeapId[tHeapSize] = nil, nil
+			tHeapSize = tHeapSize - 1
+			if tHeapSize > 0 then
+				local i = 1
+				while true do
+					local tChild = i * 2
+					if tChild > tHeapSize then break end
+					if tChild < tHeapSize and tHeapDist[tChild + 1] < tHeapDist[tChild] then tChild = tChild + 1 end
+					if tHeapDist[tChild] >= tLastDist then break end
+					tHeapDist[i], tHeapId[i] = tHeapDist[tChild], tHeapId[tChild]
+					i = tChild
+				end
+				tHeapDist[i], tHeapId[i] = tLastDist, tLastId
+			end
+			return tTopDist, tTopId
+		end
+		tPush(tDistanceToStartWp, WaypointCacheLookupAll[aStartWpName])
+		while tHeapSize > 0 do
+			local tDistance, tWaypointCacheIndex = tPop()
+			if tDistance <= tFinalWpDistances[tWaypointCacheIndex] then
 				for tLinktWaypointCacheIndex, tLinkDistance in pairs(WaypointCache[tWaypointCacheIndex].links.byId) do
 					local tDisPlusLink = tDistance + tLinkDistance
 					if tLinkDistance == 0 then
 						tDisPlusLink = tDisPlusLink + 0.5
 					end
 					if tDisPlusLink < aMaxDistance then
-						if tFinalWpDistances[tLinktWaypointCacheIndex] == nil then
+						local tOld = tFinalWpDistances[tLinktWaypointCacheIndex]
+						if tOld == nil or tOld > tDisPlusLink then
 							tFinalWpDistances[tLinktWaypointCacheIndex] = tDisPlusLink
-							tTempWpToCheckNextRound[tLinktWaypointCacheIndex] = tDisPlusLink
-							tStillWpToCheckNextRound = true
-						else
-							if tFinalWpDistances[tLinktWaypointCacheIndex] > tDisPlusLink then
-								tFinalWpDistances[tLinktWaypointCacheIndex] = tDisPlusLink
-								tTempWpToCheckNextRound[tLinktWaypointCacheIndex] = tDisPlusLink
-								tStillWpToCheckNextRound = true
-							end
+							tPush(tDisPlusLink, tLinktWaypointCacheIndex)
 						end
 					end
 				end
 			end
-			tWpToCheckNextRound = tTempWpToCheckNextRound
 		end
 	end
 	
@@ -2038,10 +2061,10 @@ function SkuNav:ListWaypoints2(aSort, aFilter, aAreaId, aContinentId, aExcludeRo
 	end
 
 	if aSort == true then
-		local tSortedList = {}
-		for k, v in SkuSpairs(tWpList, function(t,a,b) return t[b] > t[a] end) do --nach wert
-			tSortedList[#tSortedList+1] = v
-		end
+		-- the names are plain strings: sort them directly (the former sort through a comparator closure per comparison was
+		-- the main cost of every waypoint list on the big Forever maps, 11.11.2026); same order
+		table.sort(tWpList)
+		local tSortedList = tWpList
 		if aRetAsTable then
 			return tSortedList
 		else
@@ -5254,15 +5277,16 @@ function SkuNav:GetClosestWaypointFromBaseName(aBaseName, aOriginWaypointName)
 	tSubAreaIds[tCurrentAreaId] = tCurrentAreaId
 
 	local tWaypointList = {}
-	local tListWPs = SkuNav:ListWaypoints2(true, nil, tCurrentAreaId)
+	-- fetched once, unsorted: the list is sorted by distance below anyway (11.11.2026)
+	local tListWPs, tListState, tListInit = SkuNav:ListWaypoints2(false, nil, tCurrentAreaId)
 	if tListWPs then
-		for i, v in SkuNav:ListWaypoints2(true, nil, tCurrentAreaId) do
+		local tPlayX, tPlayY = UnitPosition("player")
+		for i, v in tListWPs, tListState, tListInit do
 			local tWayP = SkuNav:GetWaypointData2(v)
 			if tWayP then
 				if tSubAreaIds[tonumber(tWayP.areaId)] then
 					if ssub(v, 1, tAutoLen) ~= L["auto"].." " then
 						local tWpX, tWpY = tWayP.worldX, tWayP.worldY
-						local tPlayX, tPlayY = UnitPosition("player")
 						local tDistance, _  = SkuNav:Distance(tPlayX, tPlayY, tWpX, tWpY)
 
 						-- add direction to wp

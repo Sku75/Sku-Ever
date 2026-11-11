@@ -5,15 +5,14 @@ local L = Sku.L
 local tUnitDbWaypointData
 local function BuildSortedUniqueRouteWps(tRoutesInRange)
 	local tSortedWaypointList = {}
+	-- a lookup set instead of scanning the whole list for every entry (that scan with a string join per step took over half a
+	-- second for the ~1,700 entry candidates on the big Forever maps, 11.11.2026)
+	local tSeen = {}
 	for k, v in SkuSpairs(tRoutesInRange, function(t,a,b) return t[b].nearestWpRange > t[a].nearestWpRange end) do
-		local tFnd = false
-		for tK, tV in pairs(tSortedWaypointList) do
-			if tV == v.nearestWpRange..L[";Meter"].."#"..v.nearestWP then
-				tFnd = true
-			end
-		end
-		if tFnd == false then
-			table.insert(tSortedWaypointList, v.nearestWpRange..L[";Meter"].."#"..v.nearestWP)
+		local tEntry = v.nearestWpRange..L[";Meter"].."#"..v.nearestWP
+		if not tSeen[tEntry] then
+			tSeen[tEntry] = true
+			table.insert(tSortedWaypointList, tEntry)
 		end
 	end
 	return tSortedWaypointList
@@ -634,10 +633,13 @@ function SkuNav.WaypointsCurrentMapBuildChildren(self)
 				local tSubAreaIds = SkuNav:GetSubAreaIds(tCurrentAreaId)
 				tSubAreaIds[tCurrentAreaId] = tCurrentAreaId
 
+				local tPerfWp0 = debugprofilestop()
 				local tWaypointList = {}
-				local tListWPs = SkuNav:ListWaypoints2(true, nil, tCurrentAreaId)
+				-- unsorted and fetched once: the result is sorted by distance below anyway (before: two sorted calls, 11.11.2026)
+				local tListWPs, tListState, tListInit = SkuNav:ListWaypoints2(false, nil, tCurrentAreaId)
 				if tListWPs then
-					for i, v in SkuNav:ListWaypoints2(true, nil, tCurrentAreaId) do
+					local tPlayX, tPlayY = UnitPosition("player")
+					for i, v in tListWPs, tListState, tListInit do
 						local tWayP = SkuNav:GetWaypointData2(v)
 						if tWayP then
 							if tSubAreaIds[tonumber(tWayP.areaId)] then
@@ -645,7 +647,6 @@ function SkuNav.WaypointsCurrentMapBuildChildren(self)
 								--if not sfind(v, L["auto"]..";") then
 								--if not sfind(v, L["Quick waypoint"]) and not sfind(v, "auto;") then
 									local tWpX, tWpY = tWayP.worldX, tWayP.worldY
-									local tPlayX, tPlayY = UnitPosition("player")
 									local tDistance, _  = SkuNav:Distance(tPlayX, tPlayY, tWpX, tWpY)
 									-- add direction to wp
 									local tDirectionTargetWp = ""
@@ -685,12 +686,14 @@ function SkuNav.WaypointsCurrentMapBuildChildren(self)
 				for k,v in SkuSpairs(tWaypointList, function(t,a,b) return t[b].distance > t[a].distance end) do --nach wert
 					table.insert(tSortedWaypointList, v.distance..L[";Meter"]..v.direction.."#"..k)
 				end
+				local tPerfWp1 = debugprofilestop()
 				if #tSortedWaypointList == 0 then
 					SkuNav:InjectWpListEmptyHint(self)
 				else
 					--local tNewMenuEntry = SkuOptions:InjectMenuItems(self, tSortedWaypointList, SkuGenericMenuItem)
 					SkuNav_MenuBuilder_WaypointSelectionMenu(self, tSortedWaypointList)
 				end
+				dprint("perf waypoint list", "entries", #tSortedWaypointList, "collect+sort ms", math.floor(tPerfWp1 - tPerfWp0), "build ms", math.floor(debugprofilestop() - tPerfWp1))
 end
 
 -- Starts following the selected route / unit route (the isSelect target for the
@@ -808,10 +811,12 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 			--SkuSettings:Sub("SkuNav").metapathFollowingStart = nil
 			SkuSettings:Sub("SkuNav").metapathFollowingStartTMP = nil
 			SkuMetapathFollowingMetapathsTMP = nil
+			local tPerfStart = debugprofilestop()
 			local tPlayX, tPlayY = UnitPosition("player")
 			local tRoutesInRange = SkuNav:GetAllLinkedWPsInRangeToCoords(tPlayX, tPlayY, SkuNav.MaxMetaEntryRange)--SkuSettings:Sub("SkuNav").nearbyWpRange)
 
 			local tSortedWaypointList = BuildSortedUniqueRouteWps(tRoutesInRange)
+			dprint("perf routes entry points", "found", #tSortedWaypointList, "ms", math.floor(debugprofilestop() - tPerfStart))
 
 			if #tSortedWaypointList == 0 then
 				SkuNav:InjectWpListEmptyHint(self)
@@ -828,8 +833,10 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 						tNewMenuEntry.dynamic = true
 						tNewMenuEntry.sorting = true
 						tNewMenuEntry.BuildChildren = function(self)
+							local tPerf0 = debugprofilestop()
 							SkuSettings:Sub("SkuNav").metapathFollowingStartTMP = v
 							local tMetapaths = SkuNav:GetAllMetaTargetsFromWp5(ssub(v, string.find(v, "#") + 1), SkuSettings:Sub("SkuNav").routesMaxDistance, SkuNav.MaxMetaWPs)--
+							local tPerf1 = debugprofilestop()
 							SkuMetapathFollowingMetapathsTMP = tMetapaths
 							local tData = {}
 							for i, v in pairs(tMetapaths) do--
@@ -840,6 +847,7 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 							for k,v in SkuSpairs(tData, function(t,a,b) return t[b] > t[a] end) do
 								table.insert(tSortedList, k)
 							end
+							local tPerf2 = debugprofilestop()
 							if #tSortedList == 0 then
 								SkuNav:InjectWpListEmptyHint(self)
 							else
@@ -868,7 +876,7 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 			
 								end
 							end
---print("filled", debugprofilestop() - beginTime)
+dprint("perf routes list", "targets", #tSortedList, "search ms", math.floor(tPerf1 - tPerf0), "sort ms", math.floor(tPerf2 - tPerf1), "build ms", math.floor(debugprofilestop() - tPerf2))
 
 						end
 						tCount = tCount + 1
