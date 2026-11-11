@@ -1274,9 +1274,15 @@ function SkuCore:ResolveFollowLeader()
 	end
 	local tName = SkuStatus.followUnitName
 	if tName and tName ~= "" then
-		for x = 1, 40 do if UnitName("raid"..x) == tName then return "raid"..x end end
-		for x = 1, 5 do if UnitName("party"..x) == tName then return "party"..x end end
-		if UnitExists("target") and UnitName("target") == tName then return "target" end
+		-- In instances on WoW Forever UnitName can be a secret value: it cannot be compared, so such a unit is skipped.
+		local function tIsLeader(aUnit)
+			local tUnitName = UnitName(aUnit)
+			if Sku.IsSecret(tUnitName) then return false end
+			return tUnitName == tName
+		end
+		for x = 1, 40 do if tIsLeader("raid"..x) then return "raid"..x end end
+		for x = 1, 5 do if tIsLeader("party"..x) then return "party"..x end end
+		if UnitExists("target") and tIsLeader("target") then return "target" end
 	end
 	return nil
 end
@@ -1753,11 +1759,12 @@ function SkuCore:OnEnable()
 					tLastPlayerTargetNr = 1
 				end
 				local tName = UnitName("target")
-				if tName then
+				-- In a Forever instance an enemy's name is a secret value: it cannot be compared or put into the macro.
+				if tName and not Sku.IsSecret(tName) then
 					if not tSkuCoreNamePlateRepo[tLastPlayerTargetNr] then
 						tLastPlayerTargetNr = 1
 					end
-					if tSkuCoreNamePlateRepo[tLastPlayerTargetNr] then
+					if tSkuCoreNamePlateRepo[tLastPlayerTargetNr] and not Sku.IsSecret(tSkuCoreNamePlateRepo[tLastPlayerTargetNr].name) then
 						if tName == tSkuCoreNamePlateRepo[tLastPlayerTargetNr].name then
 							tLastPlayerTargetNr = tLastPlayerTargetNr + 1
 							if tLastPlayerTargetNr > #tSkuCoreNamePlateRepo then
@@ -1766,7 +1773,7 @@ function SkuCore:OnEnable()
 						end
 					end
 				end
-				if tSkuCoreNamePlateRepo[tLastPlayerTargetNr] then
+				if tSkuCoreNamePlateRepo[tLastPlayerTargetNr] and not Sku.IsSecret(tSkuCoreNamePlateRepo[tLastPlayerTargetNr].name) then
 					_G["SkuCoreSecureTabButton"]:SetAttribute("macrotext1", "/tar "..tSkuCoreNamePlateRepo[tLastPlayerTargetNr].name)	
 				end
 			else
@@ -2092,6 +2099,11 @@ function SkuCore:OnEnable()
 				-- map was shown and hidden from here, mid-movement. Only distances are taken from it.
 				local tNewY, tNewX = UnitPosition("player")
 				if tNewX and tNewY then
+					-- Measurement (WoW Forever only, temporary): position trace once per second, to see where a route really leads.
+					if Sku.isForever and (not SkuCoreMovement.traceAt or GetTime() - SkuCoreMovement.traceAt >= 1) then
+						SkuCoreMovement.traceAt = GetTime()
+						dprint("posTrace", string.format("%.1f", tNewY), string.format("%.1f", tNewX))
+					end
 
 					-- Walk-to-interact arming: the native "Interact With Target" key (G,
 					-- INTERACTTARGET) auto-walks the character via the engine's own movement
@@ -2149,6 +2161,7 @@ function SkuCore:OnEnable()
 							if SkuCoreMovement.counter > 5 and tSound > 0 then
 								SkuCoreMovement.counter = 0
 								dprint("selfCollision fire", "tier", tSound, "dist", tostring(math.floor(tDistance * 100) / 100), "mod", tostring(math.floor(tMod * 100) / 100), "engineArm", tostring(tEngineWalkArm))
+								dprint("selfCollision pos", "UnitPosition1", tostring(tNewY), "UnitPosition2", tostring(tNewX))
 								SkuOptions.Voice:OutputString("sound-stuck"..tSound, false, false, 0.8)
 							end
 						else
@@ -4519,6 +4532,13 @@ do
 		return (ok and v) and v or "?"
 	end
 
+	-- In a Forever instance names and GUIDs can be secret values: they cannot be converted to text or split.
+	local function tSafeText(aValue)
+		if aValue == nil then return "-" end
+		if Sku.IsSecret(aValue) then return "geheim" end
+		return tostring(aValue)
+	end
+
 	local function tQuestPanel()
 		for _, n in ipairs({"QuestFrameDetailPanel", "QuestFrameProgressPanel", "QuestFrameRewardPanel", "QuestFrameGreetingPanel"}) do
 			local f = _G[n]
@@ -4538,8 +4558,8 @@ do
 			.. " title=" .. tostring((ok and title ~= "") and title or "-")
 			.. " autoInteract=" .. tCVar("AutoInteract")
 			.. " softInteract=" .. tCVar("SoftTargetInteract")
-			.. " softUnit=" .. tostring(select(2, pcall(UnitName, "softinteract")) or "-")
-			.. " target=" .. tostring(UnitName("target") or "-")
+			.. " softUnit=" .. tSafeText(select(2, pcall(UnitName, "softinteract")))
+			.. " target=" .. tSafeText(UnitName("target"))
 			.. " moving=" .. ((SkuCore.isMoving == true) and 1 or 0)
 			.. " menuOpen=" .. ((SkuOptions and SkuOptions.IsMenuOpen and SkuOptions:IsMenuOpen()) and 1 or 0)
 	end
@@ -4552,10 +4572,14 @@ do
 		local ok, id = pcall(GetQuestID)
 		local guid = select(2, pcall(UnitGUID, "questnpc"))
 		local kind = "-"
-		if type(guid) == "string" then kind = (strsplit("-", guid)) or "-" end
-		return "questId=" .. tostring(ok and id or "?")
+		if Sku.IsSecret(guid) then
+			kind = "geheim"
+		elseif type(guid) == "string" then
+			kind = (strsplit("-", guid)) or "-"
+		end
+		return "questId=" .. tSafeText(ok and id or "?")
 			.. " giverKind=" .. tostring(kind)
-			.. " giver=" .. tostring(guid or "-")
+			.. " giver=" .. tSafeText(guid)
 	end
 
 	local tTraceFrame = CreateFrame("Frame", "SkuQuestWindowTrace")
@@ -4584,7 +4608,7 @@ do
 		-- Level 2 / 12 frames: wide enough that the pcall + hook frames at the top do not
 		-- push the interesting caller out of the window.
 		local ok, s = pcall(debugstack, 2, 12, 0)
-		if not ok or type(s) ~= "string" then return "stack=?" end
+		if not ok or type(s) ~= "string" or Sku.IsSecret(s) then return "stack=?" end
 		s = s:gsub("Interface[/\\]AddOns[/\\]", ""):gsub("%s+", " ")
 		return "stack=" .. s:sub(1, 600)
 	end

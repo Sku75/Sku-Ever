@@ -141,21 +141,40 @@ end
 -- the browse tab's "Refresh" macrotext. aLabel names a selector of other choices of the same shape (default Category).
 ---------------------------------------------------------------------------------------------------------------------------------------
 function Shared.AddCategorySelect(aParent, aCategories, aCurrentName, aOnPick, aLabel)
-   local tCat = Inject(aParent, aLabel or L["Category"])
+   -- The entry's label carries the current value ("Play style: relaxed"), so it can be read without opening it; a pick
+   -- relabels it in place, like the other toggles of this menu.
+   local tBaseLabel = aLabel or L["Category"]
+   local tLabelNow = tBaseLabel
+   do
+      local tValue = aCurrentName()
+      if type(tValue) == "string" and tValue ~= "" then tLabelNow = tBaseLabel .. ": " .. tValue end
+   end
+   local tCat = Inject(aParent, tLabelNow)
    tCat.dynamic = true
    tCat.isSelect = true
    tCat.noStepUpAfterSelect = true
    tCat.GetCurrentValue = function() return aCurrentName() end
    tCat.OnAction = function(self, aValue, aSelName)
       for _, c in ipairs(aCategories) do
-         if c.name == aSelName then
+         if c.name == aSelName or (c.name .. L[" (active)"]) == aSelName then
             aOnPick(c)
+            -- ENTER steps the cursor back up, and the menu then reads the entry's label, which drowned the pick's own
+            -- announcement (seen 2026-11-11: the play style was set, but nothing confirmed it). Relabel the entry with
+            -- the new value, keep the cursor on it and say it.
+            local tNewLabel = tBaseLabel .. ": " .. c.name
+            tCat.name = tNewLabel
+            tCat.textFirstLine = tNewLabel
+            Shared.Pin(tCat, tNewLabel)
             return
          end
       end
    end
    tCat.BuildChildren = function(self)
-      for _, c in ipairs(aCategories) do Inject(self, c.name) end
+      -- the current choice is marked "(active)", like the toggles of this menu
+      local tCurrent = aCurrentName()
+      for _, c in ipairs(aCategories) do
+         Inject(self, c.name .. (c.name == tCurrent and L[" (active)"] or ""))
+      end
    end
 end
 

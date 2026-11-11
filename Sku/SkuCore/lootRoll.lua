@@ -90,6 +90,9 @@ end
 
 function LootRoll.OnStart(aRollID)
 	tRolled[aRollID] = nil
+	-- Other announcements that overwrite the speech queue (the soft-target name, see SkuMob) hold back until the roll
+	-- announcement has been spoken: it waits 1.2 s, then needs a few seconds to read out.
+	LootRoll.quietUntil = GetTime() + 9
 	tAnnounce(aRollID, 0)
 end
 

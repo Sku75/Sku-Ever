@@ -1979,6 +1979,13 @@ function SkuOptions:CreateMainFrame()
 			if SkuCore.LootRoll.ReadTooltip() then return end
 
 			if GameTooltip:IsVisible() == true then
+				-- An enemy's tooltip text is a secret value in a Forever instance: it cannot be compared or searched, only
+				-- handed to the speech output.
+				local tTooltipRaw = TooltipLines_helper(GameTooltip:GetRegions())
+				if Sku.IsSecret(tTooltipRaw) then
+					SkuOptions.Voice:SpeakSecretText("%s", tTooltipRaw)
+					return
+				end
 				if TooltipLines_helper(GameTooltip:GetRegions()) ~= "asd" then
 					if TooltipLines_helper(GameTooltip:GetRegions()) ~= "" then
 						local tText = SkuUtil:Unescape(TooltipLines_helper(GameTooltip:GetRegions()))
@@ -4956,6 +4963,10 @@ end
 local oDCFAddMessage = nil--DEFAULT_CHAT_FRAME.AddMessage
 function nDCFAddMessage(...)
 	local _, b = ...
+	-- A chat line with a secret text (e.g. a DBM warning in a Forever instance) cannot be searched: pass it on unchanged.
+	if b and Sku.IsSecret(b) then
+		return oDCFAddMessage(...)
+	end
 	if b then
 		local tResult = string.find(b, L["is no player with"])
 		if not tResult then

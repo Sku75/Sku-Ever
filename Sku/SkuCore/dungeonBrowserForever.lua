@@ -54,7 +54,14 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- LFG state helpers.
 ---------------------------------------------------------------------------------------------------------------------------------------
+-- Asking the server for the activity list answers with LFG_LIST_AVAILABILITY_UPDATE, which refreshes the menu node, which
+-- reads the list and asks again: an endless rebuild loop (seen 2026-11-11, thousands of rebuilds in seconds, so the menu
+-- never settled after "Create entry"). Ask at most every 10 seconds.
+local tLastActivityRequest = 0
 local function tRequestActivities()
+   local tNow = GetTime()
+   if tNow - tLastActivityRequest < 10 then return end
+   tLastActivityRequest = tNow
    C_LFGList.RequestAvailableActivities()
 end
 

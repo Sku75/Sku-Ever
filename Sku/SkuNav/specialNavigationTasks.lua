@@ -71,6 +71,9 @@ function SkuNav:NavigationModeWoCoordinatesCheckTaskTrigger(aStringToCheck, arg1
 	--print("NavigationModeWoCoordinatesCheckTaskTrigger", aStringToCheck, arg1)
 	local tTaskId
 
+	-- A secret chat text (WoW Forever, instances) cannot be searched or unescaped: no task trigger can come from it.
+	if Sku.IsSecret and Sku.IsSecret(aStringToCheck) then return end
+
 	aStringToCheck = SkuUtil:Unescape(aStringToCheck)
 
 	if tCurrentTask then

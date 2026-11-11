@@ -432,23 +432,41 @@ function SkuMob:PLAYER_SOFT_INTERACT_CHANGED(aEvent, aGuid, aNewGuid)
 	tSoftTrace("interact", "softinteract", aGuid, aNewGuid)
 	-- Diagnose "Ton ja, Name nicht immer": jeder stille Ausstieg und die Namensausgabe landen im Ring
 	dprint("SkuMob softInteract event: exists", UnitExists("softinteract"), "name", Sku.SafeName("softinteract"), "guid", tSoftTraceGuid(Sku.SafeGUID("softinteract")), "isTarget", Sku.SafeGUID("softinteract") ~= nil and Sku.SafeGUID("softinteract") == Sku.SafeGUID("target"))
-	if not Sku.SafeGUID("softinteract") then
-		dprint("SkuMob softInteract: silent - no readable guid (cleared or secret)")
+	-- In a Forever instance the unit can exist with a SECRET guid (a corpse to loot): it cannot be compared with the target,
+	-- but it is still announced (the name goes through SpeakSecretText below). Only a cleared slot is silent.
+	local tSoftGuid = Sku.SafeGUID("softinteract")
+	-- A game OBJECT (a quest item to click, a chest) is not a unit: UnitExists is false for it, but UnitName still answers
+	-- (readable, or secret in an instance). Only a slot without any name is cleared.
+	local tSoftRawName = UnitName("softinteract")
+	if not tSoftGuid and not UnitExists("softinteract") and tSoftRawName == nil then
+		dprint("SkuMob softInteract: silent - slot cleared")
 		return
 	end
+	if not tSoftGuid then
+		dprint("SkuMob softInteract: raw name", tSoftRawName == nil and "nil" or (Sku.IsSecret(tSoftRawName) and "secret" or "readable"))
+	end
+	if not tSoftGuid then
+		dprint("SkuMob softInteract: guid secret, announcing anyway")
+	end
+	if SkuCore.LootRoll and SkuCore.LootRoll.quietUntil and GetTime() < SkuCore.LootRoll.quietUntil then
+		dprint("SkuMob softInteract: silent - a loot roll is being announced")
+		return
+	end
+	local tSoftDead = UnitIsDead("softinteract")
+	if Sku.IsSecret(tSoftDead) then tSoftDead = true end -- a secret flag on an interactable unit in an instance: treat as a corpse
 
 	if SkuOptions.db.profile["SkuOptions"].softTargeting.interact.enabled ~= true then
 		dprint("SkuMob softInteract: silent - interact soft targeting is off")
 		return
 	end
-	if Sku.SafeGUID("softinteract") == Sku.SafeGUID("target") then
+	if tSoftGuid and tSoftGuid == Sku.SafeGUID("target") then
 		dprint("SkuMob softInteract: silent - already the hard target")
 	end
-	if Sku.SafeGUID("softinteract") ~= Sku.SafeGUID("target") then
+	if not tSoftGuid or tSoftGuid ~= Sku.SafeGUID("target") then
 		--print("SkuMob:PLAYER_SOFT_INTERACT_CHANGED(aEvent, ", aGuid, UnitGUID("softinteract"))
 		if ((SkuOptions.db.profile["SkuOptions"].softTargeting.interact.soundfor == 2 and UnitExists("softinteract") == false) 
 			or (
-					(SkuOptions.db.profile["SkuOptions"].softTargeting.interact.soundfor == 3 and UnitExists("softinteract") == true and UnitIsDead("softinteract") == true) 
+					(SkuOptions.db.profile["SkuOptions"].softTargeting.interact.soundfor == 3 and UnitExists("softinteract") == true and tSoftDead == true) 
 						or 
 					UnitExists("softinteract") == false
 				)
@@ -459,7 +477,7 @@ function SkuMob:PLAYER_SOFT_INTERACT_CHANGED(aEvent, aGuid, aNewGuid)
 			end
 		end
 		if ((SkuOptions.db.profile["SkuOptions"].softTargeting.interact.unitNameFor == 2 and UnitExists("softinteract") == false) 
-			or ((SkuOptions.db.profile["SkuOptions"].softTargeting.interact.unitNameFor == 3 and UnitExists("softinteract") == true and UnitIsDead("softinteract") == true) or UnitExists("softinteract") == false) 
+			or ((SkuOptions.db.profile["SkuOptions"].softTargeting.interact.unitNameFor == 3 and UnitExists("softinteract") == true and tSoftDead == true) or UnitExists("softinteract") == false) 
 			or SkuOptions.db.profile["SkuOptions"].softTargeting.interact.unitNameFor == 4) and SkuOptions.db.profile["SkuOptions"].softTargeting.interact.unitNameFor > 1
 		then
 			if SkuOptions.db.profile["SkuOptions"].softTargeting.interact.outputBTTS == true then
@@ -471,7 +489,7 @@ function SkuMob:PLAYER_SOFT_INTERACT_CHANGED(aEvent, aGuid, aNewGuid)
 					C_Timer.After(0.1, function()
 						dprint("SkuMob softInteract: speak name", Sku.IsSecret(tName) and "(secret)" or tName)
 						-- no readable health (no pool, or hidden on Forever): dead only by its flag, else alive
-						local hp = Sku.UnitHealthPercent("softinteract") or (UnitIsDead("softinteract") and 0 or 100)
+						local hp = Sku.UnitHealthPercent("softinteract") or (tSoftDead and 0 or 100)
 						-- An enemy's name is a secret value in a Forever instance (e.g. a corpse to loot); its GUID is a
 						-- different restriction and can stay readable, so this point is reached. A secret cannot be
 						-- concatenated or queued, it goes through SpeakSecretText.
@@ -657,6 +675,16 @@ function SkuMob:PLAYER_TARGET_CHANGED(event, aUnitId)
 			end
 		end
 
+		-- [Forever] In an instance the threat and target-of-target answers above can be nil or unusable for an enemy, so the
+		-- "in combat" beep stayed silent. The unit's own combat flag is not secret there (same reading the nameplate enemy
+		-- counter in aqCombat.lua relies on).
+		if not status and Sku.isForever and UnitCanAttack("player", aUnitId) then
+			local tUnitInCombat = UnitAffectingCombat(aUnitId)
+			if tUnitInCombat ~= nil and not Sku.IsSecret(tUnitInCombat) and tUnitInCombat then
+				status = true
+			end
+		end
+
 		-- [41.05] Gegnerstatus Kampf: off = kein Beep, beep/announce = Beep wie bisher.
 		local tCombatStatusMode = SkuSettings:Sub("SkuMob").enemyCombatStatusMode or "beep"
 		if status and tIsPlayerControled == false and tCombatStatusMode ~= "off" then
@@ -667,7 +695,17 @@ function SkuMob:PLAYER_TARGET_CHANGED(event, aUnitId)
 
 		--raidtarget
 		local tRaidtarget = GetRaidTargetIndex(aUnitId)
+		-- In a Forever instance the marker index (skull, cross ...) can be a secret value: it cannot be used as a table key
+		-- or compared, so it is skipped (no marker spoken, and no Sku marker handed out for this unit either).
+		local tRaidtargetSecret = Sku.IsSecret(tRaidtarget)
+		local tRaidtargetRaw = tRaidtarget
+		if tRaidtargetSecret then tRaidtarget = nil end
 		local tRaidTargetString = ""
+		-- A secret marker cannot be turned into its name (no table lookup); it is spoken as "Symbol <number>" at the end
+		-- through SpeakSecretText, "\2" stands in for it (1 star, 2 circle, 3 diamond, 4 triangle, 5 moon, 6 square, 7 cross, 8 skull).
+		if tRaidtargetSecret then
+			tRaidTargetString = (SkuSettings:Sub("SkuMob").repeatRaidTargetMarkers == true) and "\2;\2;" or "\2;"
+		end
 		if tRaidtarget then
 			if SkuCore.RaidTargetValues[tRaidtarget] then
 				if SkuSettings:Sub("SkuMob").repeatRaidTargetMarkers == true then
@@ -680,7 +718,7 @@ function SkuMob:PLAYER_TARGET_CHANGED(event, aUnitId)
 		
 		local tUnitGUID = Sku.SafeGUID(aUnitId)
 		--sku raid target
-		if tRaidtarget == nil or tRaidtarget == "" then
+		if (tRaidtarget == nil or tRaidtarget == "") and not tRaidtargetSecret then
 			if SkuCore.aqCombat:aqCombatGetSkuRaidTarget(tUnitGUID) ~= nil then
 				tRaidTargetString = SkuCore.RaidTargetValues[SkuCore.aqCombat:aqCombatGetSkuRaidTarget(tUnitGUID)].color..";"
 			else
@@ -836,19 +874,28 @@ function SkuMob:PLAYER_TARGET_CHANGED(event, aUnitId)
 		-- string.format. Either line can carry it, so both voice paths check (a raid-marker-only line has none).
 		local function tSpeakSecretLine(aLine)
 			local tFormat = string.gsub(aLine, "%%", "%%%%")
+			local tArgs = {}
+			for tMark in string.gmatch(aLine, "[\1\2]") do
+				tArgs[#tArgs + 1] = (tMark == "\1") and tUnitName or tRaidtargetRaw
+			end
 			tFormat = string.gsub(tFormat, "\1", "%%s")
-			dprint("SkuMob PTC speak (secret name):", tFormat)
-			SkuOptions.Voice:SpeakSecretText(tFormat, tUnitName)
+			tFormat = string.gsub(tFormat, "\2", Sku.deEn("Symbol", "Marker", "Marqueur").." %%d")
+			dprint("SkuMob PTC speak (secret name/marker):", tFormat)
+			SkuOptions.Voice:SpeakSecretText(tFormat, unpack(tArgs))
+		end
+		local function tHasSecretPart(aLine)
+			return (tNameSecret and string.find(aLine, "\1", 1, true) ~= nil)
+				or (tRaidtargetSecret and string.find(aLine, "\2", 1, true) ~= nil)
 		end
 		if tIsPlayerControled == false or SkuSettings:Sub("SkuMob").vocalizePlayerNamePlaceholdersSkuTts == true then
-			if tNameSecret and string.find(tOutputString, "\1", 1, true) then
+			if tHasSecretPart(tOutputString) then
 				tSpeakSecretLine(tOutputString)
 			else
 				dprint("SkuMob PTC speak (audio):", tOutputString)
 				SkuOptions.Voice:OutputString(tOutputString, true, true, 0.3)
 			end
 		else
-			if tNameSecret and string.find(tOutputStringB, "\1", 1, true) then
+			if tHasSecretPart(tOutputStringB) then
 				tSpeakSecretLine(tOutputStringB)
 			else
 				dprint("SkuMob PTC speak (btts):", tOutputStringB)

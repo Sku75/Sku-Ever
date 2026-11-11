@@ -3719,7 +3719,100 @@ function SkuNav:GetAllLinkedWPsInRangeToCoords(aX, aY, aRange)
 		end
 	end
 
+	-- [Forever] stacked floors: only X/Y are known, so a waypoint 30 yards below can be the nearest one
+	if Sku.isForever and tCount > 1 then
+		tFoundWps = SkuNav:ForeverKeepEntriesNearLastRouteWp(tFoundWps, aX, aY)
+	end
+
 	return tFoundWps
+end
+
+-- [Forever] The game gives Sku no height (UnitPosition z = 0), so in a spiral stairwell the waypoint nearest in X/Y is
+-- often one on the wrong turn, 30 yards lower; a route restarted from there leads into the wall. While a route was being
+-- followed a moment ago, the entry candidates are therefore limited to those that are linked to the waypoint it was
+-- heading for (walking distance up to FOREVER_ENTRY_LINK_RANGE). If that would leave none, nothing is filtered.
+local FOREVER_ENTRY_LINK_RANGE = 100
+local FOREVER_ENTRY_MAX_AGE = 300
+local FOREVER_ENTRY_MAX_PLAYER_DIST = 60
+local FOREVER_ENTRY_STALE_DIST = 25
+local tForeverEntryCache = nil
+-- Known spots where the entry waypoint cannot be told from the floor below by X/Y alone and no route was followed before
+-- (e.g. after /reload): standing within FOREVER_ENTRY_SEED_DIST of one of these, that waypoint is the anchor.
+local FOREVER_ENTRY_SEEDS = {"auto Eisenschmiede city;896"}
+local FOREVER_ENTRY_SEED_DIST = 12
+function SkuNav:ForeverKeepEntriesNearLastRouteWp(aFound, aX, aY)
+	local tLast = SkuNav.foreverLastRouteWp
+	if not tLast then
+		for _, tSeedName in ipairs(FOREVER_ENTRY_SEEDS) do
+			local tSeedId = WaypointCacheLookupAll[tSeedName]
+			local tSeedData = tSeedId and WaypointCache[tSeedId]
+			if tSeedData and (SkuNav:Distance(aX, aY, tSeedData.worldX, tSeedData.worldY) or 100000) <= FOREVER_ENTRY_SEED_DIST then
+				tLast = {name = tSeedName, time = GetTime()}
+				SkuNav.foreverLastRouteWp = tLast
+				break
+			end
+		end
+	end
+	if not tLast then
+		return aFound
+	end
+	-- only for the city pack waypoints with stacked floors ("auto <city> city;N", see navpack build_pack --route-label city);
+	-- everywhere else (a quest giver or mob as the last target, the old Sku net) the filter did harm (11.11.2026, Dun Morogh)
+	if not string.find(tLast.name, "^auto .+ city;%d+$") then
+		return aFound
+	end
+	local tStart = WaypointCacheLookupAll[tLast.name]
+	local tStartData = tStart and WaypointCache[tStart]
+	if not (tStartData and tStartData.links and tStartData.links.byId) then
+		return aFound
+	end
+	local tPlayerDist = SkuNav:Distance(aX, aY, tStartData.worldX, tStartData.worldY) or 100000
+	if tPlayerDist > FOREVER_ENTRY_MAX_PLAYER_DIST then
+		return aFound
+	end
+	-- an old anchor still counts while the player stays close to it (stuck on a spot for minutes, 11.11.2026)
+	if (GetTime() - tLast.time) > FOREVER_ENTRY_MAX_AGE and tPlayerDist > FOREVER_ENTRY_STALE_DIST then
+		return aFound
+	end
+	-- walking distance from the waypoint the route was heading for (small Dijkstra, only a handful of waypoints)
+	if not (tForeverEntryCache and tForeverEntryCache.start == tStart and tForeverEntryCache.gen == SkuNav._wpcGen) then
+		local tDist, tOpen, tDone = {[tStart] = 0}, {[tStart] = 0}, {}
+		while true do
+			local tBest, tBestDist
+			for tId, tD in pairs(tOpen) do
+				if not tBestDist or tD < tBestDist then tBest, tBestDist = tId, tD end
+			end
+			if not tBest then break end
+			tOpen[tBest] = nil
+			tDone[tBest] = true
+			local tData = WaypointCache[tBest]
+			if tData and tData.links and tData.links.byId then
+				for tLinked, tLen in pairs(tData.links.byId) do
+					local tNew = tBestDist + tLen
+					if tNew <= FOREVER_ENTRY_LINK_RANGE and not tDone[tLinked] and (not tDist[tLinked] or tNew < tDist[tLinked]) then
+						tDist[tLinked] = tNew
+						tOpen[tLinked] = tNew
+					end
+				end
+			end
+		end
+		tForeverEntryCache = {start = tStart, gen = SkuNav._wpcGen, dist = tDist}
+	end
+	local tKept, tKeptCount, tDropped = {}, 0, 0
+	for tName, tEntry in pairs(aFound) do
+		local tId = WaypointCacheLookupAll[tName]
+		if tId and tForeverEntryCache.dist[tId] then
+			tKept[tName] = tEntry
+			tKeptCount = tKeptCount + 1
+		else
+			tDropped = tDropped + 1
+		end
+	end
+	if tKeptCount == 0 or tDropped == 0 then
+		return aFound
+	end
+	dprint("entry candidates: kept", tKeptCount, "dropped", tDropped, "(not linked to last route wp", tostring(tLast.name), ")")
+	return tKept
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
@@ -3928,6 +4021,28 @@ function SkuNav:SelectWP(aWpName, aNoVoice)
 		end
 		SkuSettings:Sub("SkuNav").selectedWaypoint = ""
 		return
+	end
+
+	-- [Forever] remember where a route was heading (used to pick the right floor when a route is restarted)
+	-- The anchor is the last waypoint that was really REACHED: a new selection that is linked directly to the previous one is a
+	-- route advance (the previous one was reached); any other selection is a (re)start, which must not drag the anchor along,
+	-- or a wrong-floor entry candidate becomes the new anchor and the restart keeps picking the wrong floor (11.11.2026).
+	if Sku.isForever and SkuSettings:Sub("SkuNav").metapathFollowing == true then
+		local tNow = GetTime()
+		local tSel = SkuNav.foreverRouteSel
+		local tAdvance = false
+		if tSel and tSel.name ~= aWpName and (tNow - tSel.time) < 120 then
+			local tPrevId = WaypointCacheLookupAll[tSel.name]
+			local tNewId = WaypointCacheLookupAll[aWpName]
+			local tPrevData = tPrevId and WaypointCache[tPrevId]
+			if tNewId and tPrevData and tPrevData.links and tPrevData.links.byId and tPrevData.links.byId[tNewId] then
+				tAdvance = true
+			end
+		end
+		if tAdvance then
+			SkuNav.foreverLastRouteWp = {name = tSel.name, time = tNow}
+		end
+		SkuNav.foreverRouteSel = {name = aWpName, time = tNow}
 	end
 
 

@@ -1778,6 +1778,17 @@ function SkuChat_SkuMessageEventHandler(self, event, tMessagetype, message)
 	
 end
 
+-- WoW Forever: a secret value (e.g. the sender GUID or target of a line in an instance) cannot be used as a table key; Blizzard's
+-- ChatHistory_GetAccessID does exactly that and errors. Without the ID the line is still shown, it just has no history entry.
+local function SkuChat_SafeAccessID(...)
+	if Sku.IsSecret then
+		for i = 1, select("#", ...) do
+			if Sku.IsSecret((select(i, ...))) then return nil end
+		end
+	end
+	return ChatHistory_GetAccessID(...)
+end
+
 function SkuChat_MessageEventHandler(self, event, ...)
 	--find messagetype group
 	local tMessagetype = event
@@ -1792,6 +1803,10 @@ function SkuChat_MessageEventHandler(self, event, ...)
 
 	if ( strsub(event, 1, 8) == "CHAT_MSG" ) then
 		local arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17 = ... 
+
+		-- WoW Forever: text or sender of a chat line can be secret (instances, e.g. boss mod lines); Sku cannot read, compare or
+		-- mirror it, so it leaves such a line alone.
+		if Sku.IsSecret and (Sku.IsSecret(arg1) or Sku.IsSecret(arg2)) then return end
 
 		SkuNav:NavigationModeWoCoordinatesCheckTaskTrigger(arg1)
 
@@ -1997,8 +2012,8 @@ function SkuChat_MessageEventHandler(self, event, ...)
 				self:AddMessage(tMessagetype, format(globalstring, arg8, arg4, arg2, arg5), info.r, info.g, info.b, info.id) 
 			elseif ( arg1 == "INVITE" ) then
 				local playerLink = SkuChat:GetPlayerLink(arg2, ("[%s]"):format(arg2), arg11) 
-				local accessID = ChatHistory_GetAccessID(chatGroup, chatTarget) 
-				local typeID = ChatHistory_GetAccessID(infoType, chatTarget, arg12) 
+				local accessID = SkuChat_SafeAccessID(chatGroup, chatTarget) 
+				local typeID = SkuChat_SafeAccessID(infoType, chatTarget, arg12) 
 				self:AddMessage(tMessagetype, format(globalstring, arg4, playerLink), info.r, info.g, info.b, info.id, accessID, typeID) 
 			else
 				self:AddMessage(tMessagetype, format(globalstring, arg8, arg4, arg2), info.r, info.g, info.b, info.id) 
@@ -2021,8 +2036,8 @@ function SkuChat_MessageEventHandler(self, event, ...)
 					end
 				end
 			end
-			local accessID = ChatHistory_GetAccessID(SkuChatChat_GetChatCategory(type), arg8) 
-			local typeID = ChatHistory_GetAccessID(infoType, arg8, arg12) 
+			local accessID = SkuChat_SafeAccessID(SkuChatChat_GetChatCategory(type), arg8) 
+			local typeID = SkuChat_SafeAccessID(infoType, arg8, arg12) 
 			self:AddMessage(tMessagetype, format(globalstring, arg8, SkuChat_ResolvePrefixedChannelName(arg4)), info.r, info.g, info.b, info.id, accessID, typeID) 
 
 		elseif ( type == "BN_INLINE_TOAST_ALERT" ) then
@@ -2227,8 +2242,8 @@ function SkuChat_MessageEventHandler(self, event, ...)
 				body = BetterDate(CHAT_TIMESTAMP_FORMAT, time())..body 
 			end
 
-			local accessID = ChatHistory_GetAccessID(chatGroup, chatTarget) 
-			local typeID = ChatHistory_GetAccessID(infoType, chatTarget, arg12 or arg13) 
+			local accessID = SkuChat_SafeAccessID(chatGroup, chatTarget) 
+			local typeID = SkuChat_SafeAccessID(infoType, chatTarget, arg12 or arg13) 
 			self:AddMessage(tMessagetype, body, info.r, info.g, info.b, info.id, accessID, typeID, arg2) 
 		end
 
@@ -3479,6 +3494,10 @@ function SkuChat:DEFAULT_CHAT_FRAME_AddMessage(...)
 	-- body so a disabled SkuChat does not mirror DEFAULT_CHAT_FRAME messages.
 	if SkuChat.IsEnabled and not SkuChat:IsEnabled() then return end
 	local a, b, c, d, e, f = ...
+	-- A line with a secret text (e.g. a DBM warning in a Forever instance) cannot be compared or mirrored into the tabs.
+	if Sku.IsSecret(a) then
+		return
+	end
 	if a == "" or a == " " then
 		return
 	end

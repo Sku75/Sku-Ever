@@ -621,6 +621,9 @@ end
 local function tPlateCount(aMode, aEliteOnly)
    local tGroup = (IsInRaid() and tPlateGroupRaid) or (IsInGroup() and tPlateGroupParty) or tPlateGroupSolo
    local tCount = 0
+   -- In an instance every hostile enemy in combat is fighting the group, so mode 3 ("you or your group") needs no threat
+   -- check there: an enemy that only a group member fights was missed when the threat answer was nil.
+   local tInInstance = IsInInstance()
    for _, tUnit in ipairs(tPlateUnits) do
       -- An enemy out of combat has an empty threat list: checking that first spares the walk over a raid for every idle plate.
       if UnitExists(tUnit) and tPlateIsHostile(tUnit) and not UnitIsDead(tUnit) and UnitAffectingCombat(tUnit) then
@@ -628,7 +631,7 @@ local function tPlateCount(aMode, aEliteOnly)
          if aMode == 4 then
             tCounts = tPlateAttacksPlayer(tUnit)
          elseif aMode == 3 then
-            tCounts = tPlateGroupFights(tUnit, tGroup)
+            tCounts = tInInstance or tPlateGroupFights(tUnit, tGroup)
          else
             tCounts = true
          end
