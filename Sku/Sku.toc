@@ -67,6 +67,7 @@ SkuCore\actionPageForever.lua
 SkuCore\buffAnnounce.lua
 SkuCore\auraEnd.lua
 SkuCore\cooldownManagerForever.lua
+SkuCore\combatProbe.lua
 SkuCore\pendingPrompts.lua
 SkuCore\JunkAndRepair.lua
 SkuCore\UIErrors.lua

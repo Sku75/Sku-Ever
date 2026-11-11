@@ -86,6 +86,66 @@ local function tRowFor(aSkillIndex)
 	end)
 end
 
+-- Blizzard's list is a scroll box that builds only the rows in view. Returns true when it is longer than its window.
+local function tListScrolls()
+	local tBox = ClassTrainerFrame.ScrollBox
+	local tVisible = tBox and tBox.GetVisibleExtentPercentage and tBox:GetVisibleExtentPercentage() or 1
+	return tVisible > 0 and tVisible < 1
+end
+
+-- Is the service in view (its row is built)? The trade skill's step button above the list always counts.
+local function tServiceInView(aSkillIndex)
+	local tStepIndex = GetTrainerServiceStepIndex and GetTrainerServiceStepIndex()
+	if tStepIndex and tStepIndex == aSkillIndex then return true end
+	local tBox = ClassTrainerFrame.ScrollBox
+	if not (tBox and tBox.FindFrameByPredicate) then return false end
+	return tBox:FindFrameByPredicate(function(_, aElementData)
+		local tData = aElementData and (aElementData.data or aElementData)
+		return tData and tData.skillIndex == aSkillIndex
+	end) ~= nil
+end
+
+-- Pages Blizzard's list by one window height (aDirection -1 back, 1 forward), then rebuilds the menu.
+local function tPageList(aDirection)
+	local tBox = ClassTrainerFrame.ScrollBox
+	if not (tBox and tBox.GetScrollPercentage and tBox.SetScrollPercentage) then return end
+	local tVisible = tBox.GetVisibleExtentPercentage and tBox:GetVisibleExtentPercentage() or 0.3
+	local tStep = (tVisible > 0 and tVisible < 1) and (tVisible / (1 - tVisible)) or 0.3
+	local tNew = math.min(math.max(tBox:GetScrollPercentage() + aDirection * tStep, 0), 1)
+	local tAtEnd = (tNew == tBox:GetScrollPercentage())
+	pcall(tBox.SetScrollPercentage, tBox, tNew, true)
+	dprint("trainerRow", "blaettern", aDirection, "neu", tostring(tNew))
+	C_Timer.After(0.3, function()
+		if not ClassTrainerFrame:IsVisible() then return end
+		SkuCore:RefreshWindowMenuQuietly()
+		if tAtEnd then
+			tSay(aDirection > 0 and Sku.deEn("Ende der Liste", "end of list", "fin de la liste")
+				or Sku.deEn("Anfang der Liste", "start of list", "début de la liste"))
+		end
+	end)
+end
+
+-- Adds a "page back" / "page forward" entry when Blizzard's list is longer than its window.
+local function tAddPageButton(aParentChilds, aDirection)
+	local tBox = ClassTrainerFrame.ScrollBox
+	local tVisible = tBox and tBox.GetVisibleExtentPercentage and tBox:GetVisibleExtentPercentage() or 1
+	if not (tVisible > 0 and tVisible < 1) then return end
+	local tLabel = aDirection > 0 and Sku.deEn("Liste weiter blättern", "Page list forward", "Page suivante")
+		or Sku.deEn("Liste zurück blättern", "Page list back", "Page précédente")
+	table.insert(aParentChilds, tLabel)
+	aParentChilds[tLabel] = {
+		RoC = "Child",
+		type = "Button",
+		skuIdentity = "pagelist:" .. aDirection,
+		textFirstLine = tLabel,
+		textFull = "",
+		childs = {},
+		click = true,
+		quietClick = true,
+		func = function() tPageList(aDirection) end,
+	}
+end
+
 -- Service index of the skill chosen in Blizzard's window (nil when none is chosen).
 local function tSelectedIndex()
 	local tFrame = ClassTrainerFrame
@@ -255,6 +315,8 @@ function SkuCore:Build_ClassTrainerFrameForever(aParentChilds)
 			"ClassTrainerFramePoints")
 	end
 
+	tAddPageButton(aParentChilds, -1)
+
 	local tStateNames = {
 		available = L["learnable"],
 		unavailable = L["not learnable"],
@@ -271,10 +333,19 @@ function SkuCore:Build_ClassTrainerFrameForever(aParentChilds)
 	end
 	tHookSelection()
 
+	-- Only what Blizzard's window shows right now is listed; the rest is reached with the page entries. If no row is
+	-- built yet (window just opened), everything is listed so the menu is never empty.
+	local tOnlyInView = false
+	if tListScrolls() then
+		for i = 1, tNum do
+			if tServiceInView(i) then tOnlyInView = true break end
+		end
+	end
+
 	for i = 1, tNum do
 		-- Observed on Forever: name, state, ?, ?, rank text
 		local tName, tState, _, _, tRankText = GetTrainerServiceInfo(i)
-		if tName and tName ~= "" then
+		if tName and tName ~= "" and (not tOnlyInView or tServiceInView(i)) then
 			local tCost = GetTrainerServiceCost(i)
 			if not (tonumber(tCost) and tCost > 0) then tCost = nil end
 
@@ -316,6 +387,8 @@ function SkuCore:Build_ClassTrainerFrameForever(aParentChilds)
 			local tRow = (tState == "available" and not tKnownSkill) and tRowFor(i) or nil
 			if tState == "available" and not tKnownSkill and not tRow then
 				tLabel = tLabel .. ", " .. L["cannot be selected, reopen the window"]
+				dprint("trainerRow", "keine Zeile", "index", i, "name", tostring(tName), "stufe", tostring(tLevel),
+					"beruf", tostring(tSkillName), tostring(tSkillRank), "zeilenGebaut", tostring(ClassTrainerFrame.ScrollBox ~= nil))
 			end
 			if i == tSelectedIndex then
 				tLabel = tLabel .. ", " .. L["selected"]
@@ -362,6 +435,8 @@ function SkuCore:Build_ClassTrainerFrameForever(aParentChilds)
 		end
 	end
 
+	tAddPageButton(aParentChilds, 1)
+
 	-- Learn: secure click on Blizzard's own Learn button for the chosen skill.
 	local tTrainButton = ClassTrainerTrainButton
 	if tSelectedIndex and tTrainButton and tTrainButton:IsVisible() then
@@ -372,7 +447,19 @@ function SkuCore:Build_ClassTrainerFrameForever(aParentChilds)
 			local tLabel = L["Learn"] .. ": " .. tSelName
 			local tCanTrain = tTrainButton:IsEnabled() == true
 			if not tCanTrain then
-				tLabel = tLabel .. " (" .. L["not possible right now"] .. ")"
+				-- Say WHY (Blizzard greys the button out for: too little money, too few pet points, no free profession slot).
+				local tReason = L["not possible right now"]
+				if not tIsPet and tSelCost and GetMoney() < tSelCost then
+					tReason = Sku.deEn("nicht genug Geld, es kostet ", "not enough money, it costs ", "pas assez d'argent, coût ")
+						.. SkuGetCoinText(tSelCost, true) .. ", " .. Sku.deEn("du hast ", "you have ", "vous avez ") .. SkuGetCoinText(GetMoney(), true)
+				elseif tIsPet and tSelCost and tPetPoints() and tSelCost > tPetPoints() then
+					tReason = L["Not enough training points"] .. ": " .. tSelCost .. " " .. L["needed"] .. ", " .. tPetPoints() .. " " .. L["free"]
+				elseif ClassTrainerTrainButton.disableReason ~= nil then
+					tReason = Sku.deEn("kein freier Berufsplatz", "no free profession slot", "aucun emplacement de métier libre")
+				end
+				dprint("trainerRow", "lernen gesperrt", "index", tSelectedIndex, "name", tostring(tSelName), "kosten", tostring(tSelCost),
+					"geld", tostring(GetMoney()), "grund", tostring(ClassTrainerTrainButton.disableReason))
+				tLabel = tLabel .. " (" .. tReason .. ")"
 			end
 			local tPointsBefore = tIsPet and tPetPoints() or nil
 			local tMoneyBefore = GetMoney()

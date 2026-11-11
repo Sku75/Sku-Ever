@@ -291,6 +291,8 @@ local function tSection(aParentChilds, aLabel)
 	return tNode
 end
 
+local tMerchantPage, tPageHooked = 1, false
+
 local function tBuildWare(aIndex)
 	local tInfo = tWareInfo(aIndex)
 	if not tInfo.name or tInfo.name == "" then return nil end
@@ -353,11 +355,46 @@ function SkuCore:Build_MerchantFrame(aParentChilds)
 		textFirstLine = tMerchantName, textFull = "", childs = {},
 	}
 
-	-- wares
+	-- wares, one window page at a time (like Blizzard's merchant pages); the rest is reached with the page entries
+	if not tPageHooked and _G["MerchantFrame"] then
+		tPageHooked = true
+		_G["MerchantFrame"]:HookScript("OnHide", function() tMerchantPage = 1 end)
+	end
 	local tWares = tSection(aParentChilds, L["Wares"])
-	for i = 1, GetMerchantNumItems() do
+	local tNumWares = GetMerchantNumItems() or 0
+	local tPageSize = tonumber(_G.MERCHANT_ITEMS_PER_PAGE) or 10
+	local tPages = math.max(math.ceil(tNumWares / tPageSize), 1)
+	tMerchantPage = math.min(math.max(tMerchantPage, 1), tPages)
+	local tFrom, tTo = 1, tNumWares
+	if tPages > 1 then
+		tFrom = (tMerchantPage - 1) * tPageSize + 1
+		tTo = math.min(tMerchantPage * tPageSize, tNumWares)
+		local tPageText = " (" .. tMerchantPage .. "/" .. tPages .. ")"
+		local tBack = tEntry(Sku.deEn("Liste zurück blättern", "Page list back", "Page précédente") .. tPageText, "", function()
+			if tMerchantPage > 1 then
+				tMerchantPage = tMerchantPage - 1
+			else
+				tSay(Sku.deEn("Anfang der Liste", "start of list", "début de la liste"))
+			end
+		end)
+		tBack.skuIdentity = "merchantpage:back"
+		tAddChild(tWares, tBack)
+	end
+	for i = tFrom, tTo do
 		local tNode = tBuildWare(i)
 		if tNode then tAddChild(tWares, tNode) end
+	end
+	if tPages > 1 then
+		local tPageText = " (" .. tMerchantPage .. "/" .. tPages .. ")"
+		local tForward = tEntry(Sku.deEn("Liste weiter blättern", "Page list forward", "Page suivante") .. tPageText, "", function()
+			if tMerchantPage < tPages then
+				tMerchantPage = tMerchantPage + 1
+			else
+				tSay(Sku.deEn("Ende der Liste", "end of list", "fin de la liste"))
+			end
+		end)
+		tForward.skuIdentity = "merchantpage:forward"
+		tAddChild(tWares, tForward)
 	end
 	if #tWares.childs == 0 then
 		tAddChild(tWares, tEntry(L["Menu empty"], "", nil))
