@@ -1,0 +1,46 @@
+; WoW Logintool V2 - thin AHK v2 driver over the SkuLoginSense helper.
+;
+; Architecture (dev/rework-docs/LOGINTOOL-REWORK-PLAN.md, Phases 4+5):
+; - ALL glue-screen sensing goes through SkuLoginSense.exe (out-of-process
+;   window capture + fiducial classification + Windows OCR). The driver keeps
+;   only two native pixel probes (window focus, Sku in-game corner marker)
+;   for the cheap 1 Hz mode watcher.
+; - Character/realm/popup content is read LIVE via OCR: real character names,
+;   real realm lists, popup text spoken verbatim. Selection clicks the OCR
+;   line's own bounding rect - no more 50x arrow-down scanning.
+; - Keybinds: arrows/PgUp/PgDn/Enter/Esc drive the spoken menu, Alt+F1 toggles
+;   pause/login mode, Alt+Esc exits, Ctrl+Alt+F2 sends PrintScreen.
+;
+; - The character list is counted with the arrow keys before the main menu is
+;   shown (flows.ahk), the way v1 did it: a realm holds up to 50 characters
+;   while only nine slots are visible, so OCR of the visible section alone
+;   would silently drop everything below the fold.
+
+#Requires AutoHotkey v2.0
+#SingleInstance Force
+SendMode "Input"
+CoordMode "Mouse", "Screen"
+CoordMode "Pixel", "Screen"
+SetWorkingDir A_ScriptDir "\.."  ; tool root: data\ and log.txt live here
+
+; The tool's own release number, spoken at launch and logged. Three places
+; carry this number and are bumped together at publish time: this constant,
+; the CHANGELOG heading, and Config.LoginToolVersion in the installer (which
+; also writes it into installed-release.txt on deploy).
+global gToolVersion := "4.2"
+
+global gSettingsVersion := "3.0"
+
+#Include includes\log.ahk
+#Include includes\json.ahk
+#Include includes\config.ahk
+#Include includes\sapi.ahk
+#Include includes\sense.ahk
+#Include includes\ui.ahk
+#Include includes\detect.ahk
+#Include includes\forever.ahk
+#Include includes\menu.ahk
+#Include includes\flows.ahk
+#Include includes\keybinds.ahk
+
+Main()

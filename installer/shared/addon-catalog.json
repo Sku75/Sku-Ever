@@ -1,0 +1,250 @@
+{
+  "schemaVersion": 2,
+  "repository": "Sku75/Sku-WoW-Addon-TBC",
+  "mainAddon": {
+    "key": "Sku",
+    "displayName": "Sku",
+    "provider": "github-latest",
+    "assetPattern": "Sku-{version}.zip",
+    "rootFolders": ["Sku"]
+  },
+  "companionTag": "v41.02.05",
+  "companions": [
+    {
+      "key": "SkuBeaconSoundsets",
+      "displayName": "Sku Beacon Soundsets",
+      "asset": "SkuBeaconSoundsets.zip",
+      "rootFolders": ["SkuBeaconSoundsets"],
+      "required": true,
+      "media": true
+    },
+    {
+      "key": "SkuCustomBeaconsEssential",
+      "displayName": "Sku Custom Beacons Essential",
+      "asset": "SkuCustomBeaconsEssential.zip",
+      "rootFolders": ["SkuCustomBeaconsEssential"],
+      "required": true,
+      "media": true
+    },
+    {
+      "key": "SkuCustomBeaconsAdditional",
+      "displayName": "Sku Custom Beacons Additional",
+      "asset": "SkuCustomBeaconsAdditional.zip",
+      "rootFolders": ["SkuCustomBeaconsAdditional"],
+      "required": true,
+      "media": true
+    }
+  ],
+  "languagePacks": [
+    {"key": "SkuAudioData", "locale": "deDE", "displayName": "Deutsch", "asset": "SkuAudioData.zip", "rootFolders": ["SkuAudioData"], "media": true},
+    {"key": "SkuAudioData_fast_de", "locale": "deDE-fast", "displayName": "Deutsch schnell", "asset": "SkuAudioData_fast_de.zip", "rootFolders": ["SkuAudioData_fast_de"], "media": true},
+    {"key": "SkuAudioData_en", "locale": "enUS", "displayName": "English", "asset": "SkuAudioData_en.zip", "rootFolders": ["SkuAudioData_en"], "media": true}
+  ],
+  "managedAnniversaryAddons": [
+    {
+      "prefKey": "ManageQuestie",
+      "displayName": "Questie",
+      "defaultEnabled": true,
+      "packages": [
+        {
+          "key": "CurseQuestie",
+          "provider": "github",
+          "project": "Questie/Questie",
+          "tagPrefix": "bundle/",
+          "assetContains": "Questie-v",
+          "assetTemplate": "Questie-{name}.zip",
+          "clients": ["anniversary", "era", "forever"],
+          "fallbackVersion": "bundle/v12.1.0+v1.0.6",
+          "fallbackUrl": "https://github.com/Questie/Questie/releases/download/bundle%2Fv12.1.0%2Bv1.0.6/Questie-v12.1.0%2Bv1.0.6.zip",
+          "fallbackSha256": "4ca2fbcbd03e050e8b8295f86bc29c6fe6044ef2db298e724f581c8c5a9a6d68",
+          "requiredRoots": ["Questie", "QuestieDB"]
+        }
+      ]
+    },
+    {
+      "prefKey": "ManageAtlasLoot",
+      "displayName": "AtlasLoot Continued",
+      "defaultEnabled": true,
+      "packages": [
+        {
+          "key": "CurseAtlasLootContinued",
+          "provider": "pinned",
+          "clients": ["anniversary", "era", "forever"],
+          "fallbackVersion": "12488",
+          "fallbackUrl": "https://edge.forgecdn.net/files/9187/862/AtlasLootClassic-Continued_12488.zip",
+          "fallbackSha256": "8eaee376a19b26da4a50f4f7f7304f9f41b3eadfd0bd38c4fd98f67495fa82bd",
+          "requiredRoots": ["AtlasLootContinued", "AtlasLootContinued_Data"],
+          "rootPrefix": "AtlasLootContinued",
+          "obsoleteRoots": ["AtlasLootClassic", "AtlasLootClassic_BiS", "AtlasLootClassic_Collections", "AtlasLootClassic_Crafting", "AtlasLootClassic_Data", "AtlasLootClassic_DungeonsAndRaids", "AtlasLootClassic_Factions", "AtlasLootClassic_Options", "AtlasLootClassic_PvP", "AtlasLoot", "AtlasLoot_BiS", "AtlasLoot_Collections", "AtlasLoot_Crafting", "AtlasLoot_Data", "AtlasLoot_DungeonsAndRaids", "AtlasLoot_Factions", "AtlasLoot_Favourites", "AtlasLoot_Options", "AtlasLoot_PvP"]
+        }
+      ]
+    },
+    {
+      "prefKey": "ManageDetails",
+      "displayName": "Details Damage Meter",
+      "defaultEnabled": true,
+      "packages": [
+        {
+          "key": "CurseDetails",
+          "provider": "pinned",
+          "clients": ["anniversary", "era", "forever"],
+          "fallbackVersion": "20261014.15330.172",
+          "fallbackUrl": "https://edge.forgecdn.net/files/9177/176/Details-Details.20261014.15330.172.zip",
+          "fallbackSha256": "67c4fe6c81e7bc331098e67bce00ee049735d278a7c9d04c9d749930233e5086",
+          "requiredRoots": ["Details", "Details_DataStorage"],
+          "rootPrefix": "Details"
+        }
+      ]
+    },
+    {
+      "prefKey": "ManagePawn",
+      "displayName": "Pawn",
+      "defaultEnabled": false,
+      "packages": [
+        {
+          "key": "CursePawnTBC",
+          "provider": "github",
+          "project": "VgerMods/Pawn",
+          "assetContains": "-BurningCrusade.zip",
+          "assetTemplate": "{tag}-BurningCrusade.zip",
+          "clients": ["anniversary"],
+          "fallbackVersion": "2.13.17",
+          "fallbackUrl": "https://github.com/VgerMods/Pawn/releases/download/Pawn-2.13.17/Pawn-2.13.17-BurningCrusade.zip",
+          "fallbackSha256": "e0a597b5387001b30278d21817c162c74b84cd26c77ec3d969d65b4aea8c1fd2",
+          "requiredRoots": ["Pawn"]
+        },
+        {
+          "key": "CursePawnVanilla",
+          "provider": "github",
+          "project": "VgerMods/Pawn",
+          "assetContains": "-Classic.zip",
+          "assetTemplate": "{tag}-Classic.zip",
+          "clients": ["era"],
+          "fallbackVersion": "2.13.17",
+          "fallbackUrl": "https://github.com/VgerMods/Pawn/releases/download/Pawn-2.13.17/Pawn-2.13.17-Classic.zip",
+          "fallbackSha256": "26ae9f704953417b0898c6950cd64a3cd25f994108e2d052f9929417c0f82cbe",
+          "requiredRoots": ["Pawn"]
+        },
+        {
+          "key": "CursePawnForever",
+          "provider": "github",
+          "project": "VgerMods/Pawn",
+          "assetContains": "-Forever.zip",
+          "assetTemplate": "{tag}-Forever.zip",
+          "clients": ["forever"],
+          "fallbackVersion": "2.13.17",
+          "fallbackUrl": "https://github.com/VgerMods/Pawn/releases/download/Pawn-2.13.17/Pawn-2.13.17-Forever.zip",
+          "fallbackSha256": "5b23160af66be3d70a46075eb7073dd43d398a3aea9d8ad29974f4063c30a216",
+          "requiredRoots": ["Pawn"]
+        }
+      ]
+    },
+    {
+      "prefKey": "ManageDBM",
+      "displayName": "Deadly Boss Mods",
+      "defaultEnabled": true,
+      "packages": [
+        {
+          "key": "DBMCore",
+          "provider": "github",
+          "project": "DeadlyBossMods/DeadlyBossMods",
+          "assetContains": "DBM-Core-",
+          "assetTemplate": "DBM-Core-{tag}.zip",
+          "clients": ["anniversary", "era", "forever"],
+          "fallbackVersion": "12.1.14",
+          "fallbackUrl": "https://github.com/DeadlyBossMods/DeadlyBossMods/releases/download/12.1.14/DBM-Core-12.1.14.zip",
+          "fallbackSha256": "d073b8b6e37efa877e4bb18d4dc736206f64868eabd91674c356d0313c21a2e8",
+          "requiredRoots": ["DBM-Core", "DBM-GUI", "DBM-StatusBarTimers"],
+          "rootPrefix": "DBM-"
+        },
+        {
+          "key": "DBMRaidsBC",
+          "provider": "github",
+          "project": "DeadlyBossMods/DBM-BurningCrusade",
+          "assetContains": "DBM-Raids-BC-",
+          "assetTemplate": "DBM-Raids-BC-{tag}.zip",
+          "clients": ["anniversary"],
+          "fallbackVersion": "r21",
+          "fallbackUrl": "https://github.com/DeadlyBossMods/DBM-BurningCrusade/releases/download/r21/DBM-Raids-BC-r21.zip",
+          "fallbackSha256": "27f58b47e56d7372de8c99c1f3181b6c1a9d5db7644ff09c4bc2aafbf9d6bff0",
+          "requiredRoots": ["DBM-Raids-BC"],
+          "rootPrefix": "DBM-"
+        },
+        {
+          "key": "DBMRaidsVanilla",
+          "provider": "github",
+          "project": "DeadlyBossMods/DBM-Vanilla",
+          "assetContains": "DBM-Vanilla_SoD-",
+          "assetTemplate": "DBM-Vanilla_SoD-{tag}.zip",
+          "clients": ["era", "forever"],
+          "fallbackVersion": "r832",
+          "fallbackUrl": "https://github.com/DeadlyBossMods/DBM-Vanilla/releases/download/r832/DBM-Vanilla_SoD-r832.zip",
+          "fallbackSha256": "1c02e96a45de723dce1c56c2f9428f767447496434d81dc191d2e8e9a63ed61d",
+          "requiredRoots": ["DBM-Raids-Vanilla"],
+          "rootPrefix": "DBM-"
+        },
+        {
+          "key": "DBMDungeons",
+          "provider": "github",
+          "project": "DeadlyBossMods/DBM-Dungeons",
+          "assetContains": "DBM-Dungeons-",
+          "assetTemplate": "DBM-Dungeons-{tag}.zip",
+          "clients": ["anniversary", "era", "forever"],
+          "fallbackVersion": "r266",
+          "fallbackUrl": "https://github.com/DeadlyBossMods/DBM-Dungeons/releases/download/r266/DBM-Dungeons-r266.zip",
+          "fallbackSha256": "e1684a59a31940af9bf6dfde8a920e8feaf7ba90f439b5916c975d8b64fff96c",
+          "requiredRoots": ["DBM-Party-BC", "DBM-Party-Vanilla"],
+          "rootPrefix": "DBM-"
+        }
+      ]
+    },
+    {
+      "prefKey": "ManageGTFO",
+      "displayName": "GTFO",
+      "defaultEnabled": true,
+      "packages": [
+        {
+          "key": "CurseGTFO",
+          "provider": "pinned",
+          "clients": ["anniversary", "era", "forever"],
+          "fallbackVersion": "6.12.1",
+          "fallbackUrl": "https://edge.forgecdn.net/files/9187/115/GTFO-6.12.1.zip",
+          "fallbackSha256": "a2dd43bd4c61cc19ba5fb8efbf5953380f9905d3e2cc0a97260eccf5e63ec5d2",
+          "requiredRoots": ["GTFO"]
+        }
+      ]
+    },
+    {
+      "prefKey": "ManageBugSack",
+      "displayName": "BugSack + BugGrabber",
+      "defaultEnabled": true,
+      "packages": [
+        {
+          "key": "BugSack",
+          "provider": "github",
+          "project": "funkydude/BugSack",
+          "assetContains": "BugSack-v",
+          "assetTemplate": "BugSack-{tag}.zip",
+          "clients": ["anniversary", "era", "forever"],
+          "fallbackVersion": "12.1.7",
+          "fallbackUrl": "https://github.com/funkydude/BugSack/releases/download/v12.1.7/BugSack-v12.1.7.zip",
+          "fallbackSha256": "ff93f1a141c889bdc6da604bae547d1b03e8c9b8fbbea27bf26fdc8c6c735308",
+          "requiredRoots": ["BugSack"]
+        },
+        {
+          "key": "CurseBugGrabber",
+          "provider": "pinned",
+          "clients": ["anniversary", "era", "forever"],
+          "fallbackVersion": "12.1.0",
+          "fallbackUrl": "https://edge.forgecdn.net/files/8907/587/%21BugGrabber-v12.1.0.zip",
+          "fallbackSha256": "248fe28b39a9e85bb7ddd23b02ef335715b82fb6d93dd7a3ce568dc51967c1df",
+          "requiredRoots": ["!BugGrabber"]
+        }
+      ]
+    }
+  ],
+  "inventory": {
+    "hiddenPackages": [],
+    "skuOwnedPrefixes": ["SkuAudioData"]
+  }
+}

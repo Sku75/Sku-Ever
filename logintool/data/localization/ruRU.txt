@@ -1,0 +1,178 @@
+﻿English==Английский
+German / Deutsch==Немецкий
+French / Français==Французский
+Russian / Русский==Русский
+Spanish / Español==Испанский
+Setup completed. Start the game now.==Настройка завершена. Сейчас запустите игру.
+selected==выбран
+go right to select a voice==Перейдите вправо, чтобы выбрать голос
+go right to select a game type==Перейдите вправо, чтобы выбрать версию игры
+go right to select a language==Перейдите вправо, чтобы выбрать язык
+pause mode==Режим паузы
+play mode==Режим игры
+login mode==Режим входа
+login mode for==Режим входа для
+script exited==Завершён
+select language==Выберите язык
+main menu==Главное меню
+selected, restart script to apply==выбран. Скрипт перезапускается для применения изменений.
+wait==подождите
+go right to select a region==Перейдите вправо, чтобы выбрать регион
+Europe==Европа
+USA==США
+Cata==Катаклизм
+Classic==Классическая эра
+BurningCrusade==Burning Crusade
+Retail==Актуальный
+Not_available==Недоступен
+Something went wrong. Please restart the game and try again.==Что-то пошло не так. Пожалуйста, перезапустите игру и попробуйте снова.
+you don't have any characters on the selected server==У вас нет персонажей на выбранном сервере.
+character==Персонаж
+selected==выбран
+this race is locked for your account. Try a different race.==Эта раса заблокирована для вашего аккаунта. Пожалуйста, выберите другую расу.
+create new character==Создать нового персонажа
+login with selected character==Войти с выбранным персонажем
+select character==Выбрать персонажа
+enter the name for the new character and press enter, or escape to cancel character creation.==Введите имя нового персонажа и нажмите enter или нажмите escape для отмены создания персонажа.
+Failed You already have the maximum number of character on this server.==Ошибка. У вас уже максимальное количество персонажей на этом сервере.
+switching to server. please wait.==Идёт смена сервера, пожалуйста, подождите.
+Deleting failed. Type delete again and press enter, or press escape to cancel the deleting process.==Произошла ошибка при удалении. Напечатайте слово УДАЛИТЬ заглавными буквами и нажмите Enter. Или нажмите Escape для отмены.
+character deleted==Персонаж удалён
+Please wait, the character list is being rebuilt.==Пожалуйста, подождите, список персонажей строится заново.
+Failed. The name is not available, or the names format is not allowed.==Ошибка. Выбранное имя недоступно или запрещено.
+Character created==Персонаж создан
+Empty - No characters on this server.==Пусто. Нет персонажей на этом сервере.
+switch server==Изменить сервер.
+select region==Выберите регион
+select game type==Выберите версию игры
+select voice==Выберите голос
+enter delete and press enter, or press escape to cancel the deleting process.==Напечатайте delete и нажмите enter или нажмите escape для отмены удаления.
+press enter to confirm the deletion, or press escape to cancel.==Напечатайте слово УДАЛИТЬ заглавными буквами и нажмите Enter. Или нажмите Escape для отмены.
+delete character==Удалить персонажа
+switched to Server==Сервер изменён
+Could not switch server.==Не удалось сменить сервер.
+The server is full. You are in queue.==Сервер переполнен. Вы в очереди
+Please wait.==Пожалуйста, подождите
+Creation is canceled. Please wait.==Создание отменено, пожалуйста, подождите
+Deleting is canceled. Please wait==Удаление отменено, пожалуйста, подождите
+setup mode==Режим настройки
+server full. Waiting in queue.==Сервер переполнен. Вы в очереди
+character number:==Номер персонажа:
+Fail. Client is reporting incorrect language.==Ошибка. Игра сообщает о некорректном языке клиента для этого сервера. Сервер не изменён.
+Exile's_Reach==Остров изгнанников
+Race_starting_zone==Расовая стартовая зона
+male==Мужской
+female==Женский
+Alliance==Альянс
+Horde==Орда
+Human==Люди
+Dwarf==Дворфы
+Night_Elf==Ночные Эльфы
+Gnome==Гномы
+Draenei==Дренеи
+Worgen==Воргены
+Pandaren_(Alliance)==Пандарены (Альянс)
+Dracthyr_(Alliance)==Драктиры (Альянс)
+Void_Elf==Эльфы Бездны
+Light_Forge_Draenei==Озарённые Дренеи
+Dark_Iron_Dwarf==Дворфы Чёрного Железа
+Kul_Tiran==Культирасцы
+Mecha_Gnome==Механогномы
+Orc==Орки
+Undead==Нежить
+Tauren==Таурены
+Troll==Тролли
+Blood_Elf==Эльфы Крови
+Goblin==Гоблины
+Pandaren_(Horde)==Пандарены (Орда)
+Dracthyr_(Horde)==Драктиры (Орда)
+Night_Borne==Ночнорождённые
+High_Mountain_Tauren==Таурены Крутогорья
+Mag_Har_Ork==Маг'хары
+Zandalari_Troll==Зандалары
+Vulpera==Вульперы
+Warrior==Воин
+Hunter==Охотник
+Mage==Маг
+Rogue==Разбойник
+Priest==Жрец
+Warlock==Чернокнижник
+Paladin==Паладин
+Druid==Друид
+Shaman==Шаман
+Monk==Монах
+Demon_Hunter==Охотник на демонов
+Death_Knight==Рыцарь Смерти
+Evoker==Пробудитель
+Version==Версия
+Anniversary==Юбилей
+hardcore==хардкор
+hardcore_pve==хардкор_pve
+hardcore_pvp==хардкор_pvp
+hardcore_rp==хардкор_rp
+addons==Аддоны
+activate all addons==Включить все аддоны
+deactivate all addons==Отключить все аддоны
+load out of date addons==Загружать устаревшие аддоны
+yes==Да
+no==Нет
+all addons activated==Все аддоны включены
+all addons deactivated==Все аддоны отключены
+out of date addons will be loaded==Устаревшие аддоны будут загружены
+out of date addons will not be loaded==Устаревшие аддоны не будут загружены
+addon menu only available on character selection screen==Меню аддонов доступно только на экране выбора персонажа
+Unknown screen. Close the dialog in the game, then press Alt F1 twice.==Неизвестный экран. Закройте диалог в игре, затем дважды нажмите Alt F1.
+The screen recognition textures are missing from the game folder. Please run the Sku installer to reinstall the login tool.==Текстуры распознавания экрана отсутствуют в папке игры. Запустите установщик Sku, чтобы переустановить инструмент входа.
+Login tool version==Инструмент входа, версия
+The character list may be incomplete. Press Alt F1 twice to rebuild it.==Внимание, список персонажей может быть неполным. Дважды нажмите Alt F1, чтобы построить его заново.
+The game has opened the server selection.==Игра открыла выбор сервера.
+close server selection==закрыть выбор сервера
+server selection closed==выбор сервера закрыт
+The tool does not know this dialog yet. Answer it in the game.==Инструмент ещё не знает этот диалог. Ответьте на него в игре.
+Press Enter to agree, or press Escape to decline.==Нажмите Enter, чтобы согласиться, или Escape, чтобы отказаться.
+Agreed. Connecting to the server. Please wait.==Принято. Подключение к серверу. Пожалуйста, подождите.
+Declined.==Отклонено.
+select category==Выбрать категорию
+this category holds no servers==В этой категории нет серверов.
+the server list did not load. please try again.==Список серверов не загружен. Попробуйте ещё раз.
+The game is still connecting. Press Escape to cancel.==Игра ещё подключается. Escape — отмена.
+the server list may be incomplete.==Список серверов может быть неполным.
+This game version is not supported yet.==Эта версия игры пока не поддерживается.
+game version detected==версия игры определена
+detect game type automatically==определять тип игры автоматически
+game type is detected automatically now==Тип игры теперь определяется автоматически.
+login screen, not logged in==Экран входа, вход не выполнен
+Not logged in. Either there is no connection to the server, or account name and password still have to be entered in the game.==Вход не выполнен. Либо нет соединения с сервером, либо имя учётной записи и пароль ещё нужно ввести в игре.
+account name==Имя учётной записи
+password==Пароль
+log in==Войти
+save account name==Сохранить имя учётной записи
+empty==пусто
+on==включено
+off==выключено
+Type now. Enter ends the entry, Escape leaves it.==Печатай сейчас. Enter завершает ввод, Escape выходит из него.
+Type now. The password is never read back. Enter ends the entry, Escape leaves it.==Печатай сейчас. Пароль никогда не зачитывается. Enter завершает ввод, Escape выходит из него.
+Entry ended.==Ввод завершён.
+Logging in. Please wait.==Выполняется вход. Подожди.
+The login did not go through.==Войти не удалось.
+This is not available on this screen.==На этом экране это недоступно.
+No characters on this realm yet.==На этом сервере пока нет персонажей.
+The server was not found in the list. The list is being read again.==Сервер не найден в списке. Список считывается заново.
+Attention. The game is on a different server:==Внимание. Игра находится на другом сервере:
+Change the server again before you play here.==Смените сервер, прежде чем играть здесь.
+Agreed. Please wait.==Принято. Пожалуйста, подождите.
+The game is starting. Please wait.==Игра запускается. Пожалуйста, подождите.
+The hardcore rules are still open.==Правила хардкора всё ещё открыты.
+Blizzard's social contract is open. Accepting it, please wait.==Открыт социальный договор Blizzard. Принимаю его, пожалуйста, подождите.
+Social contract accepted.==Социальный договор принят.
+The social contract could not be accepted. Sighted help is needed once: scroll the text to the end and press accept.==Не удалось принять социальный договор. Один раз нужна помощь зрячего человека: прокрутить текст до конца и нажать «Принять».
+The PvP realm warning is still open.==Предупреждение о PvP-мире всё ещё открыто.
+no voices found, press enter to keep the system voice==Голоса не найдены, нажмите Enter, чтобы оставить системный голос
+keeping the system voice==Системный голос сохранён
+this voice does not work, choose another one==Этот голос не работает, выберите другой
+Forever==WoW Forever
+Forever mode: the game reads the screen itself. Press Control Alt F3 to save a screenshot for calibration.==Forever mode: the game reads the screen itself. Press Control Alt F3 to save a screenshot for calibration.
+screenshot saved==screenshot saved
+narration settings written for Forever==narration settings written for Forever
+nothing to select on this screen==nothing to select on this screen
+typing mode, Enter or Escape to leave==typing mode, Enter or Escape to leave

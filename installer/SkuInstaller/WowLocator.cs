@@ -1,0 +1,556 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+
+namespace SkuInstaller
+{
+    /// <summary>One installed WoW client flavor and its AddOns folder.</summary>
+    public class WowFlavor
+    {
+        public string Product;      // e.g. wow_anniversary, wow_classic_era
+        public string AddOnsPath;   // <flavor>\Interface\AddOns
+        public string DisplayName;  // friendly label for the dropdown
+        public bool Beta;           // the WoW Forever beta folder (a live client wins over it)
+    }
+
+    /// <summary>
+    /// Finds installed WoW client flavors and their AddOns folders, and reports
+    /// whether the game is running.
+    ///
+    /// Modern Battle.net writes no usable registry key, so detection is
+    /// file-driven: under each WoW base dir, each "_*_" folder is a flavor; its
+    /// .flavor.info names the product (wow_anniversary, wow_classic_era, …) and a
+    /// WowClassic.exe / Wow.exe confirms it's a real client. Sku is installed into
+    /// the chosen flavor's Interface\AddOns. The same Sku build serves
+    /// Anniversary, Classic Era and WoW Forever; what makes it load on each is
+    /// TocSync writing that flavor's EXACT interface build into every TOC (see
+    /// InterfaceVersionList). WoW Forever runs its own exe (_forever_\Wow.exe; the
+    /// beta was _classic_beta_\WowB.exe) and its own interface family (16001), so
+    /// its TOCs never carry the Anniversary numbers.
+    /// These Anniversary-family clients gate on the exact build number — a near
+    /// number is silently refused, and "Load out of date AddOns" (checkAddonVersion
+    /// 0) does NOT cover a mismatched interface. Learned on Classic Era 11509 when
+    /// companions tagged 11508 silently failed to load.
+    /// </summary>
+    public static class WowLocator
+    {
+        /// <summary>
+        /// The clients this Sku build supports, in the order the wizard offers
+        /// them. Anniversary is the primary target; the same Sku build serves
+        /// Classic Era and WoW Forever (what makes it load there is TocSync
+        /// writing that client's exact interface build — see the class remarks).
+        ///
+        /// This is deliberately the SUPPORTED list, not the detected list: the
+        /// version-selection page shows every entry so a user whose client sits
+        /// somewhere we don't probe can still tick it and browse to it. Detection
+        /// then fills in the folder for the ones we did find.
+        /// </summary>
+        public static readonly string[] SupportedProducts =
+        {
+            Config.AnniversaryFlavor,   // wow_anniversary
+            Config.EraFlavor,           // wow_classic_era
+            Config.ForeverFlavor,       // WoW Forever (the live "wowf" is normalized onto it)
+        };
+
+        /// <summary>True for a client this Sku build installs into.</summary>
+        public static bool IsSupportedProduct(string product) =>
+            Array.IndexOf(SupportedProducts, product) >= 0;
+
+        /// <summary>
+        /// The game exe names (without extension) a flavor folder may hold: the
+        /// classic clients run WowClassic.exe (Wow.exe on some installs), WoW
+        /// Forever runs Wow.exe (live) or WowB.exe (beta).
+        /// </summary>
+        private static readonly string[] ClientExeNames =
+            { Config.GameProcessName, "Wow", Config.ForeverProcessName };
+
+        private static bool HasClientExe(string flavorDir) =>
+            ClientExeNames.Any(n => File.Exists(Path.Combine(flavorDir, n + ".exe")));
+
+        /// <summary>
+        /// Very short tag for a client, used to prefix progress rows so a
+        /// multi-client run can be told apart at a glance ("TBC:", "Era:").
+        ///
+        /// Deliberately one short word. These prefix every line of the event log,
+        /// and anything longer pushes the actual message off to the right and
+        /// makes the log tiring to read back. Forever stays a whole word: an
+        /// abbreviation like "FE" means nothing when it is read aloud.
+        /// </summary>
+        public static string ShortLabel(string product)
+        {
+            switch (product)
+            {
+                case "wow_anniversary": return "TBC";
+                case "wow_classic_era": return "Era";
+                case "wow_classic_beta": return "Forever";
+                case "wow_classic":     return "Classic";
+                case "wow_sod":         return "SoD";
+                default:                return product;
+            }
+        }
+
+        /// <summary>Friendly name for a flavor token, with no folder suffix.</summary>
+        public static string ProductLabel(string product)
+        {
+            switch (product)
+            {
+                case "wow_anniversary": return "Anniversary (TBC)";
+                case "wow_classic_era": return "Classic Era";
+                case "wow_classic_beta": return "WoW Forever";
+                case "wow_classic":     return "Classic";
+                case "wow_sod":         return "Season of Discovery";
+                default:                return product;
+            }
+        }
+
+        /// <summary>Candidate WoW base directories to probe (before asking the user).</summary>
+        private static string[] CandidateBaseDirs()
+        {
+            var dirs = new System.Collections.Generic.List<string>();
+
+            // FIRST: the base dirs implied by folders the user already installed
+            // into (PathMemory). A game on a drive we would never guess is found
+            // straight away on the second run, and — because the probe is by BASE
+            // dir — pointing us at one client there also finds the other one.
+            dirs.AddRange(PathMemory.RememberedBaseDirs());
+
+            foreach (var pf in new[]
+            {
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            })
+            {
+                if (!string.IsNullOrEmpty(pf))
+                    dirs.Add(Path.Combine(pf, "World of Warcraft"));
+            }
+
+            // Common non-default drives. Cheap to probe; harmless if absent.
+            foreach (var drive in new[] { "C", "D", "E" })
+            {
+                dirs.Add($@"{drive}:\World of Warcraft");
+                dirs.Add($@"{drive}:\Games\World of Warcraft");
+            }
+
+            return dirs.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        }
+
+        /// <summary>
+        /// Returns the Anniversary AddOns folder, or null if not auto-found.
+        /// </summary>
+        public static string DetectAddOnsFolder()
+        {
+            foreach (var baseDir in CandidateBaseDirs())
+            {
+                string addons = AddOnsUnderBase(baseDir);
+                if (addons != null)
+                {
+                    Logger.Info($"Detected AddOns folder: {addons}");
+                    return addons;
+                }
+            }
+            Logger.Info("Could not auto-detect the Anniversary AddOns folder.");
+            return null;
+        }
+
+        /// <summary>
+        /// Detects every installed WoW flavor (Anniversary, Classic Era, …) with a
+        /// real client exe, newest-relevant first. Used to populate the game-version
+        /// picker. AddOns folders that don't exist yet are still offered (created on
+        /// install). Anniversary is listed first when present.
+        /// </summary>
+        public static System.Collections.Generic.List<WowFlavor> DetectFlavors()
+        {
+            var found = new System.Collections.Generic.List<WowFlavor>();
+            var seen = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var baseDir in CandidateBaseDirs())
+            {
+                if (!Directory.Exists(baseDir)) continue;
+
+                string[] flavorDirs;
+                try { flavorDirs = Directory.GetDirectories(baseDir, "_*_"); }
+                catch { continue; }
+
+                foreach (var flavorDir in flavorDirs)
+                {
+                    if (!HasClientExe(flavorDir)) continue;
+
+                    string product = ReadFlavorProduct(flavorDir) ?? Path.GetFileName(flavorDir);
+
+                    // Only Anniversary, Classic Era and WoW Forever are supported
+                    // by this Sku build — skip Classic (wow_classic), retail, SoD, etc.
+                    if (!IsSupportedProduct(product))
+                        continue;
+
+                    string addons = Path.Combine(flavorDir, "Interface", "AddOns");
+                    if (!seen.Add(addons.ToLowerInvariant())) continue;
+
+                    found.Add(new WowFlavor
+                    {
+                        Product = product,
+                        AddOnsPath = addons,
+                        DisplayName = FriendlyFlavorName(product, flavorDir),
+                        Beta = Path.GetFileName(flavorDir).Equals(Config.ForeverBetaFolder,
+                                                                  StringComparison.OrdinalIgnoreCase),
+                    });
+                }
+            }
+
+            // Anniversary first (the primary target), then the rest as found -
+            // except that a leftover Forever BETA folder goes behind the live
+            // one: InstallTarget takes the FIRST flavor of a product, and
+            // "_classic_beta_" sorts before "_forever_". OrderBy is stable
+            // (List.Sort is not), so "as found" really stays as found.
+            return found
+                .OrderBy(f => f.Product == Config.AnniversaryFlavor ? 0 : 1)
+                .ThenBy(f => f.Beta ? 1 : 0)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Which client an Interface\AddOns folder belongs to, e.g.
+        /// wow_classic_era, or null if it can't be told. An AddOns path is
+        /// &lt;base&gt;\&lt;flavor&gt;\Interface\AddOns, so the flavor folder is two
+        /// levels up and its .flavor.info names the product.
+        ///
+        /// Used when the user browses to a folder by hand: it lets the wizard file
+        /// their choice under the right client instead of guessing.
+        /// </summary>
+        public static string ProductForAddOnsFolder(string addonsFolder)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(addonsFolder)) return null;
+                var iface = Directory.GetParent(addonsFolder.TrimEnd('\\'));
+                var flavorDir = iface?.Parent;
+                return flavorDir != null ? ReadFlavorProduct(flavorDir.FullName) : null;
+            }
+            catch { return null; }
+        }
+
+        private static string ReadFlavorProduct(string flavorDir)
+        {
+            try
+            {
+                string info = Path.Combine(flavorDir, ".flavor.info");
+                if (!File.Exists(info)) return null;
+                // line 1 = header, line 2 = the product token (e.g. "wow_anniversary")
+                var lines = File.ReadAllLines(info);
+                return lines.Length >= 2 ? Config.NormalizeProduct(lines[1].Trim()) : null;
+            }
+            catch { return null; }
+        }
+
+        private static string FriendlyFlavorName(string product, string flavorDir)
+        {
+            return $"{ProductLabel(product)}  —  {Path.GetFileName(flavorDir)}";
+        }
+
+        /// <summary>
+        /// Given a WoW base dir, return its Anniversary AddOns folder or null.
+        /// Tries the conventional _anniversary_ folder first, then scans every
+        /// _*_ flavor folder and reads .flavor.info to be certain.
+        /// </summary>
+        private static string AddOnsUnderBase(string baseDir)
+        {
+            if (string.IsNullOrEmpty(baseDir) || !Directory.Exists(baseDir))
+                return null;
+
+            // Fast path: the conventional folder name.
+            string conventional = Path.Combine(baseDir, Config.AnniversaryFolder);
+            if (IsAnniversaryFlavor(conventional))
+                return AddOnsInFlavor(conventional);
+
+            // Robust path: inspect each flavor folder's .flavor.info.
+            foreach (var dir in Directory.GetDirectories(baseDir, "_*_"))
+            {
+                if (IsAnniversaryFlavor(dir))
+                    return AddOnsInFlavor(dir);
+            }
+            return null;
+        }
+
+        private static string AddOnsInFlavor(string flavorDir)
+        {
+            string addons = Path.Combine(flavorDir, "Interface", "AddOns");
+            try { Directory.CreateDirectory(addons); } catch { /* may need elevation */ }
+            return addons;
+        }
+
+        /// <summary>
+        /// True if the flavor folder is the Anniversary client: its .flavor.info
+        /// names wow_anniversary, and WowClassic.exe is present.
+        /// </summary>
+        private static bool IsAnniversaryFlavor(string flavorDir)
+        {
+            if (string.IsNullOrEmpty(flavorDir) || !Directory.Exists(flavorDir))
+                return false;
+
+            bool hasExe = File.Exists(Path.Combine(flavorDir, Config.GameProcessName + ".exe"));
+
+            string flavorInfo = Path.Combine(flavorDir, ".flavor.info");
+            bool flavorMatches = false;
+            if (File.Exists(flavorInfo))
+            {
+                try
+                {
+                    // Two lines: a header, then the product token.
+                    flavorMatches = File.ReadAllText(flavorInfo)
+                        .IndexOf(Config.AnniversaryFlavor, StringComparison.OrdinalIgnoreCase) >= 0;
+                }
+                catch { /* ignore */ }
+            }
+
+            // Require the exe; the flavor token confirms but tolerate it missing.
+            return hasExe && (flavorMatches || !File.Exists(flavorInfo));
+        }
+
+        /// <summary>
+        /// True if the flavor folder is any client this Sku build supports
+        /// (Anniversary, Classic Era, WoW Forever): it holds a client exe and its
+        /// .flavor.info names a supported product.
+        /// </summary>
+        private static bool IsSupportedFlavor(string flavorDir)
+        {
+            if (string.IsNullOrEmpty(flavorDir) || !Directory.Exists(flavorDir))
+                return false;
+            return HasClientExe(flavorDir) && IsSupportedProduct(ReadFlavorProduct(flavorDir));
+        }
+
+        /// <summary>
+        /// Validates a user-picked folder. Accepts either the AddOns folder itself
+        /// or a flavor/base folder we can resolve down to AddOns. Returns the
+        /// resolved AddOns path or null.
+        /// </summary>
+        public static string ResolveUserPickedFolder(string picked)
+        {
+            if (string.IsNullOrEmpty(picked) || !Directory.Exists(picked))
+                return null;
+
+            // Picked the AddOns folder directly.
+            if (picked.TrimEnd('\\').EndsWith("AddOns", StringComparison.OrdinalIgnoreCase))
+                return picked;
+
+            // Picked a flavor folder: Anniversary (tolerates a missing
+            // .flavor.info) or any other supported client.
+            if (IsAnniversaryFlavor(picked) || IsSupportedFlavor(picked))
+                return AddOnsInFlavor(picked);
+
+            // Picked a base folder.
+            string viaBase = AddOnsUnderBase(picked);
+            if (viaBase != null) return viaBase;
+
+            // Last resort: Interface\AddOns directly under whatever was picked.
+            string guess = Path.Combine(picked, "Interface", "AddOns");
+            if (Directory.Exists(guess)) return guess;
+
+            return null;
+        }
+
+        // --- Game process detection ---
+        //
+        // We never close or launch the game ourselves: the user launches WoW from
+        // Battle.net (the only reliable way) and closes it manually when a big
+        // update needs it. We only DETECT whether it's running, to gate media /
+        // first-install updates and to decide the end-of-run message.
+
+        public static bool IsGameRunning() =>
+            Config.GameProcessNames.Any(n => Process.GetProcessesByName(n).Length > 0)
+            || Process.GetProcessesByName("Wow").Any(IsSupportedClientProcess);
+
+        /// <summary>
+        /// Wow.exe is WoW Forever's live exe AND Retail's. Only one running out of
+        /// a supported flavor folder counts - a Retail session must not hold up a
+        /// Sku install. A process whose path cannot be read counts (the safe
+        /// side: wait rather than write under a running client).
+        /// </summary>
+        private static bool IsSupportedClientProcess(Process p)
+        {
+            try
+            {
+                string exe = ProcessImagePath(p.Id);
+                if (exe == null) return true;
+                string product = ReadFlavorProduct(Path.GetDirectoryName(exe));
+                return product != null && IsSupportedProduct(product);
+            }
+            catch { return true; }
+            finally { p.Dispose(); }
+        }
+
+        // QueryFullProcessImageName needs only PROCESS_QUERY_LIMITED_INFORMATION
+        // and works across bitness (Process.MainModule does neither).
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
+
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true,
+            CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        private static extern bool QueryFullProcessImageName(IntPtr process, int flags,
+            System.Text.StringBuilder name, ref int size);
+
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        private static extern bool CloseHandle(IntPtr handle);
+
+        private static string ProcessImagePath(int pid)
+        {
+            IntPtr h = OpenProcess(0x1000, false, pid);   // PROCESS_QUERY_LIMITED_INFORMATION
+            if (h == IntPtr.Zero) return null;
+            try
+            {
+                var sb = new System.Text.StringBuilder(1024);
+                int size = sb.Capacity;
+                return QueryFullProcessImageName(h, 0, sb, ref size) ? sb.ToString() : null;
+            }
+            finally { CloseHandle(h); }
+        }
+
+        /// <summary>
+        /// Reads the "## Version:" line from an addon's TOC, e.g. "41.06" from
+        /// AddOns\Sku\Sku.toc. Returns null if the TOC or the line is missing.
+        /// The TOC may start with a UTF-8 BOM — StreamReader handles that.
+        /// </summary>
+        public static string ReadTocVersion(string addonsFolder, string folderName)
+        {
+            try
+            {
+                string toc = Path.Combine(addonsFolder, folderName, folderName + ".toc");
+                if (!File.Exists(toc)) return null;
+
+                foreach (var raw in File.ReadAllLines(toc))
+                {
+                    string line = raw.Trim();
+                    // "## Version: 41.06"
+                    if (line.StartsWith("##", StringComparison.Ordinal))
+                    {
+                        int colon = line.IndexOf(':');
+                        if (colon > 0)
+                        {
+                            string key = line.Substring(2, colon - 2).Trim();
+                            if (string.Equals(key, "Version", StringComparison.OrdinalIgnoreCase))
+                                return line.Substring(colon + 1).Trim();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Could not read {folderName} TOC version: {ex.Message}");
+            }
+            return null;
+        }
+
+        // --- Client interface version (for TOC "## Interface:" sync) ---
+        //
+        // WoW records each installed product's build version in ".build.info" at the
+        // WoW base dir (a "|"-delimited table with a header row). The TOC interface
+        // number is that build's first three dotted parts folded as
+        // major*10000 + minor*100 + patch  (2.5.6 -> 20506, 1.15.8 -> 11508).
+
+        /// <summary>
+        /// The Interface version(s) of the installed, Sku-supported client(s) of
+        /// the family <paramref name="addonsFolder"/> belongs to, formatted as a
+        /// TOC "## Interface:" list — highest first, e.g. "20506, 11508". Empty
+        /// string if none can be read. The .build.info at a base dir lists every
+        /// product, so reading the base that owns the folder already yields both
+        /// Anniversary and Classic Era; if that fails (e.g. a custom/throwaway
+        /// path) we scan the machine.
+        ///
+        /// Two families, never mixed: a WoW Forever folder gets only Forever's
+        /// number (16001), an Anniversary or Era folder only theirs. Each client
+        /// has its own AddOns folder, so its TOCs only need to name that client.
+        /// </summary>
+        public static string InterfaceVersionList(string addonsFolder)
+        {
+            var versions = new System.Collections.Generic.List<int>();
+            bool forever = ProductForAddOnsFolder(addonsFolder) == Config.ForeverFlavor;
+
+            string baseDir = BaseDirOf(addonsFolder);
+            if (baseDir != null)
+                CollectInterfaceVersions(baseDir, versions, forever);
+
+            if (versions.Count == 0)
+                foreach (var bd in CandidateBaseDirs())
+                    CollectInterfaceVersions(bd, versions, forever);
+
+            var ordered = versions.Distinct().OrderByDescending(v => v);
+            return string.Join(", ", ordered);
+        }
+
+        /// <summary>WoW base dir that owns an AddOns tree (…\&lt;base&gt;\_flavor_\Interface\AddOns).</summary>
+        private static string BaseDirOf(string addonsFolder)
+        {
+            try
+            {
+                var interfaceDir = Directory.GetParent(addonsFolder); // Interface
+                var flavor = interfaceDir?.Parent;                    // _flavor_
+                var baseDir = flavor?.Parent;                         // WoW base
+                return baseDir?.FullName;
+            }
+            catch { return null; }
+        }
+
+        /// <summary>
+        /// Adds the interface number of each Sku-supported product of one family
+        /// found in &lt;baseDir&gt;\.build.info: Anniversary + Classic Era, or WoW
+        /// Forever alone when <paramref name="forever"/> is set — never
+        /// wow_classic/retail, which run different interface numbers.
+        /// </summary>
+        private static void CollectInterfaceVersions(string baseDir, System.Collections.Generic.List<int> into,
+                                                     bool forever)
+        {
+            if (string.IsNullOrEmpty(baseDir)) return;
+            string buildInfo = Path.Combine(baseDir, ".build.info");
+            if (!File.Exists(buildInfo)) return;
+
+            try
+            {
+                var lines = File.ReadAllLines(buildInfo);
+                if (lines.Length < 2) return;
+
+                // Header names carry a "!TYPE:len" suffix — strip it to find columns.
+                var headers = lines[0].Split('|');
+                int verCol = -1, prodCol = -1;
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    string name = headers[i].Split('!')[0].Trim();
+                    if (name.Equals("Version", StringComparison.OrdinalIgnoreCase)) verCol = i;
+                    else if (name.Equals("Product", StringComparison.OrdinalIgnoreCase)) prodCol = i;
+                }
+                if (verCol < 0 || prodCol < 0) return;
+
+                for (int r = 1; r < lines.Length; r++)
+                {
+                    if (string.IsNullOrWhiteSpace(lines[r])) continue;
+                    var cols = lines[r].Split('|');
+                    if (verCol >= cols.Length || prodCol >= cols.Length) continue;
+
+                    string product = Config.NormalizeProduct(cols[prodCol].Trim());
+                    bool wanted = forever
+                        ? product == Config.ForeverFlavor
+                        : (product == Config.AnniversaryFlavor || product == Config.EraFlavor);
+                    if (!wanted) continue;
+
+                    int iface = InterfaceFromBuildVersion(cols[verCol].Trim());
+                    if (iface > 0) into.Add(iface);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Could not read .build.info in {baseDir}: {ex.Message}");
+            }
+        }
+
+        /// <summary>"2.5.6.68502" -> 20506 (major*10000 + minor*100 + patch). 0 if unparseable.</summary>
+        internal static int InterfaceFromBuildVersion(string build)
+        {
+            if (string.IsNullOrWhiteSpace(build)) return 0;
+            var parts = build.Split('.');
+            if (parts.Length < 3) return 0;
+            if (int.TryParse(parts[0], out int maj) &&
+                int.TryParse(parts[1], out int min) &&
+                int.TryParse(parts[2], out int pat))
+                return maj * 10000 + min * 100 + pat;
+            return 0;
+        }
+    }
+}

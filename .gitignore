@@ -1,0 +1,23 @@
+old-addon-versions/
+
+# personal dev config & local-only dirs (untracked)
+/CLAUDE.md
+/archive/
+/userlogs/
+# third-party addons pulled in for study (foreign code, never ship/publish)
+/interessante addons/
+# local run logs (cpu.log etc.) — written on this machine, never part of a release
+/Logs/
+
+# python bytecode from the dev/ helper scripts
+__pycache__/
+
+# incoming mapper contributions (25+ MB SavedVariables zips/files; archived on
+# disk only — the merged RESULT is what gets committed, see dev/mapper/)
+/dev/mapper/inbox/
+# outgoing mapper data packs (derived from the tracked route file, ~6 MB each)
+/dev/mapper/packs/
+
+# generated cross-platform installer release assets
+/installer/dist-universal/
+/installer/macos/build/

@@ -1,0 +1,178 @@
+﻿English==Anglais
+German / Deutsch==Allemand
+French / Français==Français
+Russian / Русский==Russe
+Spanish / Español==Espagnole
+Setup completed. Start the game now.==Configuration terminée, lancez le jeu maintenant.
+selected==Séléctionné
+go right to select a voice==Allez à droite
+go right to select a game type==Aller à droite pour séléctionner un type de jeu
+go right to select a language==Aller a droite pour séléctionner une langue
+pause mode==Mis en pause
+play mode==Mode de jeu
+login mode==Mode de connection
+login mode for==Mode de connection pour
+script exited==Terminé
+select language==Choisir la langue
+main menu==Menu principale
+selected, restart script to apply==Séléctionné, relancement du script pour appliquer les modifications, veuillez attendre
+wait==Veuillez attendre
+go right to select a region==Aller a droite pour séléctionner une région
+Europe==Europe
+USA==Etats-Unis
+Cata==Cataclysm
+Classic==Classic ERA
+BurningCrusade==Burning Crusade
+Retail==Retail
+Not_available==Non_disponible
+Something went wrong. Please restart the game and try again.==Quelque chose s’est mal passer, veuillez relancer le jeu et réessayer 
+you don't have any characters on the selected server==Vous n’avez aucuns personnages sur le royaume séléctionné.
+character==Personnage
+selected==Séléctionné
+this race is locked for your account. Try a different race.==Cette race n’est pas disponible pour votre compte, essayez d’en séléctionner une autre
+create new character==Créer un nouveau personnage
+login with selected character==Se connecter avec le personnage séléctionné
+select character==Séléctionner le personnage
+enter the name for the new character and press enter, or escape to cancel character creation.==Entrez le nom pour votre nouveau personnage puis appuyez sur entrer ou échape pour annuler.
+Failed You already have the maximum number of character on this server.==La création de personnage a échouée, vous avez atteint le nombre maximum de personnage sur le serveur
+switching to server. please wait.==Changement de royaume, veuillez patienter
+Deleting failed. Type delete again and press enter, or press escape to cancel the deleting process.==La suppression a échoué. Écrivez le mot EFFACER en majuscules et appuyez sur Entrée. Ou appuyez sur Échap pour annuler.
+character deleted==Le personnage a bien été supprimé
+Please wait, the character list is being rebuilt.==Veuillez patienter, la liste des personnages est en cours de reconstruction.
+Failed. The name is not available, or the names format is not allowed.==Echec, le nom du personnage a déjà été pris ou n’est pas approprié.
+Character created==Le personnage a été créer.
+Empty - No characters on this server.==Vide, il n’y a aucuns personnage sur ce royaume
+switch server==Changer de royaume
+select region==Séléctionner la région
+select game type==Séléctionner le type de jeu
+select voice==Séléctionner la voix
+enter delete and press enter, or press escape to cancel the deleting process.==Ecrivez EFFACER puis appuyez sur ENTRER, sinon appuyez sur échape pour annuler la suppression du personnage.
+press enter to confirm the deletion, or press escape to cancel.==Écrivez le mot EFFACER en majuscules et appuyez sur Entrée. Ou appuyez sur Échap pour annuler.
+delete character==Supprimer le personnage
+switched to Server==Le royaume a été changé
+Could not switch server.==Impossible de changer de royaume.
+The server is full. You are in queue.==Le royaume est plein, vous êtes dans la file d’attente
+Please wait.==Veuillez atendre
+Creation is canceled. Please wait.==La création est annulée, veuillez patienter
+Deleting is canceled. Please wait==La suppression est annulée, veuillez patienter
+setup mode==Mode de configuration
+server full. Waiting in queue.==Le royaume est plein, vous êtes dans la file d’attente
+character number:==Personnage numéro 
+Fail. Client is reporting incorrect language.==Echec, le royaume que vous avez séléctionner ne semble pas avoir la même langue que la langue définie sur votre jeu. Le serveur n’a pas été changé.
+Exile's_Reach==Confins de l’Exil
+Race_starting_zone==La zone de départ pour la race
+male==Homme
+female==Femme
+Alliance==Alliance
+Horde==Horde
+Human==Humain
+Dwarf==Nain
+Night_Elf==Elf de la nuit
+Gnome==Gnome
+Draenei==Draenei.
+Worgen==Worgen
+Pandaren_(Alliance)==Pandaren (Alliance)
+Dracthyr_(Alliance)==Dracthyr (Alliance)
+Void_Elf==Elfe du Vide
+Light_Forge_Draenei==Draeneï sancteforge
+Dark_Iron_Dwarf==Nain sombrefer
+Kul_Tiran==Kultiran
+Mecha_Gnome==Mécagnome
+Orc==Orc
+Undead==Mort-vivant
+Tauren==Tauren
+Troll==Troll
+Blood_Elf==Elf de sang
+Goblin==Gobelin
+Pandaren_(Horde)==Pandaren (Horde)
+Dracthyr_(Horde)==Dracthyr (Horde)
+Night_Borne==Sacrenuit
+High_Mountain_Tauren==Taurène de Haut-Roc
+Mag_Har_Ork==Orque mag'har
+Zandalari_Troll==Trolle zandalari
+Vulpera==Vulpérin
+Warrior==Guerrier
+Hunter==Chasseur
+Mage==Mage
+Rogue==Voleur
+Priest==Prêtre
+Warlock==Démoniste
+Paladin==Paladin
+Druid==Druide
+Shaman==Chamane
+Monk==Moine
+Demon_Hunter==Chasseur de démons
+Death_Knight==Chevalier de la mort
+Evoker==Evocateur
+Version==Version
+Anniversary==Jubilé
+hardcore==Extrême
+hardcore_pve==Extrême_pve
+hardcore_pvp==Extrême_pvp
+hardcore_rp==Extrême_rp
+addons==Modules complémentaires
+activate all addons==Activer tous les modules
+deactivate all addons==Désactiver tous les modules
+load out of date addons==Charger les modules obsolètes
+yes==Oui
+no==Non
+all addons activated==Tous les modules sont activés
+all addons deactivated==Tous les modules sont désactivés
+out of date addons will be loaded==Les modules obsolètes seront chargés
+out of date addons will not be loaded==Les modules obsolètes ne seront pas chargés
+addon menu only available on character selection screen==Le menu des modules n'est disponible que sur l'écran de sélection des personnages
+Unknown screen. Close the dialog in the game, then press Alt F1 twice.==Écran inconnu. Fermez la boîte de dialogue dans le jeu, puis appuyez deux fois sur Alt F1.
+The screen recognition textures are missing from the game folder. Please run the Sku installer to reinstall the login tool.==Les textures de reconnaissance d'écran sont absentes du dossier du jeu. Veuillez exécuter l'installateur Sku pour réinstaller l'outil de connexion.
+Login tool version==Outil de connexion version
+The character list may be incomplete. Press Alt F1 twice to rebuild it.==Attention, la liste des personnages est peut-être incomplète. Appuyez deux fois sur Alt F1 pour la reconstruire.
+The game has opened the server selection.==Le jeu a ouvert la sélection de royaume.
+close server selection==fermer la sélection de royaume
+server selection closed==sélection de royaume fermée
+The tool does not know this dialog yet. Answer it in the game.==L'outil ne connaît pas encore ce dialogue. Répondez-y dans le jeu.
+Press Enter to agree, or press Escape to decline.==Appuyez sur Entrée pour accepter, ou sur Échap pour refuser.
+Agreed. Connecting to the server. Please wait.==Accepté. Connexion au serveur en cours. Veuillez patienter.
+Declined.==Refusé.
+select category==Choisir une catégorie
+this category holds no servers==Cette catégorie ne contient aucun serveur.
+the server list did not load. please try again.==La liste des serveurs n'a pas été chargée. Veuillez réessayer.
+The game is still connecting. Press Escape to cancel.==Le jeu se connecte encore. Échap pour annuler.
+the server list may be incomplete.==La liste des serveurs est peut-être incomplète.
+This game version is not supported yet.==Cette version du jeu n'est pas encore prise en charge.
+game version detected==version du jeu détectée
+detect game type automatically==détecter le type de jeu automatiquement
+game type is detected automatically now==Le type de jeu est maintenant détecté automatiquement.
+login screen, not logged in==Écran de connexion, non connecté
+Not logged in. Either there is no connection to the server, or account name and password still have to be entered in the game.==Non connecté. Soit il n'y a pas de connexion au serveur, soit le nom de compte et le mot de passe doivent encore être saisis dans le jeu.
+account name==Nom de compte
+password==Mot de passe
+log in==Se connecter
+save account name==Enregistrer le nom de compte
+empty==vide
+on==activé
+off==désactivé
+Type now. Enter ends the entry, Escape leaves it.==Saisis maintenant. Entrée termine la saisie, Échap la quitte.
+Type now. The password is never read back. Enter ends the entry, Escape leaves it.==Saisis maintenant. Le mot de passe n'est jamais lu à voix haute. Entrée termine la saisie, Échap la quitte.
+Entry ended.==Saisie terminée.
+Logging in. Please wait.==Connexion en cours. Patiente.
+The login did not go through.==La connexion n'a pas abouti.
+This is not available on this screen.==Ceci n'est pas disponible sur cet écran.
+No characters on this realm yet.==Il n'y a encore aucun personnage sur ce royaume.
+The server was not found in the list. The list is being read again.==Le royaume n'a pas été trouvé dans la liste. La liste est relue.
+Attention. The game is on a different server:==Attention. Le jeu est sur un autre royaume :
+Change the server again before you play here.==Changez de royaume avant de jouer ici.
+Agreed. Please wait.==Accepte. Veuillez patienter.
+The game is starting. Please wait.==Le jeu démarre. Veuillez patienter.
+The hardcore rules are still open.==Les règles hardcore sont toujours ouvertes.
+Blizzard's social contract is open. Accepting it, please wait.==Le contrat social de Blizzard est ouvert. Acceptation en cours, veuillez patienter.
+Social contract accepted.==Contrat social accepté.
+The social contract could not be accepted. Sighted help is needed once: scroll the text to the end and press accept.==Le contrat social n'a pas pu être accepté. Il faut une fois l'aide d'une personne voyante : faire défiler le texte jusqu'à la fin et cliquer sur accepter.
+The PvP realm warning is still open.==L'avertissement du royaume JcJ est toujours ouvert.
+no voices found, press enter to keep the system voice==Aucune voix trouvée, appuyez sur Entrée pour garder la voix du système
+keeping the system voice==La voix du système est conservée
+this voice does not work, choose another one==Cette voix ne fonctionne pas, choisissez-en une autre
+Forever==WoW Forever
+Forever mode: the game reads the screen itself. Press Control Alt F3 to save a screenshot for calibration.==Mode Forever : le jeu lit l'écran lui-même. Ctrl Alt F3 enregistre une capture d'écran pour le calibrage.
+screenshot saved==capture enregistrée
+narration settings written for Forever==réglages de lecture écrits pour Forever
+nothing to select on this screen==Rien à sélectionner sur cet écran
+typing mode, Enter or Escape to leave==Mode saisie. Entrée ou Échap pour quitter

@@ -1,0 +1,39 @@
+# SkuVoice offline harness
+
+Runs `Sku/Libs/SkuVoice-1.0/SkuVoice-1.0.lua` under LuaJIT against a simulated
+WoW TTS client, so the Blizzard-TTS queue can be tested without the game. It
+exists because the developer plays on the NVDA bridge, where the real-SAPI
+failure modes (utterances parked inside the client) can never occur.
+
+Client models (second argument):
+
+- `sapi` - real Windows voice, as measured from user captures: one utterance
+  plays at a time; SpeakText while another is in the client PARKS the new one;
+  a parked utterance only starts at the next natural PLAYBACK_FINISHED;
+  StopSpeakingText silently kills the PLAYING one and nothing else.
+- `bridge` - NVDA/SAPI2SR: STARTED + FINISHED in the handover frame.
+- `mute` - plays like `sapi` but fires no events at all (escape-hatch test).
+
+Run from THIS directory (the scripts `dofile("harness.lua")`):
+
+    luajit scen.lua ../../../Sku/Libs/SkuVoice-1.0/SkuVoice-1.0.lua sapi filter
+    LAT=0.35 luajit stress.lua ../../../Sku/Libs/SkuVoice-1.0/SkuVoice-1.0.lua sapi 1
+
+Scenarios in `scen.lua`: filter, chatnav, chatidle, endscope, echo, multi, mix, mixq, login,
+arrows, foreign (speech that is not Sku's lands in the client mid-typing), stopkey (one press
+of the stop-output key must also drop every waiting line; healthy = only the first line audible), errspam (a spammed key raising the same UI error per press, then a priority line; healthy = no copy per press and no repeat after the priority line), secret and secretstale (SkuVoice:SpeakSecretText; healthy = the number arrives, the marker word never, only the newest of two quick calls, a stale slot is dropped and the next call still speaks), secretsep (a secret line built from ";"-separated parts; healthy = the client gets spaces, never a ";"), missingword (blizzTtsForMissingWords; `MW=1` turns it on; healthy = only lines with a missing word reach the client, punctuation as written, a recorded overwrite line cuts the Blizzard-voiced one on sapi). `stress.lua <lib> <model> <seed>` is three minutes of random load;
+`LAT` sets the client's start latency in seconds. `SECRETMARKS=1` makes every
+bookmark name secret, as Forever reports it for an utterance with secret text. `HLOG=1` also prints Sku's
+own dprint lines. To compare against an older build:
+`git show <rev>:Sku/Libs/SkuVoice-1.0/SkuVoice-1.0.lua > old.lua`.
+
+Healthy output: `out-of-order=0` and no `LATE` flag. An OUT-OF-ORDER line is an
+utterance that surfaced after a newer one had already started - the "stale
+speech" bug class (v43.5 typing echo, v43.7 client gate).
+
+A `WEDGED` line means the library called StopSpeakingText from inside a TTS
+event handler. In the live client that killed all TTS until a client restart
+(2026-09-21); stops must be sent from OnUpdate.
+
+The model is a reconstruction from logs, not the client. When a capture
+contradicts it, fix the model first.

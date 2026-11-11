@@ -1,0 +1,178 @@
+﻿English==Inglés
+German / Deutsch==Alemán
+French / Français==Francés
+Russian / Русский==Ruso
+Spanish / Español==Español
+Setup completed. Start the game now.==Configuración finalizada, inicie el juego ahora
+selected==seleccionado
+go right to select a voice==Use flecha derecha para seleccionar la voz
+go right to select a game type==Use flecha derecha para seleccionar tipo de juego
+go right to select a language==Use flecha derecha para seleccionar idioma
+pause mode==Modo en pausa
+play mode==Modo de juego
+login mode==Modo de log in
+login mode for==Modo de log in para
+script exited==Finalizado
+select language==Seleccionar idioma
+main menu==Menú principal
+selected, restart script to apply==seleccionado, reiniciando script, espere
+wait==espere
+go right to select a region==use flecha derecha para seleccionar región
+Europe==Europa
+USA==Estados Unidos
+Cata==Cataclismo
+Classic==Era Clásica
+BurningCrusade==Burning Crusade
+Retail==Retail
+Not_available==No_disponible
+Something went wrong. Please restart the game and try again.==Algo salió mal. Reinicie el juego e intente nuevamente
+you don't have any characters on the selected server==No hay personajes en el servidor seleccionado
+character==personaje
+selected==seleccionado
+this race is locked for your account. Try a different race.==Esta raza está bloqueada para su cuenta, elija una raza diferente
+create new character==Crear nuevo personaje
+login with selected character==Ingresar con el personaje seleccionado
+select character==Elegir personaje
+enter the name for the new character and press enter, or escape to cancel character creation.==Ingrese el nombre para el nuevo personaje y presione enter, o escape para cancelar
+Failed You already have the maximum number of character on this server.==Error, alcanzó el límite de personajes para este servidor
+switching to server. please wait.==Cambiando servidor, espere
+Deleting failed. Type delete again and press enter, or press escape to cancel the deleting process.==Error al eliminar. Escriba la palabra BORRAR en mayúsculas y presione enter. O presione escape para cancelar.
+character deleted==Personaje eliminado
+Please wait, the character list is being rebuilt.==Por favor espere, la lista de personajes se está reconstruyendo.
+Failed. The name is not available, or the names format is not allowed.==Error, el nombre no está disponible o no es válido
+Character created==Personaje creado
+Empty - No characters on this server.==Vacío, no hay personajes en este servidor
+switch server==Cambiar servidor
+select region==Seleccionar región
+select game type==Seleccionar tipo de juego
+select voice==Seleccionar voz
+enter delete and press enter, or press escape to cancel the deleting process.==Escriba borrar y presione enter, o escape para cancelar
+press enter to confirm the deletion, or press escape to cancel.==Escriba la palabra BORRAR en mayúsculas y presione enter. O presione escape para cancelar.
+delete character==Eliminar personaje
+switched to Server==Servidor cambiado
+Could not switch server.==No se pudo cambiar de servidor.
+The server is full. You are in queue.==Servidor lleno, esperando en la cola
+Please wait.==Por favor espere
+Creation is canceled. Please wait.==Creación cancelada, espere
+Deleting is canceled. Please wait==Eliminación cancelada, espere
+setup mode==Modo de configuración
+server full. Waiting in queue.==Servidor lleno, esperando en la cola
+character number:==Número de personaje
+Fail. Client is reporting incorrect language.==Error, el idioma del cliente no está disponible para este servidor. No se cambió
+Exile's_Reach==Confín del Exilio
+Race_starting_zone==Zona inicial de la raza
+male==Masculino
+female==Femenino
+Alliance==Alianza
+Horde==Horda
+Human==Humano
+Dwarf==Enano
+Night_Elf==Elfo de la noche
+Gnome==Gnomo
+Draenei==Draenei
+Worgen==Huargen
+Pandaren_(Alliance)==Pandaren (Alianza)
+Dracthyr_(Alliance)==Dracthyr (Alianza)
+Void_Elf==Elfo del vacío
+Light_Forge_Draenei==Draenei forjado por la luz
+Dark_Iron_Dwarf==Enano Hierro Negro
+Kul_Tiran==Ciudadano de Kul Tiras
+Mecha_Gnome==Mecagnomo
+Orc==Orco
+Undead==No-muerto
+Tauren==Tauren
+Troll==Trol
+Blood_Elf==Elfo de sangre
+Goblin==Goblin
+Pandaren_(Horde)==Pandaren (Horda)
+Dracthyr_(Horde)==Dracthyr (Horda)
+Night_Borne==Nocheterna
+High_Mountain_Tauren==Tauren Montealto
+Mag_Har_Ork==Orco Mag'har
+Zandalari_Troll==Trol Zandalari
+Vulpera==Vulpera
+Warrior==Guerrero
+Hunter==Cazador
+Mage==Mago
+Rogue==Pícaro
+Priest==Sacerdote
+Warlock==Brujo
+Paladin==Paladín
+Druid==Druida
+Shaman==Chamán
+Monk==Monje
+Demon_Hunter==Cazador de demonios
+Death_Knight==Caballero de la muerte
+Evoker==Evocador
+Version==Versión
+Anniversary==Aniversario
+hardcore==hardcore
+hardcore_pve==hardcore_pve
+hardcore_pvp==hardcore_pvp
+hardcore_rp==hardcore_rp
+addons==Complementos
+activate all addons==Activar todos los complementos
+deactivate all addons==Desactivar todos los complementos
+load out of date addons==Cargar complementos obsoletos
+yes==Sí
+no==No
+all addons activated==Todos los complementos activados
+all addons deactivated==Todos los complementos desactivados
+out of date addons will be loaded==Los complementos obsoletos se cargarán
+out of date addons will not be loaded==Los complementos obsoletos no se cargarán
+addon menu only available on character selection screen==El menú de complementos solo está disponible en la pantalla de selección de personaje
+Unknown screen. Close the dialog in the game, then press Alt F1 twice.==Pantalla desconocida. Cierre el diálogo en el juego y luego presione dos veces Alt F1.
+The screen recognition textures are missing from the game folder. Please run the Sku installer to reinstall the login tool.==Faltan las texturas de reconocimiento de pantalla en la carpeta del juego. Ejecute el instalador de Sku para reinstalar la herramienta de inicio de sesión.
+Login tool version==Herramienta de inicio de sesión, versión
+The character list may be incomplete. Press Alt F1 twice to rebuild it.==Atención, la lista de personajes puede estar incompleta. Presione dos veces Alt F1 para reconstruirla.
+The game has opened the server selection.==El juego ha abierto la selección de servidor.
+close server selection==cerrar la selección de servidor
+server selection closed==selección de servidor cerrada
+The tool does not know this dialog yet. Answer it in the game.==La herramienta aún no conoce este diálogo. Respóndelo en el juego.
+Press Enter to agree, or press Escape to decline.==Pulsa Enter para aceptar, o Escape para rechazar.
+Agreed. Connecting to the server. Please wait.==Aceptado. Conectando con el servidor. Espera, por favor.
+Declined.==Rechazado.
+select category==Seleccionar categoría
+this category holds no servers==Esta categoría no contiene servidores.
+the server list did not load. please try again.==La lista de servidores no se cargó. Inténtalo de nuevo.
+The game is still connecting. Press Escape to cancel.==El juego sigue conectando. Pulsa Escape para cancelar.
+the server list may be incomplete.==La lista de servidores puede estar incompleta.
+This game version is not supported yet.==Esta versión del juego aún no es compatible.
+game version detected==versión del juego detectada
+detect game type automatically==detectar el tipo de juego automáticamente
+game type is detected automatically now==El tipo de juego se detecta automáticamente ahora.
+login screen, not logged in==Pantalla de acceso, sin sesión iniciada
+Not logged in. Either there is no connection to the server, or account name and password still have to be entered in the game.==Sin sesión iniciada. O no hay conexión con el servidor, o todavía hay que introducir el nombre de cuenta y la contraseña en el juego.
+account name==Nombre de cuenta
+password==Contraseña
+log in==Iniciar sesión
+save account name==Guardar el nombre de cuenta
+empty==vacío
+on==activado
+off==desactivado
+Type now. Enter ends the entry, Escape leaves it.==Escribe ahora. Intro termina la entrada, Escape la abandona.
+Type now. The password is never read back. Enter ends the entry, Escape leaves it.==Escribe ahora. La contraseña nunca se lee en voz alta. Intro termina la entrada, Escape la abandona.
+Entry ended.==Entrada terminada.
+Logging in. Please wait.==Iniciando sesión. Espera.
+The login did not go through.==El inicio de sesión no funcionó.
+This is not available on this screen.==Esto no está disponible en esta pantalla.
+No characters on this realm yet.==Todavía no hay personajes en este reino.
+The server was not found in the list. The list is being read again.==No se encontró el servidor en la lista. La lista se está leyendo de nuevo.
+Attention. The game is on a different server:==Atención. El juego está en otro servidor:
+Change the server again before you play here.==Cambia de servidor otra vez antes de jugar aquí.
+Agreed. Please wait.==Aceptado. Por favor espera.
+The game is starting. Please wait.==El juego se está iniciando. Por favor espera.
+The hardcore rules are still open.==Las reglas hardcore siguen abiertas.
+Blizzard's social contract is open. Accepting it, please wait.==El contrato social de Blizzard está abierto. Aceptándolo, espera por favor.
+Social contract accepted.==Contrato social aceptado.
+The social contract could not be accepted. Sighted help is needed once: scroll the text to the end and press accept.==No se pudo aceptar el contrato social. Hace falta una vez la ayuda de una persona vidente: desplazar el texto hasta el final y pulsar aceptar.
+The PvP realm warning is still open.==El aviso del reino JcJ sigue abierto.
+no voices found, press enter to keep the system voice==No se encontraron voces, pulse Intro para mantener la voz del sistema
+keeping the system voice==Se mantiene la voz del sistema
+this voice does not work, choose another one==Esta voz no funciona, elija otra
+Forever==WoW Forever
+Forever mode: the game reads the screen itself. Press Control Alt F3 to save a screenshot for calibration.==Forever mode: the game reads the screen itself. Press Control Alt F3 to save a screenshot for calibration.
+screenshot saved==screenshot saved
+narration settings written for Forever==narration settings written for Forever
+nothing to select on this screen==nothing to select on this screen
+typing mode, Enter or Escape to leave==typing mode, Enter or Escape to leave

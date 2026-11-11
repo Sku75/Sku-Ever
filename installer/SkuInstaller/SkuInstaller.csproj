@@ -1,0 +1,160 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- .NET Framework 4.8 WinForms. Native WinForms controls are read correctly
+       by NVDA/JAWS out of the box.
+
+       Was net472 until the wizard rework. Bumped to net48 because
+       ScreenReaderAnnouncer needs System.Windows.Forms.Automation
+       (AutomationNotificationKind / AutomationNotificationProcessing), which the
+       net472 reference assemblies do not expose — without it the installer
+       cannot speak its own progress, which is the entire point of the rework.
+       4.8 ships in Windows 10 1903+ and every Windows 11, and the KOTOR
+       accessibility installer already targets it for the same user base. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>SkuInstaller</AssemblyName>
+    <RootNamespace>SkuInstaller</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Single source of truth for the installer's own version. Surfaced in the
+         window title (WizardForm.InstallerVersion) so it's announced by the
+         screen reader, and written onto the download page by release.ps1.
+
+         This is the INSTALLER's version and is deliberately independent of the
+         Sku addon version: an addon release usually ships the same installer,
+         and an installer fix can ship without a new addon. release.ps1 keeps
+         both straight - it rebuilds and attaches the exe to every addon release,
+         and -PublishInstaller ships a new exe on its own.
+
+         4.0 = the guided-wizard rework: spoken progress (UIA), one run across
+         several WoW clients, per-client folder confirmation, self-updating
+         progress rows, a real Cancel button.
+         4.1 = French: Loc.Lang.Fr (same key set as en/de, picked from the OS UI
+         culture, switchable in the language list built from
+         ComponentsForm._langOrder).
+         4.2 = "Collect all logs": one button on the opening screen bundles every
+         log of EVERY detected client — Sku's SavedVariables (SkuDebugLog +
+         SkuErrorLog), BugGrabber, WVDebug, the client's Logs\ and Errors\,
+         Config.wtf, the addon list, the login tool's log and this installer's own
+         log — into one zip in Downloads (LogCollector).
+         4.3 = the updater updates ITSELF (SelfUpdater + SelfUpdatePromptForm).
+         The persistent copy in %LOCALAPPDATA%\SkuUpdater that the "Sku Updater"
+         shortcut launches used to stay on whatever build first created it, so
+         installer fixes only reached people who revisited the download page. It
+         now reads installer-version.txt from the rolling
+         releases/latest/download URL at startup, offers the update with a
+         strong recommendation, verifies the published SHA-256, renames itself
+         aside, moves the new exe into its place and restarts. Every failure
+         path falls through to a normal run with the current exe.
+         4.4 = login-tool texture hygiene. The texture step only ever copied
+         with overwrite, so recolored .blp files a newer generation renamed or
+         dropped survived every upgrade and no longer matched data.ini's colour
+         tables. Now stale .blp files are swept from the payload's Interface
+         folders before every copy (LoginToolInstaller.RemoveStaleFiducialTextures;
+         only .blp, only the payload folders, never AddOns; SkuSelfTest
+         "texturesweep"). And the log bundle's system-info.txt reports per
+         client whether the recognition textures are present at all
+         (LogCollector.AppendFiducialTextureInfo) — the missing line that made
+         the first "unknown on every screen" report unprovable. Deploys login
+         tool 3.2 (missing-texture self-diagnosis + version announce).
+         4.5 = the installer remembers where the game is (PathMemory). Detection
+         only probes Program Files and a short list of likely drives, so a user
+         with WoW anywhere else had to browse to the folder again on EVERY
+         update. The AddOns folder each client was installed into is now recorded
+         after a successful run — in %LOCALAPPDATA%\SkuUpdater\SkuPaths.txt and
+         mirrored to %ProgramData% for the "elevated with someone else's admin
+         account" case — and a remembered folder outranks detection on the next
+         run. Its base dir is also fed back into the probe list, so pointing us
+         at one client on an unusual drive finds the other one there for free. A
+         memory that has gone stale (folder deleted, or now reporting a different
+         client) is dropped and detection has its say. SkuSelfTest "pathmemory".
+         5.0 = managed third-party addons (Anniversary AND Classic Era, each
+         client getting its matching build), in feature parity with the macOS
+         installer 5.0: Questie, AtlasLootClassic, Details, Pawn, Deadly Boss
+         Mods (core + per-client raid mods + dungeons as ONE entry), GTFO, and
+         the BugSack+BugGrabber pair are installed and kept current alongside
+         Sku (ManagedAddons.cs; choices persist in
+         %LOCALAPPDATA%\SkuUpdater\SkuManagedAddons.txt, Pawn off by default).
+         GitHub /releases/latest is the source wherever the project publishes
+         releases there; only AtlasLoot/Details/GTFO/BugGrabber remain pinned to
+         CurseForge CDN files with SHA-256 until we hold a CurseForge API key.
+         The opening screen names pending managed updates and fresh installs, so
+         one-click never does silent extra work. Shared definitions live in
+         installer/shared/addon-catalog.json (test_catalog_parity.py).
+         5.1 = the bundled NVDA bridge engine (payload\sapi2sr-payload.zip)
+         gains Patch C: a line Sku marks with <bookmark mark="skuint"/> cancels
+         NVDA's speech before it is spoken, so fast menu scrolling no longer
+         reads the previous long line to the end. The version bump is what
+         carries it: the engine lives INSIDE this exe, and an installed
+         SkuUpdater only replaces itself when a higher version is published.
+         Every run (one-click included) already reinstalls + re-signs the
+         bridge, so no new step was needed.
+         5.2 = less to make an antivirus suspicious, after Windows Defender
+         deleted the freshly downloaded 5.1 for some users: real file properties
+         (below), and payload\sapi2sr-payload.zip ships x86\sapi2sr_engine.dll
+         BARE instead of carrying the throwaway signature of the developer
+         machine it was copied back from (strip_payload_signature.py; the PE-hash
+         pins are unaffected). Also the first build to carry login tool 3.4 and
+         the log bundle's voices.txt (LogCollector.WriteVoiceRegistrations).
+         5.4 = new option "Make all Windows voices available to WoW": copies the
+         Windows OneCore voices (Katja, Stefan, ...) into the SAPI voice list
+         the game reads (WindowsVoicesInstaller; same step as NVDA Voice for
+         WoW 1.1). On by default, runs on every install after the bridge.
+         5.5 = WoW Forever as a third client (_classic_beta_, WowB.exe): same
+         Sku zip, TOCs synced to 16001 only, installable once the newest release
+         is at least Config.ForeverMinMainVersion (44.0); login tool folder
+         without textures/fonts there.
+         5.6 = the live WoW Forever client: _forever_\Wow.exe whose .flavor.info
+         says "wowf" (Config.NormalizeProduct maps it onto the one Forever
+         token; a leftover _classic_beta_ folder comes second; a running
+         Wow.exe only counts when it lives in a supported flavor folder, so
+         Retail does not hold up an install). The bridge payload gains the
+         speech history: our nvdaControllerClient.dll forwards to NV Access's
+         original (x64\nvdaControllerClient.nvaccess.dll) and publishes the
+         texts of the processes a reader asks for (the login tool asks for WoW
+         on the Forever login screens only); the signing run signs it as an
+         optional third target. Login tool 4.1.
+         -->
+    <Version>5.6</Version>
+    <!-- File properties (Explorer "Details", and what antivirus reputation
+         scoring reads). Left at the SDK defaults every field said just
+         "SkuInstaller" and the copyright was blank, which is what throwaway
+         droppers look like. The exe is NOT Authenticode-signed (no paid
+         certificate), so this is the only identity it carries. -->
+    <Company>Sku</Company>
+    <Product>Sku Installer</Product>
+    <AssemblyTitle>Sku Installer - World of Warcraft screen reader addon setup</AssemblyTitle>
+    <Description>Installs and updates the Sku accessibility addon for World of Warcraft. https://github.com/Sku75/Sku-WoW-Addon-TBC</Description>
+    <Authors>JeanStiletto</Authors>
+    <Copyright>Copyright (c) 2026 JeanStiletto and the Sku contributors</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <!-- JavaScriptSerializer for parsing the GitHub releases JSON. -->
+    <Reference Include="System.Web.Extensions" />
+    <!-- Required for the `dynamic` late-binding used to create .lnk shortcuts. -->
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Bundled SAPI2SR NVDA-SAPI bridge payload (x64 bookmark-fixed engine +
+         x86 + companions + the signing script). Extracted+installed at runtime
+         by Sapi2SrInstaller. -->
+    <EmbeddedResource Include="payload\sapi2sr-payload.zip" />
+    <!-- Portable AutoHotkey v2 runtime + GPL license, dropped next to the WoW
+         Login Tool so it runs without a system-wide AHK install. Runs the
+         v2\START.ahk driver. Deployed at runtime by LoginToolInstaller. -->
+    <EmbeddedResource Include="payload\AutoHotkey64_v2.exe" />
+    <EmbeddedResource Include="payload\AutoHotkey-license.txt" />
+    <!-- Shared with the macOS installer; release/package definitions have one
+         repository source even though each platform keeps a native UI. -->
+    <EmbeddedResource Include="..\shared\addon-catalog.json" Link="shared\addon-catalog.json" />
+    <EmbeddedResource Include="..\shared\installer-channel.json" Link="shared\installer-channel.json" />
+  </ItemGroup>
+
+</Project>

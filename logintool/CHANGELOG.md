@@ -1,0 +1,1656 @@
+# WoW Logintool
+
+## 4.2 (offen)
+
+**Charakter erstellen: nach dem automatischen Erkennen der Spielversion wurde
+die falsche Rasse angeklickt.** Das Tool startete mit der gespeicherten
+Spielversion Classic und baute das Menü "neuen Charakter erstellen" aus der
+Classic-Rassentabelle; dort ist Untot die Nummer 6. Als der TBC-Client erkannt
+wurde ("switching game type Classic -> BurningCrusade"), lud es die
+TBC-Tabellen neu, baute das Menü aber nicht neu. Die Menüeinträge behielten
+die Classic-Nummern, und der Klick nahm Nummer 6 der TBC-Tabelle: dort stehen
+die Draenei auf 5, Nummer 6 ist der Orc. Die Klassennummer rutscht genauso
+(Untot Priester = Nummer 3, Orc Nummer 3 = Schurke). So entstanden am
+02.11. zweimal Orcs statt Untoter. Jetzt wird nach dem Versionswechsel auch das
+Menü neu gebaut und der Menüzeiger auf die Wurzel gesetzt, wie es die
+Auswahl von Hand im Einrichtungsmenü schon immer tat. UNGETESTET am Client.
+
+## 4.1 (2026-10-28)
+
+Die ersten vier Einträge kamen am selben Tag als stiller Nachtrag dazu: das
+4.1-Paket wurde ersetzt, die Versionsnummer blieb 4.1 (kein Update für
+bestehende Installationen).
+
+**Forever, Aussehen: Pfeil runter erreicht die Optionen unter dem sichtbaren
+Teil der Liste.** Die Optionsliste scrollt. Das Tool kannte bisher nur
+Optionen, deren Beschriftung wenigstens halb zu sehen war. In einem
+niedrigeren Fenster (854 statt 889 Einheiten hoch, 28.10.) endete die Liste
+der Nachtelfe sichtbar bei "Ohren", und "Augenfarbe" und "Augenbrauen" waren
+nie erreichbar: Pfeil runter ging von "Ohren" direkt auf "Beenden". Jetzt
+scrollt Pfeil runter auf der untersten Option die Liste eine Raste weiter und
+springt auf die erste neue Option. Bewegt sich die Liste nicht, ist sie zu
+Ende; das merkt sich das Tool, bis die Liste wieder nach oben scrollt oder
+eine andere Kategorie gewählt wird, damit Pfeil runter danach ohne Wartezeit
+auf "Beenden" geht. GETESTET am Client (28.10.): das Listenende wird erkannt
+("option list ends at 'Augenbrauen'"), Pfeil runter geht danach auf
+"Beenden". Der Fall ganz verdeckter Zeilen trat im Test nicht auf (das
+Fenster war wieder 889 Einheiten hoch) und ist UNGETESTET.
+
+**Forever, Aussehen: eine angeschnittene Option wird nicht mehr
+übersprungen.** Eine unten halb verdeckte Beschriftung liest die
+Texterkennung oft falsch ("Gesichtstätowierunøsfarbe") und nach dem
+Hineinscrollen richtig. Das Tool fand die Option unter dem alten Namen nicht
+wieder, blieb stumm, und der nächste Pfeil landete woanders: die Farbe der
+Gesichtstätowierung war nicht erreichbar (28.10.). Jetzt nimmt es in dem Fall
+die erste Option, die nach dem Scrollen neu dazugekommen ist. UNGETESTET am
+Client.
+
+**Forever, Aussehen: die Seite fällt beim Hover auf "Zurück" nicht mehr auf
+"unbekannt".** Mit dem Mauszeiger auf "Zurück" las die Texterkennung den
+Knopf als ". Zurück—n", die Seite galt dann als unbekannt (7-mal in einer
+Sitzung): Der Cursor sprang in die Liste aller Textzeilen, und beim Rückweg
+auf die Seite wurde alles Gelernte verworfen (Zähler wie "3 von 10",
+Wertnamen, Scrollstand der Liste). Jetzt reicht "Voller Name" allein, um die
+Seite zu erkennen. Außerdem setzt nur noch ein echter Seitenwechsel diese
+Daten zurück; eine falsch gelesene Seite oder das Spielmenü darüber nicht.
+GETESTET am Client (28.10.): "Zurück" wurde wieder falsch gelesen, die Seite
+blieb erkannt. Dasselbe passierte auf der Rassen-Seite (Cursor sprang auf
+[0/42]); dort zählen jetzt auch die Spaltenköpfe "ALLIANZ"/"HORDE" statt
+"Zurück". Das ist UNGETESTET.
+
+**Forever: die Namensprüfung sagt den aktuellen Stand.** Neben dem Namensfeld
+zeigt der Client ein Symbol: grüner Haken (Name verfügbar), rotes X (der
+Grund als Tooltip) oder nichts, solange die Prüfung läuft oder das Feld leer
+ist. Der Client sagt jeden Text nur einmal; bei einem stummen Besuch
+wiederholte das Tool den zuletzt gehörten Text, egal was das Symbol inzwischen
+zeigte ("verfügbar" nach einem neuen, vergebenen Namen). Jetzt liest das Tool
+die Farbe des Symbols: grün sagt den Verfügbar-Text, rot den zuletzt gehörten
+Grund, aber nur wenn seitdem nicht in ein Namensfeld geklickt wurde (sonst
+"Name nicht verfügbar"), kein Symbol sagt "Noch kein Ergebnis der
+Namensprüfung". Kann das Tool die Farbe nicht sicher erkennen, bleibt es beim
+alten Verhalten. Die Logzeile "name check icon green .. red .." zeigt die
+gezählten Pixel. Am Client gemessen (28.10.): rotes X 23 rot / 0 grün, Haken
+13 grün / 0 rot, kein Symbol 0 / 0. Der erste Stand prüfte zusätzlich eine
+Stelle 40 Einheiten rechts als Hintergrund und verwarf rot und grün darum
+jedes Mal: dort steht der Tooltip mit dem Grund in derselben Farbe (der obere
+Bildschirmrand drückt ihn neben das Symbol). Diese Prüfung ist entfernt; "kein
+Symbol" (0 / 0) wurde schon richtig gesagt. GETESTET am Client (28.10.): rot
+und grün werden jetzt erkannt und richtig gesagt.
+
+Zweiter Test: Der erste Besuch nach dem Tippen sagte jedes Mal "Noch kein
+Ergebnis". Der Client blendet das Symbol vom letzten Tastendruck bis zur
+Antwort des Servers aus (1 s Wartezeit, dann die Anfrage). Jetzt wartet das
+Tool bei "kein Symbol" bis zu 2,4 s, solange der Cursor dort bleibt; erscheint
+das Symbol, beginnt der Besuch neu (der Client spricht es, oder das Tool sagt
+die Farbe). Erst wenn keins kommt, sagt das Tool "Noch kein Ergebnis". Der
+Grund bei rot (Blizzards Tooltip, z. B. Name vergeben oder unzulässig) kam
+fast nie, weil jeder Klick ins Namensfeld ihn verwarf. Jetzt sagt das Tool ihn
+auch dann, wenn der Client in diesem Spielstart erst einen einzigen Grund
+genannt hat - stumm bleibt der Client nur bei einem Text, den er schon gesagt
+hat. Gelernte Texte stehen im Log ("name check red text learned").
+UNGETESTET am Client.
+
+**WoW Forever Live-Client.** Der Live-Client liegt in `_forever_\Wow.exe`
+und meldet in `.flavor.info` den Flavor `wowf` (Build 1.60.1.70634). Das Tool
+kannte nur `wow_classic_beta`, hat den Ordner deshalb nie gefunden und die
+Narrations-Einstellungen (Stimme, Rate, Lautstärke aus `data\forever.ini`)
+nur in den alten Beta-Ordner `_classic_beta_` geschrieben — der Live-Client
+sprach darum immer mit Blizzards Standardstimme und -rate. Jetzt wird
+`_forever_\WTF\Config.wtf` beschrieben. Ob der Client läuft, prüft das Tool
+über den Prozesspfad statt über den Namen `WowB.exe` (der Live-Client heißt
+`Wow.exe` wie andere Clients auch). UNGETESTET am Client.
+
+**Forever übernimmt die Stimme des Tools.** Ohne `voice=`-Zeile in
+`data\forever.ini` bekommt der Client die Stimme, die im Tool-Setup gewählt
+wurde, und die Rate des Tools (5) — Forever klingt damit wie das Tool auf den
+anderen Clients. Die Stimmen-ID ist die Position in der Windows-Stimmenliste
+(SpVoice.GetVoices); dass der Live-Client genauso zählt, ist NICHT geprüft,
+die Logzeile "narration voice" nennt die ganze Liste (GETESTET am Client:
+SAPI2SR kam richtig an). `voice=`, `rate=` in `forever.ini` gehen weiterhin
+vor; die mitgelieferte Datei setzt sie nicht mehr.
+
+**SAPI2SR: Echo bei Wiederholungen.** Der Client spricht jeden Text pro
+Spielstart nur einmal über die Brücke; danach spielt er seinen Sprach-Cache
+ab, und der ist bei der Brücke leer (44-Byte-Dateien in `Speech\` ohne
+Audio). Eine echte Stimme ist davon nicht betroffen, ihr Cache enthält Ton.
+Ausprobiert und verworfen: die leeren Dateien löschen. Am Client getestet
+(27.10.): Der Client schrieb danach bei keiner Wiederholung eine neue Datei
+und blieb stumm, er merkt sich die Texte also im Speicher. Mit der Brücke
+springt darum das Tool ein, aber nur wenn der Client wirklich stumm blieb:
+Das Tool liest nach jedem Hover den Ordner `Speech` (nur lesen, nie
+ändern). Schreibt der Client binnen 500 ms keine Sprachdatei (gemessen:
+eine echte Ansage schreibt nach 80 bis 290 ms), spricht das Tool den Eintrag
+selbst. Regelsatz-Karten: Titel plus Beschreibung, vom Bildschirm gelesen
+(Kartenmaße aus SuperDistrict.xml). Erfahrungs-Karten: genau der Wortlaut des
+Spiels (Name, "Knopf", Beschreibung, "Starteinstellungen:", sechs
+Stichpunkte, mit ", " verbunden wie NarrationUtil), aus den GlobalStrings des
+Clients in de/en/fr - der Bildschirm zeigt die Classic-Beschreibung nur mit
+"..." gekürzt. Die Erfahrungs-Karten heißen im Tool jetzt wie im Spiel statt
+"preset 1/2". Am Client getestet: die Erkennung "Client stumm" trifft auf
+beiden Seiten (27.10., Log); der Text der Erfahrungs-Karten ist UNGETESTET.
+
+**Wiederholungen mit dem Wortlaut des Spiels, auf jeder Seite.** Mit dem
+Sprachverlauf der Brücke (SAPI2SR mit unserer `nvdaControllerClient.dll`,
+`dev/rework-docs/nvda-voice-signing/speech-history`) liest das Tool mit, was
+WoW beim ersten Besuch eines Eintrags an die Brücke gibt, und sagt genau das
+wieder, wenn der Client bei einer Wiederholung stumm bleibt. Kein Wissen über
+einzelne Seiten nötig; "alliance 4" und andere Platzhalter bekommen so den
+Text des Spiels. Gesammelt wird bis 1,2 s nach dem Hover (Name und Tooltip
+kommen getrennt), ein Klick beendet das Sammeln. Ohne Sprachverlauf (ältere
+Brücke) bleibt die Erkennung über den Ordner `Speech` mit dem Seitentext bzw.
+dem Namen. Offline gegen den echten Verlauf geprüft; im Spiel UNGETESTET.
+
+**Pfeiltaste bricht die Sprache ab.** Die Brücke reicht jeden Text an NVDA
+weiter, und NVDA reiht ihn ein: Eine lange Beschreibung lief über den
+nächsten Eintrag weiter, nur Strg half. Jetzt stoppt jeder Wechsel zuerst
+NVDA und die eigene Warteschlange des Tools, dann erst bewegt sich die Maus.
+Mit Sprachverlauf gilt der Client schon nach 350 ms als stumm (statt 500;
+gemessen kommt sein Text nach höchstens 220 ms). UNGETESTET.
+
+**Leere Rassen-Plätze fallen weg.** Forever hat 5 Rassen je Fraktion, das
+Raster des Tools 7 Plätze: Auf Platz 6 und 7 sagte das Spiel nichts und das
+Tool "Horde 6". Das Tool vergleicht jetzt die Bildunruhe jedes Platzes mit
+Platz 1 (ein Bildschirmabzug je Spalte) und lässt leere Plätze am Spaltenende
+weg; das Log zeigt die Messwerte ("race column … spread"). Die Namensfelder
+und Rassen-Plätze behalten ihre Identität, auch wenn die Texterkennung ihren
+Text mal liest und mal nicht (vorher ging dabei das Mitgeschnittene
+verloren). UNGETESTET.
+
+**Aussehen: Links/Rechts sagt nur noch den neuen Wert.** Nach jedem Schritt
+fuhr das Tool die Maus neu auf das Feld, damit das Spiel den Wert ansagt; das
+Spiel sagte dann jedes Mal "Hautfarbe, Drop-down, 4 von 10". Jetzt bleibt die
+Maus liegen und das Tool sagt sofort nur Farbe und "4 von 10", einen
+Auswahlnamen (z. B. eine Frisur) kurz danach, sobald der Bildschirm ihn
+zeigt. Index und Anzahl lernt das Tool aus der eigenen Ansage des Spiels
+(Sprachverlauf) und zählt sie mit; das Rad springt am Ende nicht um. Neu
+gesperrte Auswahlen überspringt das Spiel, die nächste Ansage gleicht ab.
+Bei einer stummen Wiederholung auf einem Feld sagt das Tool den aktuellen
+Wert statt des mitgeschnittenen älteren - das war der Fehler "mehrfach
+derselbe Eintrag, dann Sprung zum richtigen". Französisch: "2 de 30" wie im
+Spiel (stand "sur"). Farbnamen: helle Rottöne heißen "rosa"; dunkle bleiben
+"rot" - Himmelsgeborenen-Haut ist wirklich karmesinrot (am Bildschirm
+geprüft, Farbfeld 77,29,41, das Tool misst die Mitte des Farbstrichs
+richtig). Das Log zeigt bei jedem Schritt die gemessene Farbe. Nummerierte
+Felder ("Gesicht") zeigen ihre Nummer im Feld: weicht die gezählte ab
+(gesperrte Auswahl übersprungen), korrigiert das Tool und sagt die richtige.
+Erster Stand dieses Eintrags stürzte bei Rechts ab (fehlende
+global-Deklaration), behoben. UNGETESTET.
+
+**Kaputte Bildschirmabzüge erkennen.** Auch mit richtiger Zuordnung kamen
+Feldlesungen leer und ganze Lesungen mit 0-2 Zeilen, immer kurz nach einem
+Frisurwechsel. Der Helfer selbst arbeitet korrekt (direkt geprüft: jede
+Anfrage genau eine Antwort, Feldlesung ~76 ms, "Prinz" sicher erkannt).
+Vermutung: Während das Spiel das Modell neu baut, kommt der Fensterabzug
+manchmal schwarz oder halb gezeichnet. Jede Antwort trägt ein grobes
+Vorschaubild; weicht es um mehr als 40 % vom letzten guten Bild ab, gilt die
+Lesung als "keine Antwort" (nicht als "leeres Feld"), die Feldlesung wird
+wiederholt (bis zu sechs Versuche) und eine ganze Lesung wird weder Karte
+noch Vergleichsbild. Außerdem: Warten auf eine frische Lesung hebt die Pause
+der Hintergrundlesungen auf - nach einem Rollen in der Pause blieben alte
+Positionen, die Feldlesung traf die Beschriftung des nächsten Feldes
+("Igenbrauen" bei Ohren). Getestet: Die Vermutung stimmt nicht, kein
+einziges "broken capture" im Log - die leeren Lesungen sind Namen, die die
+Texterkennung gar nicht lesen kann (hier 5, 7, 10, 13). Die Prüfung bleibt
+als billige Absicherung, aber eine leere Lesung wird nur noch dreimal
+versucht statt sechsmal (das war eine Sekunde langsamer). Und der eigentliche
+Fehler hinter "9 wird erst nach zwei, drei Versuchen erkannt": Als "Bild vor
+dem Schritt" merkte sich das Tool den Text aus der Seitenkarte, und die hängt
+während der Schritte hinterher. Bei Index 10 stand dort noch "Befiedert" von
+Index 9 - zurück auf 9 galt das echte "Befiedert" sechsmal als altes Bild und
+wurde verschwiegen. Jetzt gilt als "vorher" nur der gelernte Name des Index
+oder die eigene letzte Feldlesung. UNGETESTET.
+
+**Feldlesung bekommt immer ihre eigene Antwort.** In einer Sitzung kam die
+Feldlesung 9-mal leer zurück, auch bei gut lesbaren Namen ("Prinz", "Mit
+Kamm"), und zur selben Zeit erhielt der Hintergrundleser Lesungen mit 0 oder 1
+Zeile: Die Antworten waren vertauscht. Zwischen "Hintergrundleser ist fertig"
+und dem Sperren konnte er noch eine schnelle Prüfanfrage (ohne Texterkennung)
+schicken; die Feldlesung las deren textlose Antwort als eigene. Jetzt wird
+zuerst gesperrt und eine noch unterwegs befindliche Antwort abgeholt, erst
+dann gefragt. UNGETESTET.
+
+**Kein Sprung an den Seitenanfang, kein Spiel-Hineinreden bei lesbaren
+Namen.** Zwei Fehler der schnellen Feldlesung: (1) Die Sicherheitsfreigabe
+nach 3 s konnte mitten in eine Feldlesung fallen; der Hintergrundleser nahm
+deren Antwort dann als ganze Bildschirmlesung ("read 1 lines", Seite
+"unknown") und setzte den Cursor an den Anfang. Jetzt hat eine synchrone
+Lesung den Helfer exklusiv (sync), und eine einzelne Lesung "unbekannte
+Seite" mit unter 5 Zeilen wird ignoriert, bis die nächste sie bestätigt.
+(2) 200 ms nach dem Schritt ist der Feldtext oft noch nicht gezeichnet
+(laut Blizzard-Quelle wird die Wahl erst im nächsten Frame angewandt und
+das Modell neu gebaut, beim ersten Anzeigen einer Frisur dauert das); die
+leere Lesung schickte das Tool zum Spiel, das dann über die Zahl redete.
+Jetzt bis zu vier Feldlesungen im Abstand von 200 ms, erst dann fragt das
+Tool das Spiel. UNGETESTET.
+
+**Neue Auswahlnamen wieder schnell.** Das Warten auf eine ganze
+Bildschirmlesung ab 500 ms nach dem Schritt machte das erste Hören eines
+Namens 1,1 bis 1,7 s langsam. Jetzt hält ein Schritt die Hintergrundlesungen
+an und liest 200 ms danach nur das Feld (SkuLoginSense --region; am
+Screenshot: ganze Seite ~520 ms, nur das Feld ~170 ms samt Programmstart,
+im laufenden Helfer deutlich weniger). Gesprochen wird aus der ersten
+Lesung; gemerkt wird ein Name und korrigiert wird die Zählung erst, wenn eine
+zweite Feldlesung 150 ms später dasselbe zeigt. UNGETESTET.
+
+**Aussehen: Liste einmal lernen, dann aus dem Gedächtnis sprechen.** Der
+erste Versuch (Lesung ab 250 ms, Vergleich mit dem Text vor dem Schritt)
+griff bei schnellen Mehrfachschritten nicht und machte alles langsamer. Jetzt
+merkt sich das Tool jeden Auswahlnamen mit seiner Position - aus der Ansage
+des Spiels und aus Bildschirmlesungen, die frühestens 500 ms nach dem
+Schritt beginnen. Ist der Name einer Position bekannt, sagt der Schritt ihn
+sofort zusammen mit "x von n", ohne auf den Bildschirm zu warten. Die
+Lesung danach prüft nur noch: zeigt sie einen Namen, der zu einer anderen
+Position gehört, hat sich die Zählung verschoben (gesperrte Auswahl) und
+wird korrigiert - aber nur, wenn zwei Lesungen übereinstimmen. Gesagt wird
+sie nur, wenn sie etwas Neues bringt. UNGETESTET.
+
+**Keine alten Namen mehr nach einem Schritt.** Die Zählung stimmte, aber die
+Bildschirmlesung kam zu früh: Das Spiel baut nach einem Wechsel erst das
+Modell um und zeichnet den Feldtext etwas später, die Lesung zeigte noch den
+vorigen Namen (Log: "Mit Kamm" bei 18 = "Widerspenstig"). Jetzt zählt eine
+Lesung erst ab 250 ms nach dem Schritt, und zeigt sie trotz weitergezählter
+Position noch denselben Text wie vor dem Schritt, liest das Tool noch einmal;
+bleibt es alt, sagt es lieber nichts als den falschen Namen. Schützt auch die
+Nummernkorrektur. UNGETESTET.
+
+**Frisuren mit langen Namen.** Frisur 7, 14 und 18 blieben ohne Namen: Die
+Texterkennung sieht im Feld gar nichts (Diagnose im Log), das Spiel nennt sie
+aber ("Frisur, Drop-down, Gescheitelt und lang, 7 von 21", aus dem
+Sprachverlauf). Das Tool merkt sich jetzt aus jeder Ansage des Spiels den
+Namen je Position und sagt ihn bei späteren Schritten. Ist das Feld leer und
+der Name noch unbekannt, lässt das Tool das Spiel das Feld einmal ansagen
+(danach kennt es ihn). Augenfarben mit dem Rollen der Liste: am Client
+GETESTET. Namen: UNGETESTET.
+
+**Aussehen: die Liste rollt jetzt nur noch absichtlich.** Die Optionen
+stehen in einer rollbaren Liste; ganz unten war von "Augenfarbe" nur die
+Beschriftung sichtbar, das Feld abgeschnitten. Das Tool maß dort den
+dunklen Rahmen ("schwarz"), und das Rad rollte die Liste statt den Wert zu
+ändern - Hautfarbe und Gesicht verschwanden oben. Jetzt erkennt das Tool
+abgeschnittene Felder (Listenende ~30 Einheiten über "Hohe Auflösung für
+Modelle"), rollt mit dem Rad über der Beschriftung (dort rollt es, nur das
+Feld selbst ändert den Wert) und geht erst danach auf das Feld. Auf vom
+obersten sichtbaren Feld rollt zurück, wenn das Tool vorher hinunter gerollt
+hat. Neue Kategorie oder Seite = Liste oben. Farbnamen haben jetzt fünf
+Sättigungsstufen (blass, matt, -, kräftig, leuchtend): zwei Hauttöne hießen
+beide "hell orange", jetzt "hell orange" und "hell kräftig orange". Ein leeres
+Feld nach einem Schritt protokolliert, was die Texterkennung dort sah
+(Frisur 7, 14, 18). UNGETESTET.
+
+**Links/Rechts zuverlässig: fünf kleine Fehler, die zusammenspielten.**
+- Las die Texterkennung einmal weniger Zeilen, behielt das Tool zu Recht die
+  vollere Liste, hatte seine Position aber schon auf die verworfene Liste
+  umgestellt: sie zeigte danach auf einen falschen Eintrag oder auf keinen
+  (Links sprang dann an den Anfang). Jetzt bleibt beides zusammen; wird ein
+  Eintrag auf derselben Seite nicht wiedergefunden, bleibt die Position, wo
+  sie war, statt auf "keiner" zu fallen.
+- "Auf eine neue Bildschirmlesung warten" nahm auch eine Lesung, die vor dem
+  Tastendruck gestartet war und das alte Bild zeigte: daher alte Werte nach
+  einem Schritt. Jetzt zählt nur eine Lesung, die nach dem Schritt angefordert
+  wurde.
+- Die Farbe wurde starr nach 120 ms gelesen, manchmal vor dem Neuzeichnen.
+  Jetzt wird gelesen, sobald sich das Farbfeld geändert hat (höchstens
+  400 ms; keine Änderung = Listenende).
+- Ein Schritt direkt nach dem Ankommen brach das Mithören ab, bevor das Spiel
+  "x von n" gesagt hatte: Die Zählung fehlte dann. Jetzt wartet der erste
+  Schritt diese Ansage ab.
+- Links und Rechts konnten sich mitten im Schritt unterbrechen, ein schneller
+  zweiter Druck ging verloren, und die verspätete Namensansage eines älteren
+  Schritts kam nach einem neueren. Jetzt laufen Schritte strikt nacheinander
+  (Drücke werden gesammelt), und nichts von einem älteren Schritt oder einem
+  verlassenen Feld wird noch gesagt. Das Menü behält sein altes Verhalten.
+Stumme Wiederholung auf einem Feld: nur noch aus aktuellem Wissen (Zählung,
+Name oder Nummer im Feld), nie ein älterer Mitschnitt. Offline geprüft
+(Position, Ansage), im Spiel UNGETESTET.
+
+**Kartenseiten robuster erkannt.** Die Seiten wurden nur am Titel erkannt;
+einmal las die Texterkennung "WähleEure" statt "Wählt Eure", und die
+Erfahrungs-Seite fiel auf "alle Textzeilen" zurück (35 Ziele, Auf/Ab sprang
+zwischen den Zeilen beider Karten hin und her). Jetzt reicht auch ein
+zweiter Anker: auf der Regelsatz-Seite die Seitenbeschreibung, auf der
+Erfahrungs-Seite die Zeile "Starteinstellungen:". UNGETESTET. Das Log zeigt
+"client narrated … itself" bzw. "client stayed silent on …". Standard: an
+bei SAPI2SR, aus bei einer echten Stimme; `repeatecho=1`/`0` in
+`forever.ini` übersteuert. Offline geprüft (Dateierkennung inkl.
+überschriebener Datei, Kartentext), am Client UNGETESTET.
+
+**Regelsatz-Seite wieder erkannt.** Blizzard hat den Titel zum Start
+umbenannt ("Wählt Euren Gameplay-Regelsatz" statt "Wählt Euren Spielstil").
+Die Seite fiel dadurch auf "alle Textzeilen" zurück: Auf/Ab lief über Titel,
+Untertitel und jedes Bruchstück der Kartenbeschreibungen (34 Ziele), über
+denen der Client meist nichts Neues sagt. Jetzt wieder nur die Karten,
+Auswählen und Abbrechen. Texte de/en/fr aus den GlobalStrings des Builds.
+UNGETESTET am Client.
+
+**Spielmenü (Escape).** Das Menü, das Escape auf den Glue-Seiten öffnet
+(`GlueMenuFrame`), ist eine eigene Seite: Auf/Ab geht die Knöpfe in Menü-
+Reihenfolge durch (Optionen, Shop, Addons, Das Team, Videosequenzen, Mein
+Account, Offizielle Webseite, Spiel verlassen, Schließen — je nach Seite nur
+die vorhandenen), Enter klickt, Escape schließt. Nur Zeilen in der
+Menüspalte zählen, damit "Shop" der Navigationsleiste und "Spiel verlassen"
+des Verhaltenskodex nicht mitkommen. UNGETESTET am Client.
+
+**Aufräumen nach den Forever-Runden (28.10.).** Durchsicht des ganzen
+Forever-Treibers; Verhalten, das funktioniert, bleibt gleich. Behoben:
+- Eine einzelne schlechte Lesung (fast leere Seite) wurde zwar verworfen,
+  aber der nächste Pfeil-Druck baute die Karte aus genau dieser Lesung neu und
+  nahm sie doch. Tasten bauen jetzt nicht mehr selbst neu; die Karte kommt
+  nur noch vom Hintergrund-Leser, der jede neue Lesung ohnehin abbildet.
+- Eine "kaputte" Aufnahme (dunkel, kaum Text, Bild stark verändert) wurde
+  JEDES Mal verworfen: Eine Seite, die wirklich so aussieht (Laden,
+  Verbinden), wäre endlos neu gelesen und nie abgebildet worden. Jetzt zählt
+  die zweite solche Aufnahme in Folge, wie bei den fast leeren Lesungen.
+- Popout mit Escape geschlossen: Die Zellen blieben als Ziele in der Liste,
+  weil eine kürzere Liste nur kurz nach einem Klick angenommen wird und das
+  Schließen nicht als Klick zählte. Jetzt zählt es.
+- Popout auf anderem Weg zu (Klick auf etwas anderes, dasselbe Feld noch
+  einmal, Seite verlassen): Das Tool hielt es für offen, und Zahlen in
+  tieferen Feldern ("Gesicht" 3) konnten als Popout-Zellen gelten. Jetzt
+  folgt der Zustand dem Klick.
+- Gesammelte Links/Rechts-Drücke liefen nach Auf/Ab auf dem NÄCHSTEN Feld
+  weiter. Auf/Ab verwirft sie jetzt.
+- Bild auf/ab sprangen am Listenende auf den Anfang; jetzt bleiben sie am
+  ersten/letzten Ziel stehen. Auf/Ab laufen weiter im Kreis.
+- Das Halten des Hintergrund-Lesers während eines Schritts endete über einen
+  3-s-Timer, der auch fremde Halte-Anforderungen aufhob. Jetzt ist es eine
+  Frist. Der Screenshot (Strg+Alt+F3) nutzt denselben Weg wie die Feldlesung
+  (Helfer exklusiv), nicht mehr einen eigenen.
+- Kam die Antwort einer laufenden Hintergrund-Lesung nicht, konnte die
+  nächste synchrone Anfrage sie später für ihre eigene halten. Jetzt wird der
+  Helfer dann neu gestartet.
+- Helfer (alle Clients): Ein halb gelesener Antwortrest eines abgebrochenen
+  Helfers blieb im Puffer und verdarb die erste Antwort des neuen. Der Puffer
+  gehört jetzt zum Helferlauf und wird beim Stopp geleert.
+Entfernt: nie gelesene Felder (`sensedAt`, `lastScreen`, `pendingOcr`),
+`FvWaitIdle`, vier handgeschriebene Sortierungen (jetzt eine), doppelte und
+veraltete Kommentare. `forever.ini` wird einmal pro Tool-Start gelesen statt
+bei jedem Hover und jedem Schritt. Syntaxprüfung und Sortier-Test offline
+OK, am Client GETESTET (28.10.: Seiten in Ordnung; sehr schnelles Blättern
+in der Frisurenliste gab manchmal kurz falsche Ansagen, die sich selbst
+korrigierten - Ursache siehe nächster Eintrag).
+
+**Sprachverlauf nur auf den Login-Seiten.** Die SAPI2SR-Brücke (Build 2 der
+Sprachverlauf-DLL) zeichnet die Texte eines Programms nur noch auf, solange
+ein anderes Programm genau danach fragt. Das Tool fragt nach WoW nur, solange
+es die Forever-Login-Seiten steuert (Login-Modus); im Spiel, mit WoW im
+Hintergrund oder ohne laufendes Tool wird nichts von WoW aufgezeichnet, auch
+nicht Sku oder der Chat. Endet das Tool (auch durch Absturz), endet die
+Anfrage mit ihm. Log: "speech history asked for WoW pid …" / "request
+dropped". DLL und Anfrage-Name offline geprüft, mit echter SAPI2SR-Stimme
+geprüft, im Spiel GETESTET (28.10.).
+
+**Schnelles Blättern: Antworten des Helfers vertauscht.** Nach jedem Schritt
+liest das Tool das Feld in einem eigenen Thread nach. Bei schnellen Schritten
+unterbrach die Nachlesung eines neueren Schritts die eines älteren, die
+noch auf ihre Antwort wartete: Zwei Anfragen liefen gleichzeitig, die neuere
+nahm die Antwort der älteren, und die nächsten Antworten gingen ebenfalls an
+die falschen Leser (Log 28.10.: der Hintergrund-Leser "las 0 Zeilen" - die
+leere Feldlesung -, und die Feldlesung bekam den Text des ganzen
+Bildschirms als Frisurnamen). Jetzt startet keine zweite Anfrage, solange
+eine läuft; die unterbrechende Nachlesung gilt als "noch nichts gelesen" und
+versucht es 200 ms später wieder. UNGETESTET.
+
+**Charakterwahl (Anniversary, Era): Name unter dem Modell schneller.** Wenn
+die Liste rechts den Namen des gewählten Charakters nicht hergibt, las das
+Tool den ganzen Bildschirm, nur um die eine Zeile unter dem Modell zu
+finden. Jetzt liest es nur ein großzügiges Band um diese Zeile; findet es
+dort nichts, liest es wie bisher den ganzen Bildschirm. Offline gegen den
+gespeicherten Screenshot der Charakterauswahl geprüft (derselbe Name wie
+beim vollen Lesen), am Client UNGETESTET.
+
+**Tool-Version 4.1.** Das Tool nennt beim Start 4.1; der Installer 5.6
+erwartet 4.1.
+
+## 4.0 (2026-09-23)
+
+**WoW Forever (Beta-Client `_classic_beta_`, WowB.exe, Build 1.60) wird
+unterstützt — als neuer Spieltyp `Forever` mit eigener Arbeitsweise.** Der
+Forever-Client liest seine Glue-Bildschirme selbst vor (`Blizzard_Narration`:
+alles, worauf die Maus 50 ms ruht, spricht der Client mit seiner TTS-Stimme;
+Bildschirmwechsel und Dialoge melden sich beim Öffnen). Das Tool liest auf
+Forever deshalb nichts mehr vor, es FÜHRT den Mauszeiger: Auf/Ab springt von
+Ziel zu Ziel, Enter klickt, Links/Rechts stellt eine Aussehens-Option per
+Mausrad um, Enter auf einem Eingabefeld gibt die Tastatur frei (Enter/Escape
+beenden das wieder), "Welt betreten" schaltet in den Spielmodus, Alt+F1
+zurück. Die Ziele kommen aus einer OCR-Karte des Bildschirms (Texte und ihre
+Rechtecke), ergänzt um Geometrie aus Blizzards XML für Elemente ohne Text
+(Rassen-Icons, Körpertyp, Dropdown-Kästen, Namensprüfung). Die Karte wird im
+Hintergrund gepflegt: alle 250 ms eine Aufnahme ohne OCR, deren grobes
+Helligkeitsbild mit dem zuletzt kartierten Bild verglichen wird; OCR (~600 ms)
+läuft nur bei Bildänderung, nach einem Klick, eine Sekunde nach einem
+Seitenwechsel (Nachzügler-Text) und als Sicherheitsnetz alle fünf Sekunden.
+Tasten warten nie auf eine Aufnahme. Bildschirme: Bildschirmleser-Dialog,
+Login, Spielstil (Karten), Erfahrungsvoreinstellung, Charakterauswahl mit
+Löschen-Dialog, Verhaltenskodex (wird beim Erscheinen selbst zu Ende gescrollt,
+Cursor ruht auf Annehmen), Charaktererstellung Modus 1 (Rassen per gedrucktem
+Namen, Klassen beide Reihen, Körpertyp) und Modus 2 (Haupt-/Zweitname,
+Namensprüfung, Würfel, Optionen mit Wert, Popout-Raster), sonst alle
+Textzeilen als Rückfall. Farb-Optionen haben in Blizzards Daten keinen Namen
+(nur ein Farbfeld): das Tool liest das Pixel und nennt die Farbe grob
+("hell braun") mit derselben SAPI-Stimme und Rate wie die Narration.
+Einrichtung: beim Toolstart (Client nicht aktiv) werden in `WTF\Config.wtf`
+des Forever-Clients Narration ein, Erststart-Dialog aus, Stimme und Rate aus
+`data\forever.ini` gesetzt (`voice=0` = echte SAPI-Stimme über die Boxen,
+`voice=1` = NVDA-Brücke; `rate=5`). Erkennung über Flavor `wow_classic_beta`
+bzw. Build 1.60+, der Helper kennt `WowB`. Strg+Alt+F3 speichert eine
+Kalibrier-Aufnahme nach `data\captures\`.
+
+Gelernt dabei, festgehalten in `dev/rework-docs/LOGINTOOL-FOREVER-PLAN.md`
+und `dev/rework-docs/nvda-voice-signing/sapi2sr-bookmark-patch.md`: der
+12.0-Client cacht gerenderte Sprache pro Text und spielt sie ohne
+Stimmenaufruf wieder ab; über die NVDA-Brücke ist damit jeder exakt
+wiederholte Narrationstext stumm. Ein Brücken-Patch, der Speak scheitern
+lässt (Patch D), ändert daran NICHTS (Versuch 2026-09-23, Engine wieder auf
+A+B+C). Darum ist `voice=0` die Voreinstellung: eine echte Stimme wird aus
+dem Cache hörbar wiederholt. `repeatecho=1` in `forever.ini` lässt das Tool
+Wiederholungen stattdessen selbst kurz benennen (für die Brücke).
+
+## 3.4 (2026-09-19)
+
+**Blizzards Sozialvertrag wird erkannt, zu Ende gescrollt und akzeptiert.**
+Der Dialog ist `SocialContractFrame` (`Blizzard_GlueXML\SocialContract.xml/.lua`,
+für alle Classic-Varianten dieselbe Datei). Er erscheint über der
+Charakterauswahl, sobald der SERVER es verlangt: `CharacterSelect` fragt bei
+jedem Anzeigen `C_SocialContractGlue.GetShouldShowSocialContract()`, die Antwort
+kommt als Event `SOCIAL_CONTRACT_STATUS_UPDATE`. Es gibt dafür keine CVar und
+keine Einstellung — man kann ihn weder hervorrufen noch vorab beantworten. Jeder
+neue Account bekommt ihn, alle anderen erneut, wenn Blizzard den Text ändert.
+Er ist modal, schluckt jede Taste (`OnKeyDown = nop`), Ablehnen ist `QuitGame()`,
+und Akzeptieren bleibt DEAKTIVIERT, bis der Text zu 90 % gescrollt wurde. Für
+blinde Neueinsteiger ist das eine Wand.
+
+Warum der alte v1-Code nicht funktionieren konnte: Die `contract`-Prüfung des
+Helpers verlangt das abgedunkelte GELBE Logo oben links — das hat der
+BC-Anniversary-Glue gar nicht — und ihr dritter Messpunkt (ui 9852,284) liegt
+mitten im Vertragstext. Prüfung falsch → abgedunkelte Charakterauswahl =
+`unknown` → das Tool kam nicht einmal in den Login-Modus. Der Klick-Teil war ein
+blinder Sweep aus 34 Klicks eine Spalte hinunter, über den unteren Fensterrand
+hinaus.
+
+Neu, ohne neu gebauten Helper (acht `Sc*`-Widgets in data.ini plus AHK):
+- `IsSocialContract` — Ablehnen-Button rot (immer aktiv, deshalb der Anker),
+  Lücke zwischen den Buttons nicht rot, schwarzer Streifen zwischen Scrollbox
+  und unterem Inset. `SocialContractIsUp` lässt das Helper-Urteil als Netz
+  darunter gelten, aber nur ohne Popup/Addon-Warnung/Hardcore-Dialog.
+- `AcceptContract` — Maus in die Mitte der Scrollbox, Rad-Runden mit 25 ms
+  Abstand, bis Akzeptieren rot wird; dann EIN Klick auf die Mitte des
+  Akzeptieren-Buttons (69 Einheiten links der Rahmenmitte; Ablehnen beginnt 13
+  rechts davon) und Kontrolle, ob der Dialog weg ist. Drei Versuche, jeder mit
+  allen Messwerten im Log (`SocialContract: …`). Ansage vorher und nachher.
+- Scheitert es, sagt das Tool, was eine sehende Person einmal tun muss, und
+  versucht es frühestens nach 60 s wieder (`HandleSocialContract`).
+- CheckMode: der Vertrag zählt beim Moduswechsel als erkannter Bildschirm, und
+  der Login-Modus-Wächter beantwortet ihn auch mitten in der Sitzung (Rückkehr
+  aus der Welt, Realmwechsel). Danach läuft `InitLogin` einmal nach, sonst wäre
+  die Charakterliste nie aufgebaut worden.
+
+Die Geometrie ist AUS DEM XML ABGELEITET, nicht gemessen, weil sich der Dialog
+nicht auf Bestellung erzeugen lässt: Rahmen 510x632, TOP x=6 y=-110, Buttons
+136x22 bei ui y 706..728. Wichtig: Der baugleiche Hardcore-Regeldialog ist ein
+`DefaultScaleFrame` (daher dort die gemessenen 0,64), der Sozialvertrag NICHT —
+hier gelten glatte Glue-Einheiten. Die Buttonfarbe (84,0,0) stammt von jenem
+live gemessenen Zwilling; das Fenster ist mit 60..125 bewusst weit. Geprüft:
+`/validate` sauber, 0 Fehlalarme auf allen 11 Referenz-Screenshots mit beiden
+Spieltypen, Treffer auf synthetischen Vertragsbildern in 1920x1080, 2880x1800
+und 1280x1024. Am echten Dialog der Classic-Clients UNGETESTET — das erste
+Nutzer-Log mit `SocialContract:`-Zeilen zeigt die echten Farben.
+
+Nachtrag vom Forever-Test (2026-09-23, dieselbe Dialog-Grafik, dort am Client
+durchgespielt): Ablehnen im Dialog misst 73,0,0 (im Fenster 60..125), das
+deaktivierte Annehmen 97,96,97 (grau), das Scrollen per Mausrad in der Mitte
+der Textbox schaltet Annehmen frei. Aus diesem Test stammt ein ZWEITER Weg,
+der ohne die ungemessenen Messpunkte auskommt und jetzt zuerst versucht
+wird: Titel ("Verhaltenskodex"), Annehmen und "Spiel verlassen" werden als
+OCR-Text mit Rechteck gefunden (`ContractOcr`), gescrollt wird zwischen Titel
+und Buttons, ob Annehmen frei ist, sagen die Pixel neben seinem Text
+(`ContractButtonRed`), geklickt wird das Textrechteck. Der Wächter fragt auf
+einem unbenannten Bildschirm alle 5 s per OCR nach dem Titel
+(`ContractOcrCheck`). Die Messpunkte bleiben als Rückfall, wenn OCR keinen
+Titel sieht. Achtung: auf Forever ist der Rahmen ein `DefaultScaleFrame` mit
+`ignoreParentScale` (gemessen 745 px breit bei 2880x1800), auf den
+Classic-Clients laut XML NICHT — dort gelten glatte Glue-Einheiten.
+
+**Hardcore- und PvP-Warnungen werden bei jeder Auflösung gefunden.**
+Alle Glue-Bildschirme sind 768 Einheiten hoch, deshalb trifft ein Messpunkt in
+UI-Einheiten bei jeder Auflösung dieselbe Stelle — mit EINER Ausnahme: Rahmen,
+die von Blizzards `DefaultScaleFrame` erben, werden per `GetDefaultScale()` so
+skaliert, dass sie in echten PIXELN gleich groß bleiben. Ihre Größe in
+UI-Einheiten hängt damit vom Bildschirm ab. Das betrifft genau zwei Glue-Rahmen
+in vier Formen, alle 510 breit und mittig:
+- `HardcorePopUpFrame` 240 hoch (Realmlisten-Warnung) und 580 hoch
+  (Erstellungsregeln), nur Era;
+- `RealmWarningPopUpFrame` 240 hoch (PvP-Warnung in der Realmliste) und 360 hoch
+  (PvP-Warnung bei der Charaktererstellung).
+
+`GetDefaultScale()` ist eine Client-Funktion ohne Lua-Quelltext. Gemessen: auf
+2880x1800 liefert sie 0,64 (im Spiel per `/wdeval` gelesen, 2026-09-18; derselbe
+Wert ergibt sich aus drei Messungen am 580er-Dialog), wo 768/Höhe 0,43 wäre —
+es gibt also eine Untergrenze. Gilt max(0,64; 768/Höhe), stimmen die bei 0,64
+gemessenen `Hc*`-Punkte ab 1200 Pixel Höhe; bei 1080p wäre der Faktor 0,71 und
+die Buttonreihe der Erstellungsregeln wandert von ui y 547..561 auf 565..580,
+unter einem Messpunkt bei 551 — das Tool stünde stumm davor. Ein Fensterclient
+zählt nach FENSTERhöhe.
+
+Deshalb wird der Faktor nicht mehr angenommen, sondern gefunden
+(`GlueDialogScan` in flows.ahk): Beide Buttons liegen in allen vier Formen an
+derselben Stelle relativ zum Rahmen, also auf einer Geraden aus der
+Bildschirmmitte; nur der Abstand darauf hängt vom Faktor ab. Ein Bildausschnitt
+(neue Klasse `ScreenGrab` in ui.ahk, DIB-Section, direkter Speicherzugriff),
+dann Faktor 0,60..1,25 in 0,01-Schritten je Höhe: rot an drei Spalten, nicht rot
+in der Lücke und knapp außerhalb beider Buttons, schwarz am Hintergrundpunkt der
+jeweiligen Höhe. Die Außenpunkte halten die Höhen auseinander. Der Mittelwert des
+Trefferbereichs wird um die berechnete Schieflage korrigiert
+(`GlueDlgRunBias`). Die festen Messpunkte bleiben überall die ERSTE Prüfung
+(bei 0,64 bewährt), der Scan ist die zweite — und die einzige für die 360er-Form.
+
+Umgestellt: `IsHardcoreCreateConfirm` (findet jetzt auch die PvP-Warnung bei der
+Erstellung; `CreateWarningHeight` sagt, welche), neues `IsRealmWarningConfirm`
+an allen sechs Stellen, die bisher `hardcoreConfirm` fragten; Klicks über
+`GlueDialogClick` (Fallback: die alten Widgets); OCR-Textbereiche über
+`GlueDialogBand`. Die PvP-Warnung in der Realmliste hat exakt die Geometrie der
+Hardcore-Warnung und lief deshalb bei 0,64 schon bisher über denselben Weg.
+Jeder Fund steht im Log: `GlueDialog: 580-high dialog at scale 0.64 (client …)`.
+
+Geprüft: `/validate` sauber; Python-Portierung des Scans auf 66 synthetischen
+Dialogen (6 Auflösungen von 1366x768 bis 3440x1440, 3 Höhen, Faktoren 0,64 /
+0,711 / 0,853 / 1,0) — Höhe immer richtig, Faktor auf ±0,012; 0 Fehlalarme auf
+allen Referenz-Screenshots und den Sozialvertrags-Bildern. `ScreenGrab` live
+gegen `ScreenColors` verglichen: 40/40 Pixel gleich, 1000 Lesevorgänge in 16 ms.
+An echten Dialogen UNGETESTET; bei 0,64 greift ohnehin zuerst die alte Prüfung.
+
+**Leere Stimmenliste: Ersatzweg über die Registry, und die Ersteinrichtung ist
+keine Sackgasse mehr.** Folgemeldung desselben Nutzers wie bei 3.3 (Log-Bündel
+vom 2026-09-18): Das Tool spricht jetzt, aber Pfeil rechts auf "Stimme
+auswählen" tut nichts. Im Log steht viermal `GetVoices FAILED, voice list
+empty: (0x80045039)`, danach `SwitchToSetup` — und dort endet es. Die Annahme
+von 3.3 stimmte auf diesem Rechner nicht: Nicht eine einzelne Stimme ist
+unlesbar, sondern schon der Listenaufruf (`sap.GetVoices()` bzw. `.Count`)
+wirft. 3.3 fing das ab und lieferte eine LEERE Liste. Folge: Der Knoten "Nach
+rechts gehen, um eine Stimme auszuwählen" hatte keine Kinder, und weil nur die
+Stimmenauswahl zum Sprachschritt weiterführt (`VoiceSelectAction`), kam der
+Nutzer nie durch die Ersteinrichtung. Das Tool sprach (Standardstimme
+"Blastbay Libby" las sich direkt problemlos), war aber unbenutzbar.
+
+- `RegistryVoiceTokens()` (sapi.ahk): Wirft der Listenaufruf, baut das Tool die
+  Liste selbst — ein `SAPI.SpObjectToken` je Schlüssel unter
+  `Speech\Voices\Tokens` (HKLM und HKCU), per `SetId`. Läuft NUR im Fehlerfall.
+  Gemessen auf gesundem Rechner: dieselben Stimmen wie `GetVoices()`, jede so
+  gebaute Stimme lässt sich setzen und synthetisiert. Falsche Annahme dabei
+  gefunden: Ein kaputter Eintrag wirft hier NICHT — `GetDescription()` liefert
+  einfach "", der Fehler käme erst beim Sprechen ("Klasse nicht registriert").
+  Deshalb wird nur gelistet, was einen Namen UND eine CLSID hat; sonst könnte
+  man eine Stimme wählen, die das Tool stumm macht. `Speech_OneCore` bleibt
+  bewusst draußen (bietet der normale Weg auch nicht an). Reihenfolge ist die
+  der Registry, nicht die von SAPI.
+- `AddVoiceNodes()` (menu.ahk) ersetzt die drei gleichen Schleifen
+  (Hauptmenü, Login-Menü, Ersteinrichtung). Bleibt die Liste trotzdem leer,
+  bekommt der Knoten EINEN Eintrag "Keine Stimmen gefunden, Eingabe drücken, um
+  die Systemstimme zu behalten"; Eingabe sagt "Die Systemstimme bleibt" und geht
+  in der Ersteinrichtung zum Sprachschritt weiter, sonst ins Hauptmenü. Zwei
+  neue Texte in allen fünf Sprachdateien.
+- `VoiceWorks()` (sapi.ahk): Jede Stimme wird vor der Übernahme probegefahren.
+  Anlass war die Frage, ob der Ersatzweg kaputte Stimmen anbietet und den
+  Nutzer damit strandet. Gemessen mit einer Registrierung, die Namen und CLSID
+  hat, aber keine Engine: `sap.Voice := token` wird OHNE Fehler angenommen,
+  erst `Speak` wirft (0x80040154 "Klasse nicht registriert"). Das Tool wäre
+  stumm, und aus dem Hauptmenü wird die Wahl gespeichert — stumm bei jedem
+  Start, ohne gesprochenen Rückweg. Das Loch hat auch der normale Weg, SAPI
+  listet aus denselben Schlüsseln. Jetzt: Probe auf einem Wegwerf-`SpVoice` in
+  einen `SpMemoryStream` (unhörbar, die laufende Stimme wird nie angefasst,
+  16-31 ms). Scheitert sie, bleibt alles wie es war, und das Tool sagt "Diese
+  Stimme funktioniert nicht, bitte eine andere wählen" — der Cursor bleibt auf
+  dem Eintrag. `ApplyToolVoice` prüft beim Start genauso: Eine gespeicherte
+  Stimme, die nicht mehr spricht, wird nicht gesetzt, SAPIs Standard bleibt.
+  SAPI2SR ist ausgenommen (reicht Text an den Screenreader durch, die Probe
+  wäre hörbar). Getestet mit eingepflanzter toter Stimme: abgelehnt, gemerkter
+  Name und laufende Stimme unverändert; Zira angenommen; Start mit toter
+  gespeicherter Stimme setzt sie nicht.
+- Installer-Log-Bündel: neue Datei `voices.txt` (`LogCollector.
+  WriteVoiceRegistrations`) mit jeder Stimmenregistrierung in beiden
+  Registry-Sichten (64/32 Bit; das Tool ist 64 Bit und sieht reine
+  32-Bit-Stimmen nicht), Standardstimme, CLSID, ob die Engine-DLL registriert
+  ist und auf der Platte liegt, VoicePath, Attribute. Das Bündel dieses Nutzers
+  konnte sagen, DASS die Liste kaputt ist, aber nicht, welcher Eintrag.
+
+Geprüft: `/validate` sauber. Testgerüst lädt die echte sapi.ahk, ersetzt `sap`
+durch ein Objekt, dessen `GetVoices()` genau 0x80045039 wirft: Ersatzweg liefert
+dieselben 3 Stimmen, alle setzbar; zwei absichtlich kaputte HKCU-Einträge (leerer
+Schlüssel, erfundene CLSID) werden übersprungen und geloggt. `voices.txt` per
+Reflection gegen diesen Rechner erzeugt. NICHT reproduzierbar war der
+eigentliche Fehler: kaputte HKCU-Einträge und ein erfundener TokenEnum lassen
+`GetVoices()` hier nicht werfen — die Ursache beim Nutzer ist also eine andere
+(vermutlich HKLM). Ob der Ersatzweg DORT Stimmen liefert, ist UNGETESTET; wenn
+nicht, greift der "Systemstimme behalten"-Eintrag, und `voices.txt` nennt dann
+den Schuldigen.
+
+## 3.3 (2026-09-18)
+
+**Eine kaputte Windows-Stimme bringt das Tool nicht mehr zum Absturz.**
+Nutzermeldung vom 2026-09-18 (frische Installation mit dem neuesten
+Installer): Das Tool sagte noch "Version 3.2" an und brach dann mit einem
+AutoHotkey-Fehler ab: `Error: (0x80045039) Specifically: GetVoices` in
+`includes\sapi.ahk` auf der Zeile `For v in sap.GetVoices()`. 0x80045039 ist
+`SPERR_NO_MORE_ITEMS` (sperror.h): SAPI meldet N Stimmen, eine davon lässt sich
+aber nicht lesen. Ursache ist ein kaputter Eintrag unter
+`HKLM\SOFTWARE\Microsoft\Speech\Voices\Tokens` auf dem Rechner des Nutzers
+(z. B. deinstallierte Stimme mit Registry-Resten, per Registry-Trick
+hineinkopierte OneCore-Stimmen, halb registrierte Fremdstimme). Gestorben ist
+das Tool beim Aufbau des Menüs "Stimme auswählen", das alle Stimmen aufzählt.
+
+`GetVoices()` und `SetSapiVoiceByName()` gehen jetzt über die gemeinsame
+Funktion `ReadableVoiceTokens()`: Sie liest die Stimmen einzeln per `Item(i)`,
+jede in einem eigenen try. Eine unlesbare Stimme wird übersprungen und in
+log.txt vermerkt (`GetVoices: skipping unreadable voice token …`). Scheitert
+schon das Holen der Liste, bleibt sie leer (`GetVoices FAILED …`), und das Tool
+startet trotzdem. `SapiInit()` liest die Standardstimme ebenfalls in einem try
+(`SapiInit: default voice unreadable …`), denn ist genau sie der kaputte
+Eintrag, wäre der Start dort gestorben. `/validate` sauber; am Rechner mit kaputter Stimme UNGETESTET.
+
+## 3.2 (2026-08-26)
+
+**"Unbekannter Bildschirm" sagt jetzt, wenn die Erkennungs-Texturen fehlen.**
+Auslöser war ein Nutzer-Logbündel vom 2026-08-26: Spiel erkannt, Helper
+gestartet, Client stand auf der ganz normalen Charakterauswahl — und trotzdem
+kam auf jedem Bildschirm nur "unknown". Auf Era/BC hängt JEDE
+Bildschirm-Erkennung an den exakten Farben der umgefärbten Texturen, die der
+Installer in den Interface-Ordner des Clients kopiert. Fehlen die, kann das
+Tool prinzipbedingt nur "Unbekannter Bildschirm" antworten, und der bisherige
+Hinweis ("Schließe den Dialog … zweimal Alt F1") schickt den Nutzer zu einem
+Dialog, den es nicht gibt.
+
+Das Tool prüft jetzt an genau der Stelle, an der es "Unbekannter Bildschirm"
+sagen würde (CheckMode-Streak und InitLogin, gemeinsame Funktion
+`SayUnknownScreenHint`), ob `Interface\BUTTONS\128RedButton.BLP` beim
+erkannten Client existiert — die eine Textur, an der Login, Charakterauswahl
+und jede Popup-Zeile hängen (GenericRedButton). Fehlt sie, kommt stattdessen:
+"Die Texturen für die Bildschirmerkennung fehlen im Spielordner. Bitte führe
+den Sku-Installer aus, um das Login-Tool neu zu installieren." (neuer
+Lokalisierungs-Schlüssel in allen fünf Sprachen). Der Pfad des Clients kommt
+aus der bestehenden Erkennung (`gDetectedClientDir`, gesetzt in
+`ApplyDetectedGametype`); solange kein Client erkannt ist, bleibt es beim
+alten Hinweis. GETESTET am Client 2026-08-26: BUTTONS und GLUES beiseite
+benannt, Client auf den Anmeldebildschirm gestartet — beide Pfade haben die
+neue Ansage ausgelöst (CheckMode-Streak nach 12 s und InitLogin nach Alt+F1,
+Logzeilen "announcing the texture repair"), Ansage auch gehört.
+
+**Das Tool sagt beim Start jetzt seine Version an.** "Login-Tool Version 3.2"
+als erste Ansage in `Main()` (nach Stimme und Lokalisierung, vor allem
+anderen), dieselbe Nummer geht als `START: WoW Login Tool 3.2` ins Log — ein
+Logbündel verrät damit, welcher Stand LIEF, nicht nur, was der Installer
+zuletzt abgelegt hat (installed-release.txt kann von einer Dev-Kopie überholt
+sein). Die Nummer lebt als `gToolVersion` in v2\START.ahk und wird beim
+Veröffentlichen zusammen mit dieser CHANGELOG-Überschrift und
+`Config.LoginToolVersion` im Installer gepflegt. Neuer
+Lokalisierungs-Schlüssel "Login tool version" in allen fünf Sprachen.
+Ansage am Client UNGETESTET (nur `/validate`).
+
+Flankierend im Installer (nicht in diesem Zip): Beim Kopieren der Texturen
+räumt der Installer jetzt zuerst veraltete .blp-Dateien früherer
+Textur-Generationen aus den Payload-Ordnern (BUTTONS, DialogFrame,
+FrameGeneral, GLUES, HELPFRAME) — bisher wurde nur überschrieben, nie
+gelöscht, und eine überlebende alte Umfärbung passt nicht mehr zu data.ini.
+Außerdem meldet das Log-Bündel (system-info.txt) jetzt pro Client, ob die
+Erkennungs-Texturen vorhanden sind. Geprüft per SkuSelfTest `texturesweep`
+(11 Checks, alle grün).
+
+## 3.1 (2026-08-20)
+
+Ausgeliefert als 3.1, nicht als 3.0: Eine 3.0 ist nie veröffentlicht worden.
+Ihre Versionsnummer stand seit dem 2026-08-18 im Installer, ohne dass je ein
+Paket dazu hochgeladen wurde — wer in dieser Zeit installiert hat, bekam den
+2.2-Stand mit einer 3.0-Markierung. Eine Veröffentlichung ALS 3.0 würde bei
+genau diesen Leuten als "schon installiert" gelten und nie ankommen. Die
+Einträge der nie erschienenen 3.0 stehen deshalb hier mit drin.
+
+Alle Punkte bis auf den letzten ("Charakterliste ab neun Charakteren") sind am
+2026-08-20 am Client geprüft.
+
+**Das Tool brach den Login des Clients selbst ab.** Gemeldet und reproduziert:
+Spiel starten, "Das Spiel startet" hören, ein Klickgeräusch — und danach steht
+der Anmeldebildschirm da und die Zugangsdaten müssen neu getippt werden. Von
+Hand mitgelesen steht in dem Moment "Realmliste wird abgerufen" mit einem
+Abbrechen-Knopf auf dem Schirm.
+
+Genau den hat das Tool gedrückt. `InitLogin` behandelte ein Popup auf dem
+Anmeldebildschirm wie eine Fehlermeldung: vorlesen und wegklicken. Bei einem
+Dialog mit EINEM Knopf ist dieser Knopf aber Abbrechen, und dessen OnAccept
+trennt die laufende Verbindung — dieselbe Falle, die schon jeden Realm-Beitritt
+gekillt hat und gegen die `LoginSubmitAction` und `RealmSelectAction` längst
+gewappnet sind ("NEVER press this one"). Der Bildschirmwächter war es nicht,
+weil er während eines Client-Starts nie HINGESEHEN hat: Bei 2500 ms Abstand lag
+der ganze Verbindungsaufbau zwischen zwei Proben. Mit den 500 ms weiter unten
+landet er mitten darauf. Die schnellere Erkennung hat den Fehler nicht gebaut,
+sie hat ihn erreichbar gemacht.
+
+- Auf dem Anmeldebildschirm wird ein Ein-Knopf-Popup jetzt nur noch vorgelesen,
+  nie gedrückt (`AnnounceProgressPopup`, einmal pro Text statt bei jeder Probe).
+  Zwei Knöpfe sind weiterhin eine echte Frage — falsches Passwort, Server nicht
+  erreichbar — und werden beantwortet.
+- Solange dieser Dialog steht, passiert sonst gar nichts: kein Klick auf
+  "Erneut verbinden" (der würde in eine laufende Verbindung greifen), keine
+  Ansage "Nicht angemeldet" (das ist noch gar nicht entschieden), und der
+  Menüzeiger bleibt, wo der Benutzer ihn hatte.
+- Verschwindet der Dialog und der Anmeldebildschirm ist NOCH da, ist der Versuch
+  gescheitert — das zählt als Ankunft und wird angesagt, auch wenn das Tool
+  vorher schon auf diesem Bildschirm stand.
+- Auch der rote Knopf auf dem Anmeldebildschirm wird während des Client-Starts
+  nicht mehr gedrückt. Als Wiederholversuch ist er wertlos, solange der Client
+  von sich aus verbindet, und ein roter Knopf an dieser Stelle kann genauso gut
+  das Abbrechen eines Fortschrittsdialogs sein, den die Popup-Proben nicht
+  erkannt haben.
+- Dieselbe Regel auf dem Charakterbildschirm, aber NUR während des Starts:
+  "Charakterliste wird abgerufen" ist dort derselbe Dialog mit demselben Knopf.
+  Danach gilt wieder das Übliche, denn auf diesem Bildschirm läuft sonst keine
+  Verbindung. Maßgeblich ist `ClientStillStartingUp` — wahr nur für einen
+  Client, dessen Erscheinen das Tool gesehen hat, und nur für dessen erste
+  Minute.
+
+**Spielstart: kein "Unbekannter Bildschirm" mehr, sondern "Das Spiel startet" —
+und in unter einer Sekunde.** Beim Start sagte das Tool zuverlässig erst
+"Unbekannter Bildschirm" und erkannte Sekunden später den Anmeldebildschirm
+doch. Ein startender Client zeigt schwarzes Bild, Logo und Ladebildschirm, und
+die klassifizieren alle als "unknown" — der Satz, der eigentlich "du hängst
+fest" bedeutet, war damit der Satz, den man bei jedem normalen Start hörte.
+
+- Die Meldung kommt jetzt erst, wenn 12 Sekunden lang ununterbrochen kein
+  Bildschirm erkannt wurde (`gUnknownGraceMs`). Ein Sense, der gar keine Antwort
+  liefert (Fenster weg, Helfer tot), zählt dabei NICHT mit — das ist kein
+  Bildschirm, über den sich etwas sagen ließe. Wer wirklich vor WoWs eigenem
+  Menü steht, hört den Hinweis also weiterhin, nur eben erst dann.
+- Stattdessen wird gesagt, was wirklich los ist: Ein Client, dessen Fenster das
+  Tool hat auftauchen sehen und der ein paar Sekunden alt ist, fährt hoch. Der
+  Anspruch wird nur dort erhoben, wo er stimmt — `gClientWitnessed` ist nur
+  wahr, wenn das Tool beim Erscheinen des Clients schon mindestens fünf Sekunden
+  lief; ein Client, der vorher schon da war, sagt nichts über sein Alter. Neuer
+  Text in allen fünf Sprachdateien.
+- Solange nichts erkannt ist, wird alle 500 ms geprüft statt alle 2500 ms
+  (`gGlueProbeFastMs`), und der Moduswächter selbst tickt mit 500 ms statt 1000
+  ms — sonst wäre die schnellere Prüfung an seinem Sekundenraster hängen
+  geblieben. Ein Sense ohne OCR ist billig; die Erkennung hinkte dem Client
+  vorher um bis zu 3,5 Sekunden hinterher, und zwar nur wegen der Bremse. Nach
+  25 Sekunden ohne Ergebnis (`gGlueFastWindowMs`) fällt die Prüfung von selbst
+  auf den langsamen Takt zurück: dann startet der Client nicht mehr, dann steht
+  er. Im Anmeldemodus bleibt der Hintergrundwächter bei 2500 ms — der schaut
+  nur nach, ob das Spiel von sich aus die Serverauswahl geöffnet hat.
+- `SkuLoginSense.exe` wird gestartet, sobald ein Client erkannt ist, statt erst
+  wenn die erste Prüfung eine Antwort will. Prozessstart, Pipe-Paar und
+  OCR-Engine (etwa eine halbe Sekunde) lagen bisher genau zwischen "das Spiel
+  ist da" und der ersten Aussage darüber; jetzt läuft das parallel zum
+  Hochfahren des Clients.
+
+**Die Serverliste brach nach einer einzigen leeren Seite ab.** Am Client
+gemessen: 17 von 41 Realms, `BuildRealmMenu: 17 realm rows over 2 page(s)` — und
+angesagt wurde die Liste als wäre sie vollständig, weil nur die
+Seitenobergrenze `truncated` setzt. Die Abbruchbedingung war "gleiche Zeilen wie
+eben ODER nichts Neues" — und genau so sehen auch ein verschluckter
+Mausrad-Klick und eine Aufnahme mitten im Neuzeichnen des Dialogs aus. Ein
+einziger davon beendete den Aufbau. `FindRealmRowByName` hat dieselbe Lehre
+schon hinter sich ("ONE of those used to end the search silently"); jetzt gilt
+sie hier auch:
+
+- Erst die ZWEITE leer ausgegangene Seite in Folge ist das Listenende.
+- Eine Lesung mit weniger als zwei Zeilen zählt ebenfalls als leer ausgegangen
+  — in einem Dialog, der sichtbar eine Liste hält, ist das eine misslungene
+  Lesung, nie der Boden.
+- Nur eine Lesung, die wirklich eine Liste gesehen hat, darf "unverändert" für
+  die nächste Runde definieren. Sonst sieht die Seite NACH einer misslungenen
+  Lesung wie Fortschritt aus und verdeckt eine Liste, die sich gar nicht bewegt.
+- Bricht der Aufbau ab, weil gar keine Antwort mehr kommt, wird das als
+  unvollständig gemeldet statt stillschweigend eine kurze Liste zu übergeben.
+- Jede Seite steht mit Zeilen- und Neuzugangszahl im Log, dazu der Grund für den
+  Abbruch.
+
+**Die Serverliste wird gut doppelt so schnell aufgebaut — mit denselben
+Zeilen.** Vorher elf Seiten und gut 15 Sekunden für 41 Realms, und auf jeder
+Seite stand "17 rows, 3 fresh". Genau das war die veraltete Annahme: Drei Rasten
+pro Seite stammen aus der Zeit, als der Client die Rasten verschluckte, weil sie
+ohne Pause abgefeuert wurden — eine Raste war damals rund ein Drittel einer
+Zeile wert. Die 25 ms Luft in `RealmListScroll` haben das längst behoben;
+seitdem ist eine Raste eine Zeile, und das Tool las ein 17 Zeilen hohes Fenster
+elfmal, um jedesmal drei neue Realms mitzunehmen. Jetzt sind es fünf Seiten.
+
+- Die Schrittweite kommt aus der gerade gelesenen Seite: `RealmPageStep` =
+  sichtbare Zeilen minus `gRealmScrollOverlap` (5). Die Seiten greifen also
+  weiter ineinander, als eine Zeile breit ist — dazwischen kann nichts
+  verlorengehen, und die "hat sich die Liste bewegt"-Signatur hat weiterhin
+  gemeinsame Zeilen zum Vergleichen.
+- Sicherheitsnetz dazu: Teilt eine Seite KEINE einzige Zeile mit der
+  vorherigen, wäre theoretisch etwas dazwischen übersprungen worden. Das steht
+  im Log und meldet die Liste als möglicherweise unvollständig, statt sie
+  stillschweigend zu kürzen. Bei fünf Zeilen Überlappung müsste eine Raste
+  1,4 Zeilen weit springen, damit das überhaupt eintritt.
+- Die beiden "Seite bringt nichts"-Fälle werden unterschieden, weil die große
+  Schrittweite sie unterschiedlich gefährlich macht: Eine misslungene Lesung
+  wird OHNE Scrollen wiederholt — auf einer Seite, die nie gelesen wurde,
+  weiterzuscrollen ist genau das, was Zeilen überspringt. Eine Seite, die
+  identisch zur vorherigen ist, bekommt einen kleinen Schubs von vier Rasten;
+  der kann nichts überspringen, weil eben diese Seite gerade vollständig
+  gelesen wurde.
+- `RealmListScroll` holte sich die Fenstergröße bei JEDEM Scrollen per Sense vom
+  Helfer — eine komplette Fensteraufnahme samt Klassifizierung, nur um die Maus
+  in die Mitte der Liste zu setzen. Die Aufnahme IST der Client-Bereich, also
+  liefert `WowClientRect()` dieselben Zahlen umsonst.
+- Die Kategorie-Reiter werden aus der letzten Seite gelesen, die ohnehin im
+  Speicher liegt (sie scrollen nicht mit), statt am Ende jedes Aufbaus einen
+  vollen OCR-Durchlauf zu kosten. Nur wenn diese Lesung gar keine Reiter hat,
+  wird noch einmal nachgesehen.
+- Am Ende wird die Liste NICHT mehr zurückgespult. Das kostete 1,9 Sekunden pro
+  Aufbau, um den Dialog für einen Leser aufzuräumen, der das selbst tut:
+  `RealmSelectAction` klickt nie ein gespeichertes Realm-Rechteck (es weigert
+  sich, siehe Kommentar dort), sondern ruft `FindRealmRowByName` — und das
+  beginnt mit seinem eigenen Zurückspulen, jetzt über die bekannte Listenlänge
+  (`gRealmNames.Length` plus Rand) statt über blinde 60 Rasten. Vor dem ersten
+  Lesen bleibt es bei den blinden 60: Eine nicht ganz zurückgespulte Liste lässt
+  Seite 1 mitten in der Liste anfangen, und das ist der teure Fehler.
+
+**Die Serverliste arbeitet nicht mehr stumm.** Ihr Aufbau ist Sekunden aus
+Mausrad-Scrollen und OCR, und in dieser Zeit kam kein Ton — nicht
+unterscheidbar von einem Tool, das gestorben ist. Neu ist `WorkBeep`: der
+Arbeitston, mit einer Sperre von 1,2 Sekunden, damit schnelle Seiten nicht Ton
+auf Ton stapeln. Er läuft beim Hochscrollen an den Listenanfang, pro gelesener
+Seite, beim Warten auf die Realmdaten und beim Wiederfinden einer Zeile vor dem
+Beitritt. `Say(T("wait"))` ist der Benachrichtigungs-KLANG, keine Sprache, und
+unterbricht nichts — deshalb darf er mitten in einen Ablauf.
+
+**Kein Charakter-Walk mehr, wenn das Panel die ganze Liste hält.** Eine
+Charakterliste zu zählen kostete 9,2 Sekunden — für EINEN Charakter
+(`CountAndReadCharacters: 1 characters ... 9172 ms`), davon über drei Sekunden
+allein dafür, das Ende einer einelementigen Liste zu beweisen. Der naheliegende
+Einwand "die Liste könnte auf Charakter 10 stehen, dann ist nur einer sichtbar"
+ist der eine Fall, den es nicht gibt. Aus dem Client selbst
+(`Blizzard_GlueXML/Classic/CharacterSelect.lua`, `UpdateCharacterList`):
+
+```
+local characterLimit = min(numChars, MAX_CHARACTERS_DISPLAYED);
+for i=1, characterLimit, 1 do   -- Knopf i aus Index i + CHARACTER_LIST_OFFSET
+```
+
+Die ANZAHL gezeichneter Knöpfe hängt allein an `numChars`; der Scroll-Offset
+entscheidet nur, WELCHE Charaktere darin stehen. Versteckt werden Knöpfe an
+genau einer Stelle, `if (numChars < MAX_CHARACTERS_DISPLAYED)`. Ein Realm mit
+zehn Charakteren zeigt also bei jeder Scrollposition neun Knöpfe, und ein Panel
+mit weniger Einträgen als es fasst bedeutet: Der Realm HAT weniger. (Der Offset
+ist ohnehin überall geklemmt — `max(numChars - MAX, 0)` in den Scroll-Handlern,
+`SetMinMaxValues(0, numChars - MAX)` an der Scrollleiste.) Und unterhalb einer
+vollen Seite gibt es nichts zu scrollen: dieselbe Funktion versteckt die
+Scrollleiste und setzt `blockUpdates`, "keep mousewheel from doing anything" —
+die sichtbare Reihenfolge IST die Charakterreihenfolge ab Charakter 1. Gemessen
+jetzt 1359 ms statt 9172 ms.
+
+- Was der Panel-Befund nicht beweist, ist eine korrekte OCR-Lesung. Dafür der
+  Slot-Test in `CharPanelHoldsWholeList`: Die Blöcke müssen auf den Slots 1..N
+  sitzen und jeder Slot darunter leer sein. Fällt OCR ein Block in der Mitte
+  weg, laufen die belegten Slots über die Anzahl hinaus — dann entscheidet wie
+  bisher der Walk.
+- Zusätzlich müssen ZWEI Lesungen in Anzahl und Namen übereinstimmen, bevor der
+  Walk übersprungen wird. Ab neun sichtbaren Blöcken wird immer gewalkt.
+- Weil diese Liste die sichtbare Sektion ist und nicht scrollen kann, sind die
+  gespeicherten Klick-Rechtecke aktuell: `gCharListFromWalk` wird auf false
+  gesetzt, und die Auswahl eines Charakters ist damit ein Klick statt eines
+  Cursor-Walks.
+- Der Walk endete früher auf Charakter 1 und konnte das zusichern. Hier wird
+  nichts gedrückt, die Auswahl bleibt also, wo der Client sie hatte — beim
+  zuletzt gespielten Charakter. Welcher das ist, wird gelesen statt geraten:
+  eine Pixelprobe auf die Auswahlleiste, und bei ungescrollter Liste IST der
+  Slot die Charakternummer.
+- "Bitte warten, die Charakterliste wird neu aufgebaut" sagen nicht mehr die
+  acht Aufrufstellen, sondern der Walk selbst, unmittelbar bevor er losläuft.
+  Der Satz deckt die Sekunden ab, die er mit Tastendrücken verbringt; über eine
+  Liste, die in einer Sekunde fertig ist, war er eine Ansage über nichts. Auf
+  einem leeren Realm, der vor dem Walk zurückkehrt, fällt er ebenfalls weg.
+
+**Die Hardcore-Regeln werden nicht mehr dreimal vorgelesen.** Bei EINER
+Charaktererstellung wurden sie dreimal komplett gelesen — je 27 Zeilen über
+drei Seiten OCR, rund sieben Sekunden pro Durchgang. Der dritte lieferte
+`read 0 line(s) over 2 page(s)`, also gar nichts: Der Dialog steht noch da, wo
+ihn der vorige Durchgang hingescrollt hat, oberhalb ist nichts mehr zu finden.
+An `AskHardcoreCreateConfirm` kommen mehrere Wege an (Namenseingabe, CheckMode,
+InitLogin nach einem Fokuswechsel), und jeder las neu.
+
+Jetzt wird EINMAL hingesehen — eine Aufnahme, kein Scrollen — und geprüft, ob
+die sichtbare Seite Teil des schon vorgelesenen Textes ist. Dann kommt nur noch
+die Wahl ("Die Hardcore-Regeln stehen noch offen. Enter zum Zustimmen..."). Ist
+der Text ein anderer, wird wie bisher komplett vorgelesen; ein anderer Dialog
+kann also nicht übersprungen werden. Der Merker überlebt einen abgelehnten
+Namen (der bringt dieselben Regeln sofort zurück) und wird gelöscht, wenn der
+Charakter erstellt oder die Erstellung abgebrochen wird.
+
+**OCR nur noch auf dem Ausschnitt, der gelesen wird — großzügig geschnitten.**
+Windows-OCR arbeitet über die Pixel, die man ihm gibt; das Tool gab ihm bisher
+meist das ganze Fenster. Neu sind zwei Zuschnitte mit Vollbild als Auffangnetz:
+
+- `CharPanelRegion` beginnt bei 0,60 der Breite statt bei 0,74 (dort filtert
+  `OcrCharList`) und nimmt die volle Höhe. Der Anteil, den das Panel an der
+  Breite hat, ist eben KEINE Konstante: Der Glue-Bildschirm skaliert über die
+  HÖHE, ein 4:3-Fenster gibt denselben 280 UI-Einheiten einen viel größeren
+  Anteil als ein 21:9-Fenster. Ein Filter, der eine Zeile verwirft, ist
+  harmlos; ein Zuschnitt, der sie zerschneidet, ändert die Buchstaben.
+- `RealmListRegion` schneidet vor allem oben und unten (ny 0,12–0,94), weil die
+  vertikalen Brüche die stabilen sind — die Reiterleiste sitzt bei jedem
+  Seitenverhältnis auf ny 0,81–0,85. Horizontal bleiben 5 % Rand auf jeder
+  Seite stehen, weil sich die Dialogbreite mit Client und Fensterform
+  verschiebt (nx 0,259 auf TBC gegen 0,206 auf Era).
+- Kommt eine zugeschnittene Lesung ganz ohne Zeilen zurück, wird einmal das
+  volle Bild gelesen. "Da ist nichts" ist die eine Antwort, die ein Zuschnitt
+  erfinden kann, und die wird ihm nicht geglaubt.
+
+**Blinde Wartezeiten sind Bedingungen geworden — und schreiben ihre echten
+Zeiten ins Log.** Neu ist `WaitUntil(was, bedingung, maxMs)`: Es fragt den
+Bildschirm (Pixelprobe oder Sense ohne OCR), kehrt zurück, sobald die Bedingung
+stimmt, und loggt `Settle: <was> after N ms (limit M)`. Die alte Schlafdauer ist
+jetzt die OBERGRENZE — langsamer kann es nicht werden. Läuft sie ab, steht das
+ebenfalls im Log, deutlich als `TIMED OUT`, denn "die Zahl war zu klein" und "es
+ist nie passiert" dürfen nicht gleich aussehen.
+
+- `RefreshCharacterMenuSettled`: flache Sekunde vor jedem Neuaufbau → wartet auf
+  die Auswahlleiste (`UpdateCharacterList` zeichnet Knöpfe und Auswahl im selben
+  Durchlauf; die Pixelprobe kostet ~17 ms). Gemessen:
+  `Settle: character panel redrawn after 16 ms (limit 1000)` — die Sekunde war
+  sechzigmal zu lang.
+- Serverauswahl schließen, Beitritt nach dem Enter, Erstellung/Löschung
+  abbrechen: warten auf den Bildschirmwechsel statt auf die Uhr.
+- Warten auf den geöffneten Serverdialog: Probe alle 200 ms statt alle 700 ms,
+  Obergrenze unverändert bei ~7 s. Gemessen brauchte der Client dafür 1594 ms —
+  das ist seine Zeit, nicht unsere.
+- Auf dem ERSTELLUNGS-Bildschirm bleiben die Wartezeiten blind, weil keine
+  billige Probe bestätigen kann, was ein Rassenklick ändert (die Klassenzeile
+  filtert sich neu, das Modell wechselt). Aber nur EINE davon ist eine
+  Abhängigkeit: Die Klassenzeile wird aus der Rasse aufgebaut, ein Klick auf die
+  Klasse davor trifft die falsche — die behält ihre volle Länge
+  (`gCreateClickSettleMs`, 900 ms). Klasse und Geschlecht liest niemand, bevor
+  der Name getippt wird; die bekommen `gCreateClickShortMs` (300 ms). Gemessen
+  2844 ms für alle drei, jetzt rund 1500.
+
+**Die Wartezeiten bis "Da ist etwas schiefgelaufen" sind halbiert.** Sie waren
+für ein langsameres Tool bemessen. Halbiert wurde dort, wo auf eine ÖRTLICHE
+Bildschirmänderung gewartet wird — der Server wird da gar nicht gefragt, also
+bringt langes Warten nichts außer später Bescheid zu wissen:
+
+- Charaktererstellung öffnen: 20 → 10 Runden (~8 s).
+- Name bestätigen: 25 → 12 Runden (~18 s). Der Namenscheck ist eine echte
+  Serverantwort, deshalb bleibt der hier großzügiger.
+- Erstellung abbrechen: 15 → 8. Löschen abbrechen: 10 → 5.
+- Hardcore-Regeln bestätigen: 20 → 10 Runden. Das war mit 25-30 Sekunden die
+  längste von allen und die, die direkt nach dem Zustimmen kommt.
+- Serverauswahl öffnen: ~7 s bei jetzt 200-ms-Proben. Serverbeitritt: 15 → 10
+  Runden — ein LAUFENDER Beitritt zählt hier ohnehin nicht mit (der
+  Verbindungsdialog nimmt den `progress`-Zweig), diese Grenze entscheidet nur,
+  wie lange ein unerkannter Bildschirm angestarrt wird.
+- Danach piept `FailFlow` noch zweimal statt viermal.
+
+Absichtlich NICHT verkürzt: die Anmeldung selbst (`LoginSubmitAction`, ~36 s)
+und der Hardcore-Beitritt (`WaitForHardcoreJoin`, 45 Runden). Beide warten auf
+den Server, nicht auf den Client — sie kürzen hieße, eine langsame Verbindung
+als Fehler zu melden.
+
+**Gemessen, vorher und nachher** (derselbe Client, 2026-08-20):
+
+- Client erkannt bis "Anmeldemodus": 0,9 s. Vorher lagen zwischen dem ersten
+  unerkannten Bild und dem Anmeldemodus 8,5 s, davon bis zu 3,5 s reine
+  Wartetakte.
+- Charakterliste bei einem Charakter: 1359 ms statt 9172 ms; bei zwei
+  Charakteren 1203 ms.
+- Serverliste, 41 Realms: fünf Seiten statt elf, plus 1,9 s weniger durch das
+  weggefallene Zurückspulen am Ende.
+- Charaktererstellung, die drei blinden Klick-Pausen: rund 1500 ms statt 2844.
+- Hardcore-Regeln beim wiederholten Namensversuch: eine Aufnahme statt rund
+  sieben Sekunden Neulesen.
+
+**Charakterliste ab neun Charakteren.** Die folgenden Punkte gehören alle zu
+EINEM Befund: Das Panel zeigt genau neun Slots
+(`Blizzard_GlueXML_TBC.toc` lädt `Vanilla\CharacterSelectConstants.lua` mit
+`CHARACTER_SELECT_MAX_CHARACTERS = 9`, und `CharacterSelect_OnShow` setzt
+`MAX_CHARACTERS_DISPLAYED` darauf). Ab dem zehnten Charakter bewegt sich die
+Auswahlleiste nicht mehr, sondern die LISTE scrollt unter ihr durch — und genau
+dieser Zweig im Walk war an jeder Stelle mit EINER einzigen Beobachtung
+abgesichert. Bei bis zu neun Charakteren wird er nie betreten, deshalb ist davon
+nie etwas aufgefallen. Gemeldet wurde es als "zeigt nicht alle", "scrollt nicht
+richtig zurück" und "falsche Nummern"; das sind drei Symptome derselben Sache.
+UNGETESTET am Client — hier existiert kein Realm mit mehr als neun Charakteren.
+
+- Ein einzelner unveränderter Blick beendet die Liste nicht mehr. In
+  `WalkCharacterList` galt "gleicher Slot, gleiche Namen" als Listenende — was
+  aber genauso aussieht wie ein verschluckter Tastendruck oder ein Panel, das
+  noch neu zeichnet. Ergebnis: Der Walk brach mittendrin ab und meldete das
+  Ergebnis als vollständig (die Warnung hängt am OCR-Fallback, nicht am Walk).
+  Neu ist `CharWalkResolveStall`: erst nochmal hinsehen (länger warten), und
+  ERST wenn ein Blick bewiesen hat, dass sich gar nichts bewegt hat, nochmal
+  drücken — die Reihenfolge ist der Punkt, ein zweiter Druck auf einen Schritt,
+  der längst angekommen war, überspringt einen Charakter spurlos. Dieselbe
+  Lehre wie bei der Realmliste ("ONE of those used to end the search silently",
+  `FindRealmRowByName`). Gleiche Behandlung in `ClimbToFirstChar`.
+- Der Umbruch wird erst nach dem Nachziehen der Liste geprüft. Der Wrap
+  scrollt die GANZE Liste zurück nach oben (`CharacterSelectScrollDown_OnClick`
+  setzt `CHARACTER_LIST_OFFSET = 0`), und das dauert länger als die Leiste zum
+  Springen braucht. Die Bestätigung las sofort danach, verglich also die Liste
+  von vorher, verwarf einen Wrap der stattgefunden hatte als Fehllesung — und
+  der Walk sammelte die Liste ein zweites Mal, bis ihm die Schritte ausgingen.
+  Jetzt mit Settle davor; scheitert die Panel-OCR trotzdem, entscheidet der
+  große Name unter dem Charaktermodell. `CountAndReadCharacters` hatte dieses
+  `Sleep(500)` übrigens schon — an genau einer Stelle zu wenig.
+- Wrap-Erkennung im Abwärts-Walk verlangt jetzt Slot 1, nicht "irgendwie
+  weiter oben". Blizzard sagt es exakt: nach dem letzten Charakter
+  `CHARACTER_LIST_OFFSET = 0; CharacterSelect_SelectCharacter(1)` — der Wrap
+  landet auf Slot 1, nie woanders. Jeder andere Rücksprung ist eine Probe
+  mitten im Neuzeichnen einer gescrollten Liste, und die gibt es erst ab dem
+  zehnten Charakter. Bestätigt wird zusätzlich nach einem Settle.
+- `ClimbToFirstChar` erkennt den Listenanfang jetzt am Slot statt am Zufall.
+  `CharacterSelectScrollUp_OnClick` rechnet `CHARACTER_LIST_OFFSET` bei jedem
+  Schritt neu, solange der neue Index noch im Panel liegt — der Offset ist also
+  null, bevor die Leiste überhaupt anfängt, im Panel nach oben zu wandern.
+  Heißt: während die Liste scrollt steht die Leiste auf dem UNTERSTEN Slot,
+  und Slot 1 kann nur Charakter 1 sein. Gilt nur für einen Offset, den die
+  Pfeiltasten gebaut haben — eine vom Benutzer mit dem Mausrad gescrollte Liste
+  kann bei Offset 5 auch Slot 1 zeigen. Deshalb wird Slot 1 nur geglaubt, wenn
+  dieser Aufstieg vorher den untersten Slot gesehen hat oder das Panel weniger
+  Blöcke hält als es Slots hat (dann ist die Liste kürzer als das Panel und
+  kann gar nicht scrollen). Ohne diesen Beweis bleibt es beim alten Verhalten.
+- Der OCR-Notbehelf nummeriert keine gescrollte Liste mehr ab 1. Scheitert der
+  Walk, wurde bisher gelesen was gerade auf dem Schirm steht — und das ist
+  regelmäßig NICHT der Listenanfang: `UpdateCharacterSelection` setzt
+  `CHARACTER_LIST_OFFSET = selectedIndex - MAX_CHARACTERS_DISPLAYED`, sobald der
+  zuletzt gespielte Charakter unter der Kante sitzt. Die neun sichtbaren Zeilen
+  waren dann Charakter 6 bis 14, angesagt als 1 bis 9. Das ist keine
+  unvollständige Liste, das ist eine falsche. Jetzt wird vorher nach oben
+  gefahren; die Lücke bleibt unten, wo die Warnung sie hinsagt.
+- Charakternamen sind pro Realm eindeutig — daraus ist jetzt eine Schranke
+  geworden: Ein Name, der schon in der Liste steht, kann nur bedeuten, dass der
+  Walk herumgekommen ist (Schritt doppelt gezählt, oder ein nicht erkannter
+  Wrap). Wird nicht mehr doppelt aufgenommen; trifft es Charakter 1, gilt es als
+  Wrap. Bewusst mit STRIKTEM Namensvergleich (`SameCharNameStrict`) — der
+  normale akzeptiert absichtlich, dass ein Name im anderen steckt, und würde
+  die Liste bei "Sku" abbrechen, sobald es "Skubella" gibt.
+- Die Pixelproben der Auswahlleiste tasten nur noch nach links. Ab zehn
+  Charakteren wird `CharacterSelectCharacterFrame` von 260 auf 280 verbreitert
+  und die Scrollbar eingeblendet (`CharacterSelect.lua`, Zeile 1321). Der Rahmen
+  hängt TOPRIGHT, die Liste rutscht also 20 UI-Einheiten nach links, die
+  Auswahlleiste (256 breit) endet 20 Einheiten früher — und die Scrollbar legt
+  eine SCHWARZE Fläche genau auf den freigewordenen Streifen. Die alten Offsets
+  +10 und +20 lagen dort. Auf jedem Realm, der überhaupt scrollt, hat also die
+  Hälfte der Probenpunkte Schwarz gelesen.
+- Das Charaktermenü wird wie die Realmliste ATOMAR veröffentlicht.
+  `RefreshCharacterMenu` hat die Kinderliste zuerst geleert und erst nach dem
+  Walk wieder gefüllt — bei dreißig Charakteren fast eine Minute, in der die
+  Pfeiltasten auf ein leeres Untermenü treffen und schlicht nichts tun. Die
+  ALTE Liste bleibt jetzt bedienbar, bis die neue fertig ist. Steht der Cursor
+  danach auf einem Knoten der ersetzten Liste (dessen Aktion einen Index in die
+  ersetzte Liste hält — nach einer Löschung ein anderer Charakter), wird er
+  auf den Elternknoten zurückgesetzt.
+- Maus wird auch vor `MoveCharCursorTo` geparkt, nicht nur vor dem Zähl-Walk.
+  Ein Mauszeiger über der Liste hebt einen zweiten Slot hervor, und
+  `SelectedCharSlot` liefert den OBERSTEN hervorgehobenen — der Walk hätte also
+  die Maus statt der Auswahl verfolgt, und der Benutzer hörte "etwas ist
+  schiefgelaufen" für eine Auswahl, die stimmte. Dazu Settles nach dem
+  Zurückfahren auf Charakter 1 und vor der Kontrolle am Ziel: jedes Ziel jenseits
+  des neunten Charakters kommt auf einem Schritt an, der GESCROLLT hat.
+- Lange Walks sind nicht mehr stumm: Der Zähl-Walk sagt alle zehn Charaktere
+  den Stand an (das sagt nebenbei, wie groß die Liste wird), das reine
+  Zurückfahren auf Charakter 1 sagt "warten" — bewusst KEINE Zahl, das sind
+  Schritte und keine Charakternummern.
+
+- Hardcore-Bestätigung ("Der Tod ist permanent") wird erkannt und bedient:
+  Der Helper klassifiziert den Dialog jetzt als eigenen Screen
+  `hardcoreConfirm` (vier Pixel-Proben: zwei dunkelrot getönte Buttons "Ich
+  stimme zu"/"Ablehnen" auf einer Reihe UNTER allen Standard-Popup-Höhen,
+  dazwischen Rahmengrau statt Rot, Dialogkörper schwarz; Werte am 2880x1800-
+  Capture vermessen, Koordinaten im UI-Raum, damit sie auflösungsunabhängig
+  sind; gegen alle gebündelten 2.5.5-Screenshots als Negativtest geprüft).
+  Das Tool liest den Dialogtext vor (OCR, eng auf den Dialogkörper begrenzt)
+  und fragt: Enter stimmt zu, Escape lehnt ab. Niemals Auto-Antwort. Nach
+  Zustimmung wartet ein eigener Join-Flow auf die Charakterauswahl; nach
+  Ablehnung wird die darunter liegende Realmliste wieder als Menü angeboten.
+  Erkannt wird der Dialog im Realmwechsel-Flow, beim Init (Tool-Start/Fokus
+  mit offenem Dialog) und vom CheckMode-Wächter. GETESTET am Client: Dialog
+  wird erkannt, vorgelesen und per Enter angenommen; der anschließende Beitritt
+  landet auf der Charakterauswahl.
+- Beitritt nach der Hardcore-Zustimmung — KORRIGIERT gegenueber der ersten
+  Fassung dieses Eintrags, der genau falsch herum war: Zustimmen tritt dem Realm
+  BEREITS BEI. `HardcorePopUpAcceptButtonMixin:OnClick` (Blizzards eigener
+  Quelltext, `Blizzard_GlueXML\Classic\HardcoreFrames.lua`) ruft
+  `C_RealmList.ConnectToRealm(...)` auf und schliesst den Dialog erst DANACH,
+  genauso `RealmWarning.lua` fuer die PvP-Warnung. Die Realmliste bleibt
+  waehrend der ganzen Verbindung sichtbar — "die Liste ist noch offen" beweist
+  also NICHT, dass niemand beigetreten ist. Der erste Anlauf hat das falsch
+  gelesen und selbst nachgedrueckt, was jeden Beitritt abbrach (siehe "Der
+  Hardcore-Beitritt hat sich selbst abgebrochen" weiter unten).
+  `WaitForHardcoreJoin` wartet jetzt und drueckt gar nichts.
+- Reconnect-/Loginbildschirm nach einem Hardcore-Beitritt wird erkannt: Endet
+  der Beitritt in einer Trennung, liest das Tool die Meldung vor und STOPPT.
+  Vorher fiel dieser Bildschirm in den Sammelzweig und das Tool fing an, die
+  Charakterliste neu aufzubauen, während eine Reconnect-Abfrage auf dem Schirm
+  stand. Gleiche Regel wie im Realmwechsel: hier niemals klicken (die roten
+  Buttons des Loginscreens, inkl. Beenden, sähen wie Popup-Buttons aus).
+- Realmliste blättert jetzt: Bisher wurde genau ein Bildschirm ausgelesen, alle
+  Realms darunter (z.B. Soulseeker) fehlten im Menü. `BuildRealmMenu` scrollt
+  jetzt per Mausrad von oben durch die Liste und sammelt die Namen seitenweise,
+  bis nichts Neues mehr auftaucht.
+- Abgeschnittene letzte Zeile wird verworfen: Der Listenausschnitt schneidet die
+  unterste Reihe mitten im Glyph ab (am 2880x1800-Capture endeten alle Spalten
+  bei py 1256). Sie kam als 18 px hohe OCR-Grütze an ("N A L«' 'P nch" statt des
+  Realmnamens, "Niedria" statt "Niedrig") und wurde trotzdem als anklickbarer
+  Eintrag angeboten — ihr Rechteck zeigt auf einen Streifen, und genau dieser
+  Klick hat den Hardcore-Beitritt in die Trennung geschickt. Reihen unter 75 %
+  der Median-Höhe fliegen jetzt raus.
+- Realm wird beim Klick per Name neu gesucht: Ein Rechteck gilt nur für die
+  Scrollposition, an der es aufgenommen wurde. `FindRealmRowByName` scrollt vor
+  dem Klick von oben, bis der Realm sichtbar ist, und klickt das AKTUELLE
+  Rechteck — ohne das würde nach dem Blättern der falsche Realm getroffen.
+- `HardcoreJoin`-Warteschleife protokolliert den Bildschirmnamen statt still
+  "warte" zu sagen; der erste Fehlschlag hinterließ 45 Sekunden unlesbares Log.
+- Neues Diagnose-Skript `v2/dump_realms.ahk`: schreibt jede OCR-Zeile mit
+  normalisiertem und Pixel-Rechteck, alle Screen-Checks und ein PNG des
+  Captures. Ohne Sprachausgabe und ohne Eingaben, beendet sich selbst.
+- Auto-geöffneter Realm-Dialog: Auf manchen Client/Zustands-Kombinationen
+  (z.B. Era direkt nach dem Login, wenn kein beitretbarer Realm gewählt ist)
+  öffnet das Spiel die Realmliste von selbst. Bisher hat das Tool den Dialog
+  beim Init kommentarlos per Escape geschlossen (Kampf gegen das Spiel, Dialog
+  kam wieder, Tool blieb stumm und der Dialog schluckte alle Tasten). Jetzt:
+  Ansage "Das Spiel hat die Serverauswahl geöffnet." und die Realmliste wird
+  als Menü angeboten — Pfeile navigieren, Enter tritt bei. Ein neuer
+  CheckMode-Wächter (alle 2,5 s, ohne OCR) erkennt den Dialog auch, wenn er
+  erst NACH dem Moduswechsel aufgeht (InitLogin läuft nur beim Übergang).
+- Neuer Menüpunkt "Serverauswahl schließen" am Ende des Realm-Menüs (bewusster
+  Ausstieg statt Escape-Raten).
+- Unbekannter Dialog beim Realm-Beitritt (Fallback, falls künftige Dialoge
+  wieder keinen Marker haben): statt 15 s "warte" und dann Escape (= stilles
+  Ablehnen!) liest das Tool den Dialogtext per OCR vor, sagt dass es den
+  Dialog noch nicht kennt, und stoppt MIT offenem Dialog — der Nutzer
+  antwortet im Spiel.
+- Sieben neue Lokalisierungs-Strings in allen fünf Sprachdateien.
+- Versionsnummer 3.0 (gesprochen im Hauptmenü); installer Config
+  LoginToolVersion auf 3.0 — Veröffentlichung des Zips über release.ps1
+  -PublishLoginTool steht noch aus.
+
+> **Bekannter Stand — Serverwechsel: Fix unbestätigt.**
+> Beim Serverwechsel trat auf, dass ein Enter auf einem Realm den ausgewählten
+> Charakter einloggte statt den Server zu wechseln, und dass ein offener
+> Realm-Dialog für einen Verbindungsabbruch gehalten wurde. Beides ist behoben
+> (Dialog-Prüfung vor jedem Klick auf eine gespeicherte Position; der
+> Login-Marker zählt nur noch, wenn weder Realm-Dialog noch Charakterauswahl
+> den Bildschirm beanspruchen) — **die Fixes sind jedoch noch nicht am
+> laufenden Client getestet.** Charakterauswahl, Erstellen und Löschen sind
+> getestet und laufen.
+
+- **Die Realmliste wurde zu früh gelesen** — die Ursache dafür, dass der
+  Serverwechsel sich "jedes Mal anders" verhielt. `RealmListUI` öffnet, BEVOR
+  die Realmliste existiert: der Client fordert sie beim Server an (Aurora.log
+  `Requesting realm lists` -> `Realm list ready`), bis dahin ist der Dialog ein
+  leerer Rahmen. Die Bildschirmproben erkennen den RAHMEN, also begann der
+  Menüaufbau sofort, las null Zeilen und null Reiter und ließ den Nutzer mit
+  einem Menü zurück, das nur "Serverauswahl schließen" enthielt. Belegt am
+  Client: das Tool loggte `0 realm rows`, ein Dump desselben, unveränderten
+  Dialogs Sekunden später zeigte Thunderstrike, Spineshatter und beide Reiter.
+  `WaitForRealmListContent` wartet jetzt auf den INHALT (bis zu 8 Lesungen,
+  ~5 s).
+- Die beiden leeren Zustände werden unterschieden, und die Regel stammt aus
+  Blizzards eigenem Code (`RealmList_UpdateTabs` zeichnet die Reiter aus der
+  Realmliste selbst): keine Zeilen UND keine Reiter = Daten noch nicht da;
+  keine Zeilen ABER Reiter = eine Kategorie, die wirklich keine Server enthält.
+  Das Tool sagt jetzt, welcher Fall vorliegt, statt zu schweigen.
+- Reiterstreifen aus der echten Geometrie statt geraten: `RealmListTab1` hängt
+  16 Einheiten unter dem Dialograhmen und ist 32 hoch, und die Glue-Oberfläche
+  skaliert über die BILDSCHIRMHÖHE — der Streifen liegt damit bei
+  ny 0.8125-0.8542, unabhaengig vom Seitenverhältnis (gemessen im Dump:
+  0.8239-0.8356). Waagerecht ist der Dialog je Erweiterung verschieden breit
+  (`RealmListBackground` 640 Einheiten auf TBC, 770 auf Era), weshalb die alte
+  linke Grenze 0.28 INNERHALB des Era-Dialogs lag und dort den linken Reiter
+  ("Saisonbedingt", Mitte nx 0.2516) stillschweigend verschluckte. Jetzt 0.20
+  bis 0.85, was beide Clients abdeckt.
+- **Die Spielversion wird jetzt erkannt, nicht mehr eingestellt.** Gelesen
+  wird sie aus den DATEIEN des laufenden Clients, nicht vom Bildschirm: neben
+  jeder `WowClassic.exe` liegt eine `.flavor.info` ("wow_classic_era",
+  "wow_anniversary", "wow_classic"), und die gemeinsame `.build.info` eine
+  Ebene darüber trägt die Version je Produkt. Das Tool holt sich den
+  Prozesspfad des Clientfensters und liest beide Dateien — gemessene 0,65 ms,
+  einmal pro Client.
+  Die Reihenfolge ist der Punkt: die Bildschirmerkennung kann gar nicht sagen,
+  wo man ist, bevor sie die Spielversion kennt (`IsLoginScreen`,
+  `IsCharSelectionScreen`, `IsCharCreationScreen` und die Popup-Probe
+  verzweigen darauf, und 10 der 49 Widget-Koordinaten unterscheiden sich
+  zwischen Era und TBC). Die Version aus Pixeln zu raten würde diese
+  Abhängigkeit auf sich selbst schließen — und zwar SPÄT, denn ausgerechnet
+  der Loginbildschirm, auf dem ein falsch eingestelltes Tool hängenbleibt,
+  ist der, auf dem sich beide Clients am ähnlichsten sehen.
+  Entschieden wird nach der VERSIONSNUMMER, nicht nach dem Flavor-Namen:
+  "wow_anniversary" ist heute TBC und nach dem nächsten Wechsel WotLK.
+  1.x = Classic, 2.x = BurningCrusade, 4.x = Cata, ab 9.x = Retail; 3.x (WotLK)
+  und 5.x (MoP) haben keine data.ini-Sektion und werden ANGESAGT statt
+  stillschweigend auf die nächstbeste Sektion gerundet. Gegen alle drei
+  installierten Clients geprüft: Era 1.15.9 -> Classic, Anniversary 2.5.6 ->
+  BurningCrusade, wow_classic 5.5.4 -> nicht unterstützt.
+- Der Helper bekommt `--gametype` beim Start mit, statt selbst settings.ini zu
+  lesen, und wird beim Wechsel neu gestartet — sonst klassifizieren beide
+  Hälften nach unterschiedlichen Regeln.
+- "Spieltyp auswählen" von Hand PINNT die Wahl (`gGametypePin` in settings.ini)
+  und schaltet die Erkennung ab. Ein Override, den man nach jedem Clientwechsel
+  neu setzen müsste, wäre keiner — und der Grund, diesen Eintrag überhaupt
+  aufzusuchen, ist ja, dass die Erkennung danebenlag. Zurück geht es über den
+  neuen Eintrag "Spieltyp automatisch erkennen".
+- Erkannt wird nie mitten in einem Ablauf (`gBusy`): Widget-Koordinaten unter
+  einer laufenden Klickkette auszutauschen ist genau der Weg, auf dem eine
+  Löschbestätigung woanders landet als gedacht.
+- **Auf dem Loginbildschirm gab es überhaupt kein Menü.** Nur der
+  charselect-Zweig von `InitLogin` setzt `gCurrentItem`, und `MenuUp`/
+  `MenuDown` kehren sofort zurück, solange es leer ist — ein Tool, das auf dem
+  Loginbildschirm startete, hatte also tote Pfeiltasten. Das ist eine Falle,
+  keine Unbequemlichkeit: der Eintrag, der eine falsche Spielversion korrigiert
+  ("Spieltyp auswählen"), liegt im Hauptmenue, das Hauptmenue war nur zu
+  erreichen, indem man an diesem Bildschirm VORBEIKAM, und eine falsche
+  Spielversion ist einer der Gründe, warum man daran nicht vorbeikommt. Jetzt
+  landet der Fokus auf dem Hauptmenue — aber nur, wenn gar nichts fokussiert
+  ist, damit niemandem der Cursor weggezogen wird, der gerade navigiert.
+- Nachtrag zum selben Fehler: den Knopf NICHT zu klicken war nur die Hälfte.
+  `StaticPopupDialogs["CANCEL"]` setzt kein `ignoreKeys` (anders als
+  `REALM_LIST_IN_PROGRESS`), die Tastatur erreicht den Dialog also, und ENTER
+  löst button1 aus — Abbrechen. Das Tool tippte nach dem Beitritt weiter
+  Enter und brachte damit den nächsten Login um (Client 00:06:01.632
+  "BattleNet Join Realm", 00:06:02.782 "Glue Script Disconnect From Server",
+  Era, Soulseeker). `SafeJoinEnter` schaut jetzt erst nach: liegt ein Popup an,
+  wird kein Enter gesendet — der Beitritt läuft dann ohnehin schon, das Popup
+  IST der Beitritt.
+- Kategoriewechsel sagt jetzt Bescheid ("Classic-Ära, 41 Server"). Der
+  Neuaufbau dauert Sekunden; vorher blieb es still und las danach einen
+  Eintrag vor — von "es ist nichts passiert" nicht zu unterscheiden, also
+  navigierte man scheinbar in einer veralteten Liste, während der Wechsel in
+  Wahrheit funktioniert hatte.
+- **Das Tool hat jeden Realm-Login selbst abgebrochen.** Blizzards
+  Fortschrittsdialoge sind EINKNÖPFIGE Popups, deren einziger Knopf
+  ABBRECHEN ist, nicht OK: `GlueParent_UpdateDialogs` zeigt
+  `StaticPopupDialogs["CANCEL"]` für `GAME_SERVER_LOGIN` ("In Realm
+  einloggen"), für `LOGIN_STATE_CONNECTING` und für die Warteschlange, dazu
+  `REALM_LIST_IN_PROGRESS` während die Realmliste geholt wird — und dessen
+  `OnAccept` ist `C_Login.DisconnectFromServer()`. Das generische "Popup
+  vorlesen, dann seinen Knopf drücken", das für Ja/Nein-Dialoge richtig ist,
+  hat damit bei JEDEM Beitritt auf Abbrechen geklickt: der Client loggte
+  "BattleNet Join Realm" und 1,1 s später "Glue Script Disconnect From
+  Server". Am Client belegt (Era, Hardcore-Realm Stitches). Einknöpfige
+  Popups werden im Beitrittsablauf jetzt nur noch VORGELESEN und nicht mehr
+  geklickt; sie verschwinden von selbst, wenn die Verbindung steht oder
+  scheitert. Nach 60 s sagt das Tool Bescheid, dass Escape abbricht.
+  Zweiknöpfige Popups werden weiter beantwortet — das sind echte Fragen.
+- Die Realmliste war abgeschnitten und niemand erfuhr es. Die Mausrad-Rasten
+  wurden ohne Pause hintereinander gesendet und vom Client größtenteils
+  verschluckt: 3 Rasten pro Seite bewegten die Era-Liste um etwa EINE Zeile,
+  15 Seiten erreichten 32 der 54 Realms der Region, und alles darunter —
+  Soulseeker inklusive — stand nie im Menü. Jede Raste bekommt jetzt 25 ms,
+  die Seitenobergrenze liegt bei 40, und wird sie doch erreicht, sagt das Tool
+  "Die Serverliste ist möglicherweise unvollständig."
+- Hardcore-Realms haben KEINE eigene Kategorie: sie stehen unter
+  "Classic-Ära" und tragen "Hardcore" in der Typspalte
+  (`Nek'Rosh, Hardcore PvE`). Genau so findet sie auch ein sehender Spieler.
+- **Pfeiltaste während eines Realmlisten-Neuaufbaus = AutoHotkey-Fehlerdialog.**
+  `BuildRealmMenu` leerte `menuItem.children` zuerst und füllte sie über die
+  nächsten Sekunden aus Scrollen und OCR wieder. Die Pfeiltasten bleiben in
+  dieser Zeit aktiv, also erreichte ein Tastendruck `MenuNode.Sibling` mit einer
+  LEEREN Kindliste; das Klemmen half nicht, denn `Max(1, Min(0, n))` ist 1, also
+  las der Zugriff `children[1]` auf einem Array der Länge 0 und warf
+  "Invalid index" — beim Nutzer als Continue/Abort-Dialog. Am Client auf Era
+  belegt (Neuaufbau nach einem Kategorie-Reiter), inklusive Datei und Zeile,
+  weil `OnError` jetzt mitschreibt. Die Liste wird nun in einer LOSGELÖSTEN
+  Liste aufgebaut und in EINER Zuweisung veröffentlicht: bis die neue fertig
+  ist, bleibt die alte bedienbar, das Menü verstummt nicht mehr mitten im
+  Neuaufbau. `Sibling` gibt zusätzlich "" zurück, wenn die Kindliste leer ist.
+- Era verlor die Auslastung jeder Realmzeile. Die Spalten des Dialogs liegen
+  auf Era weiter rechts, weil der Rahmen dort 770 statt 640 Einheiten breit
+  ist: die Auslastung ("Niedrig") liegt bei nx 0.7063-0.7375, Mitte 0.7219 —
+  knapp AUSSERHALB der alten rechten Grenze 0.72, also wurde jede Era-Zeile nur
+  mit dem Typ vorgelesen. Auf TBC liegt sie bei 0.6562 und war nie betroffen,
+  weshalb es nur auf Era auftrat. Grenze jetzt 0.84, was beide Dialoge abdeckt.
+- Umbenannt: "Sprache auswählen: X" heißt jetzt "Kategorie auswählen: X"
+  (alle fünf Sprachdateien). Es sind Realm-KATEGORIEN
+  (`C_RealmList.GetAvailableCategories`), keine Spracheinstellung; ein Klick
+  filtert die Liste an Ort und Stelle und öffnet nichts.
+- Quelle für all das: der Client liefert Blizzards eigenen UI-Quelltext mit,
+  unter `_anniversary_\BlizzardInterfaceCode\Interface\AddOns\`
+  (`Blizzard_GlueXML\TBC\RealmList.lua`/`.xml` für TBC,
+  `Vanilla\RealmList.*` für Era; die jeweilige `.toc` sagt, welche Variante
+  ein Client laedt). Künftig dort nachsehen statt Regionen zu raten.
+- Unbehandelte AutoHotkey-Fehler landen jetzt IM LOG. Bisher erschienen sie nur
+  als Dialog ("Continue / Abort") und sonst nirgends: log.txt schwieg, ein
+  Fehlerbericht bestand aus "da kam ein Popup" ohne Meldung, Datei oder Zeile,
+  und nach dem Wegklicken war die Information weg. `OnError` schreibt jetzt
+  Meldung, Extra, Funktion, Datei:Zeile und die ersten Stackzeilen in log.txt und
+  gibt danach 0 zurück - der gewohnte Dialog erscheint unverändert, nur der
+  Nachweis fehlt nicht mehr. Registriert in log.ahk, damit auch die Test- und
+  Dump-Skripte abgedeckt sind.
+- Die Realmliste protokolliert ihre Einträge im Klartext, nicht nur deren
+  Anzahl: `BuildRealmMenu` loggt jetzt jeden erzeugten Menünamen, und
+  `RealmTabAction` loggt den Text der Registerkarte, auf die geklickt wird. Der
+  untere Streifen des Realmdialogs enthält die Kategorie-Reiter des Clients
+  (z.B. "Classic-Ära", "Saisonbedingt"), die das Tool als "Sprache
+  auswählen: ..." anbietet - wenn ein Klick darauf den Client woanders hin
+  schickt, sagte die bloße Anzahl nicht, WELCHER Eintrag es war.
+- log.txt wird beim Start rotiert statt gelöscht: die letzten fünf Sitzungen
+  bleiben als log-1.txt bis log-5.txt daneben liegen. Wer einen Fehler hatte,
+  das Tool schloss und neu startete, bevor er die Logs einsammelte, hat bisher
+  genau den Nachweis vernichtet, um den es ging. Der Log-Sammler des Installers
+  nimmt *.txt aus dem Toolordner mit, die Rotationsdateien reisen also von
+  selbst mit.
+- **Der Loginbildschirm wird nicht mehr als Charakterauswahl angesagt.** Wenn
+  das Spiel beim Start keine Verbindung zum Server bekommt, faellt der Client
+  auf den Account-Loginbildschirm zurueck (Account-Name / Account-Passwort /
+  Login). Das Tool landete dort im HAUPTMENUE, dessen erster Eintrag "Charakter
+  auswaehlen" heisst - ausgerechnet der Bildschirm, der beweist, dass es keine
+  Charakterliste gibt, meldete sich also als Charakterauswahl. Fuer jemanden,
+  der ihn nicht sehen kann, klingt er sonst nach nichts Besonderem.
+  Jetzt sagt das Tool beim Ankommen einmal: "Nicht angemeldet. Entweder besteht
+  keine Verbindung zum Server, oder Accountname und Passwort muessen im Spiel
+  noch eingegeben werden." - und bietet ein eigenes Menue "Anmeldebildschirm,
+  nicht angemeldet" an, das nur enthaelt, was ohne Anmeldung funktioniert:
+  Stimme, Sprache, Spieltyp (inklusive automatischer Erkennung), Region,
+  Version. Charakter waehlen, einloggen, erstellen, loeschen und Server
+  wechseln stehen dort NICHT mehr - sie brauchen alle einen angemeldeten
+  Client und wuerden sonst irgendwo tief in einem Flow scheitern statt am
+  Menueeintrag.
+  Der Grund, aus dem der Loginbildschirm ueberhaupt ein Menue bekam, bleibt
+  erhalten: ein falscher Spieltyp strandet das Tool genau hier, "Spieltyp
+  auswaehlen" muss also erreichbar sein, ohne an diesem Bildschirm
+  vorbeizukommen.
+  Der Wachter merkt jetzt ausserdem, wenn der Bildschirm gewechselt wird:
+  InitLogin lief bisher nur beim MODUSwechsel, also blieb das Tool nach einer
+  von Hand nachgeholten Anmeldung stumm auf dem Loginmenue stehen, waehrend im
+  Spiel laengst die Charakterauswahl stand - die Charakterliste wurde nie
+  gebaut. Ein Wechsel auf den Loginbildschirm oder von ihm weg loest jetzt eine
+  volle Neuinitialisierung aus.
+  Hinweis fuer spaeter: "keine Verbindung" ist KEIN eigener Bildschirm. Am
+  laufenden 2.5.6-Client geprueft - er ist pixel- und OCR-identisch mit einem
+  normalen Loginbildschirm (gleiche Widgets, `checks.login = true`, kein
+  Popup). Es gibt nichts zu markieren; ansagbar ist nur, was immer stimmt:
+  dieser Client ist nicht angemeldet.
+  GETESTET am Client: der Anmeldebildschirm sagt sich als solcher an.
+- **Der Anmeldebildschirm ist jetzt bedienbar, nicht nur richtig angesagt.**
+  Das Menue "Anmeldebildschirm, nicht angemeldet" fuehrt jetzt mit den
+  Bedienelementen des Bildschirms selbst: Accountname, Passwort, Anmelden,
+  Accountnamen speichern - danach unveraendert Stimme, Sprache, Spieltyp,
+  Region und Version, damit die Einstellungen auch dann erreichbar bleiben,
+  wenn die Anmeldung scheitert. Die Warnung beim Ankommen bleibt wie sie war.
+  Das Tool speichert dabei NICHTS und tippt nichts: es setzt nur den Cursor
+  des Spiels in das Feld und gibt die Tastatur an den Client weiter. Es gibt
+  keinen Autologin und in settings.ini kein Feld, das Zugangsdaten halten
+  koennte - das ist eine feste Eigenschaft des Tools, keine Voreinstellung.
+  Solange die Tastatur an einem Feld haengt, sind die Menuetasten FREIGEGEBEN
+  (Pfeile, Bild auf/ab gehen ans Spiel): ein Eingabefeld, dessen Pfeiltasten
+  ein Menue bewegen statt den Cursor, ist kein bedienbares Eingabefeld - man
+  kommt an den Tippfehler nicht heran. Enter beendet die Eingabe, Escape
+  verlaesst sie; keins von beiden geht ans Spiel weiter, weil Enter im
+  Accountfeld die Anmeldung ausloest und ein versehentliches Absenden beim
+  Verlassen eines Textfelds genau die Ueberraschung ist, die hier weg soll.
+  Anmelden ist ein eigener Eintrag.
+  Der Accountname wird vorgelesen (OCR nur des Feldes selbst, damit kein
+  Label von woanders als Inhalt durchgeht), leer als "leer". Das Passwort
+  wird NIE vorgelesen.
+  "Anmelden" drueckt den Login-Knopf des Spiels und verfolgt, was passiert:
+  einbuttonige Fortschrittsdialoge werden vorgelesen und NICHT geklickt (ihr
+  einziger Knopf ist Abbrechen und trennt die laufende Anmeldung - dieselbe
+  Falle wie beim Realmbeitritt), zweibuttonige Dialoge werden vorgelesen und
+  beantwortet, und sobald der Bildschirm verlassen ist, uebernimmt die normale
+  Initialisierung (Charakterliste, Realmdialog, Vertrag).
+  Vier neue Widgets in data.ini ([Classic] und [BurningCrusade]):
+  `LoginAccountField` 10000,403 · `LoginPasswordField` 10000,478 ·
+  `LoginSubmitButton` 10000,531 · `LoginSaveAccountCheckbox` 26,662. Am
+  laufenden 2.5.6-Client bei 2880x1800 vermessen und in den 768er UI-Raum
+  umgerechnet, also aufloesungsunabhaengig; gegen bereits vorhandene Eintraege
+  gegengeprueft ("Account erstellen" gemessen 549 gegen LoginScreenCreate 550,
+  "Beenden" gemessen 716 gegen LoginScreenQuit 717). Wo die Widgets fehlen
+  (Cata, Retail), sagen die vier Eintraege das und tun nichts.
+  Hinweis: Battle.net schliessen und neu oeffnen ist meist der schnellere Weg
+  zurueck - der manuelle Weg ist fuer die Faelle da, in denen man ihn will.
+  GETESTET am Client: Felder anwaehlen, tippen, Accountname vorlesen,
+  anmelden - alles funktioniert.
+- **Der Hardcore-Beitritt hat sich selbst abgebrochen.** Nach dem Zustimmen hat
+  der Join-Flow selbst nachgedrueckt (Reihe klicken + Enter, dann neu waehlen +
+  Enter, dann Doppelklick). Dieses Enter landete im Verbindungsdialog des
+  Clients ("In Realm einloggen"), und der ist `StaticPopupDialogs["CANCEL"]`:
+  ein einziger Knopf, Abbrechen, `OnAccept = C_Login.DisconnectFromServer()`,
+  und ohne `ignoreKeys`. Jeder Hardcore-Beitritt starb rund eine Sekunde nach
+  dem Start — `Connection.log`: `BattleNet Join Realm` 09:56:52.113, dann
+  `Glue Script Disconnect From Server` 09:56:53.104 ("Glue Script" heisst: Lua
+  hat die Trennung angefordert, also wir). Zu hoeren war Stille, ein Klick und
+  danach wieder der Loginbildschirm. Hier wird jetzt nichts mehr gedrueckt, auch
+  kein Escape beim Aufgeben — das waere `RealmList_OnCancel` und damit genau
+  dieselbe Trennung. GETESTET am Client: Soulseeker wird beigetreten, keine
+  Trennung mehr.
+- **Ein Klick auf einen nicht wiedergefundenen Realm hat einen ANDEREN Realm
+  erwischt.** Fand `FindRealmRowByName` die Zeile nicht, klickte
+  `RealmSelectAction` trotzdem das gespeicherte Rechteck. Das gehoerte zur
+  Scrollposition, an der die Zeile zuerst gesehen wurde (Soulseeker: Seite 10
+  von 10), und die gescheiterte Suche hatte die Liste ganz woanders stehen
+  gelassen. Ergebnis: eine Auswahl von Soulseeker trat Pyrewood Village bei,
+  lautlos, und dort wurde ein Hardcore-Charakter erstellt. Jetzt wird der Klick
+  VERWEIGERT: die Liste geht zurueck nach oben, das Tool sagt es, und das Menue
+  wird neu aufgebaut. Die Suche selbst war ausserdem die schwaechere Haelfte —
+  Seitenlimit 15 gegen 40 bei `BuildRealmMenu`, und sie gab nach EINER
+  unveraenderten Seite auf, was genau so aussieht wie eine verschluckte
+  Mausrad-Raste. Jetzt: Limit 40, zwei unveraenderte Seiten noetig (die zweite
+  scrollt mit 6 Rasten statt 3), und `FindRealmRow:` im Log sagt, auf welcher
+  Seite der Name gefunden wurde oder warum die Suche endete.
+  `RealmListScrollTop` scrollt 60 statt 25 Rasten nach oben — eine Raste bewegt
+  etwa eine Zeile, 25 raeumten eine 54-Realm-Liste nicht. GETESTET am Client:
+  `FindRealmRow: 'Soulseeker' found on page 9`.
+- **Ein Beitritt auf einen LEEREN Realm landet in der Charaktererstellung, nicht
+  in der Charakterauswahl.** Die Hardcore-Warnung erscheint ueberhaupt nur,
+  solange der Realm keinen Charakter hat, und `CharacterSelect.lua` schickt
+  `numChars == 0` direkt auf `GlueParent_SetScreen("charcreate")`. Beide
+  Warteschleifen behandeln diesen Bildschirm jetzt als ERFOLG (ansagen, per
+  Escape auf die leere Liste, Menue neu aufbauen); vorher lief die eine in einen
+  Timeout und die andere drueckte still Escape, sodass ein geglueckter Wechsel
+  als "Timeout" gemeldet wurde. GETESTET am Client.
+- **Die Pixel-Probe fuer die Charaktererstellung sass auf einer Kante.**
+  `CharCreationBackdrop` lag bei ui y 136 und erwartete Schwarz — auf dem
+  lebenden Hardcore-Erstellungsbildschirm war das die LETZTE nicht-schwarze
+  Zeile im Schein der Fraktionsueberschrift: 1 Pixel Rand, gelesen 124,143,0.
+  Damit war `charcreate` falsch, der ganze Bildschirm "unknown", und das Tool
+  sagte 65 mal "warte" ueber einer offenen Charaktererstellung. Auf dem
+  Pyrewood-Bildschirm Minuten vorher hatte dieselbe Probe noch bestanden; die
+  Hardcore-Erstellung zeigt zusaetzlich "Selbstgefunden" und verschiebt die
+  Spalte um wenige UI-Einheiten. Die Probe liegt jetzt bei ui y 170: dort ist es
+  von y 140 bis 196 schwarz (rund 26 UI-Einheiten Rand) und auf
+  Charakterauswahl, Login und Realmdialog NICHT schwarz, die Unterscheidung
+  bleibt also. Gegen den lebenden Client und gegen alle mitgelieferten
+  Screenshots in beiden Spieltypen geprueft. GETESTET am Client.
+- **Das Tool sagt jetzt, auf welchem Realm der Client wirklich steht.**
+  `CheckJoinedRealm` liest `CharSelectRealmName` oben aus der Charakterspalte
+  und vergleicht ihn mit dem gewaehlten Namen (nur Buchstaben und Ziffern,
+  Kleinschreibung). Passt er, wird der Realmname angesagt; ist es ein ANDERER
+  Name aus der gerade gelesenen Liste, kommt eine Warnung ("Achtung. Das Spiel
+  ist auf einem anderen Server: ...") und die Aufforderung, vor dem Spielen neu
+  zu wechseln; ist nichts lesbar, bleibt es still und steht nur im Log. Ein
+  falscher Realm kann damit nie wieder als Erfolg gemeldet werden. GETESTET am
+  Client: `JoinCheck: character screen shows 'Soulseeker' - matches Soulseeker`.
+- Ein Beitritt, der auf einem unbenannten Bildschirm endet, wird nach 10 Runden
+  an den Benutzer zurueckgegeben ("Server gewechselt" plus "Unbekannter
+  Bildschirm ... Alt F1 zweimal") statt bis zum Rundenlimit zu laufen und danach
+  "Server konnte nicht gewechselt werden" zu behaupten. Jede Art, wie ein
+  Beitritt SCHEITERN kann, hat einen eigenen Zweig darueber — ein unbenannter
+  Bildschirm heisst also, dass der Wechsel geklappt hat.
+- **Die Hardcore-Regeln bei der Charaktererstellung werden erkannt, vorgelesen
+  und sind beantwortbar.** Das ist der ZWEITE Hardcore-Dialog ("Willkommen zu
+  WoW Classic Hardcore-Realms ...", der bestaetigt werden muss, bevor der
+  Charakter entsteht) — derselbe `HardcorePopUpFrame` wie die Realm-Warnung, nur
+  mit `SetSize(510,580)` statt `(510,240)`. Dadurch sitzen seine Knoepfe bei
+  ui y 551 statt 448 und `IsHardcoreConfirm` sah ihn nicht; der modale Rahmen
+  dunkelt zusaetzlich den Bildschirm dahinter ab (`CharCreationLogo` faellt von
+  198,227,0 auf 50,57,0), also war auch `charcreate` falsch. Alle Pruefungen
+  falsch, Bildschirm "unknown", Tool stumm vor einem Dialog, den nur ein
+  sehender Spieler beantworten kann. Vier neue Proben in `data.ini`: bei
+  ui y 551 lesen beide Knopfflaechen genau 84,0,0 — die Mitte des Fensters
+  75..100, in dem `IsGlueTintedRed` sucht (y 549 ist die dunkle Oberkante mit
+  58,0,0, y 553 erreicht schon 102). Die x-Offsets liegen zwischen der linken
+  Knopfkante und der Beschriftung, also klickt `ClickWidget` genau den Punkt,
+  den die Probe geprueft hat. `HcCreateBackdrop` prueft den Streifen UNTER der
+  Scrollbox und UEBER den Knoepfen, den die Rahmengeometrie in jeder Sprache und
+  bei jeder Scrollposition leer laesst. Der Text wird seitenweise gelesen — die
+  sichtbare Seite endet mitten im Satz —, und das OCR-Fenster wird aus dem
+  Glue-Massstab berechnet statt pro Seitenverhaeltnis hart hinterlegt. Enter
+  stimmt zu, Escape lehnt ab; niemals das Tool. Nach dem Zustimmen wird nur
+  gewartet. GETESTET am Client.
+- Zwei Fallen dabei, beide behoben: die Tastenverteilung prueft
+  `gEnterCharacterNameFlag` VOR `gHardcoreConfirmFlag`, das Namensfeld-Flag muss
+  also geloescht werden, sonst laeuft Enter weiter in ein Feld, das niemand mehr
+  liest. Und `CheckMode` loeschte `gHardcoreConfirmFlag` alle 2,5 Sekunden im
+  Sammelzweig — weil dieser Dialog als "unknown" gilt, waren Enter und Escape
+  Sekunden nach der Frage lautlos entwaffnet.
+- **"Dieser Name ist nicht verfuegbar." war unsichtbar.** Der Helper sucht die
+  rote Knopfflaeche eines StaticPopups in zwei FESTEN Reihen, ui y 386 und 412 —
+  und die Hoehe eines StaticPopups haengt an seinem Text. Der OK-Knopf dieses
+  Dialogs liegt bei ui y 392..409, also liest 386 den Rahmen 14 Pixel darueber
+  und 412 den Rahmen 8 Pixel darunter: alle vier Popup-Pruefungen falsch,
+  waehrend der Bildschirm wie eine gewoehnliche Charaktererstellung aussah.
+  `PopupMidOne`/`PopupMidTwo` pruefen jetzt die Mittellinie bei ui y 400 in
+  denselben drei Spalten — genau die Reihe, die der Burning-Crusade-Zweig schon
+  immer nahm; blind war also nur Classic. Gegen den lebenden Dialog und alle
+  mitgelieferten Screenshots in beiden Spieltypen geprueft, keine
+  Falschmeldungen. GETESTET am Client.
+- **Ein Dialog auf der Charaktererstellung wird jetzt auch beim Ankommen und im
+  Leerlauf vorgelesen.** `InitLogin` erkannte den Bildschirm richtig als
+  `charcreate` und drueckte dann wortlos Escape, ohne ueberhaupt nach einem
+  Popup zu sehen — wer mit offenem "Dieser Name ist nicht verfuegbar." zum
+  Client zurueckwechselte, bekam Stille, und auch keinen Unbekannt-Hinweis, denn
+  der Bildschirm WAR erkannt. Jetzt wird zuerst gelesen und beantwortet und
+  danach das Namensfeld zurueckgegeben, statt die schon gewaehlte Rasse, Klasse
+  und Geschlecht per Escape wegzuwerfen. Zusaetzlich sieht der
+  `CheckMode`-Waechter Popups auf Charaktererstellung und Charakterauswahl, wenn
+  gerade kein Ablauf laeuft — bewusst nur dort: auf Login und Realmliste ist ein
+  Ein-Knopf-Popup ein Abbrechen und wuerde den Versuch toeten. Derselbe Text
+  wird nicht wieder und wieder vorgelesen, falls ein Klick den Dialog nicht
+  schliesst. GETESTET am Client.
+- Fuenf weitere Lokalisierungs-Strings in allen fuenf Sprachdateien (kein
+  Charakter auf diesem Realm, Server nicht in der Liste gefunden, Achtung
+  anderer Server, vor dem Spielen neu wechseln, Zugestimmt bitte warten).
+
+## 2.2 (2026-07-24)
+
+- Retired the legacy v1 (pixel-only) tool. The v2 OCR driver is now the only
+  tool: `START.ahk` and `data\includes\` were removed, and the installer no
+  longer ships or extracts the AutoHotkey v1.1 runtime — the launcher shortcut
+  always targets `v2\START.ahk`. v2 keeps sharing `data\` (settings.ini,
+  data.ini, localization, soundfiles), so nothing else changes. Installs
+  upgraded in place have the stale v1 files removed automatically. Every machine
+  that can run current WoW already has the Windows OCR + window-capture APIs v2
+  needs, so the fallback served no reachable machine.
+
+## 2.1 (2026-07-24)
+
+Classic Era support, verified live on the 1.15.9 (interface 11509) Era client:
+
+- Realm-list reader: `BuildRealmMenu` scraped realm names from a fixed region
+  whose left edge was x=0.28 of the window. The Era realm dialog (2880x1800)
+  renders the name column at nx ~0.23-0.28, so only the one realm that reached
+  0.28 was read and every other realm — including the player's own — was clipped,
+  making server change unusable. Widened the name-column left edge to 0.18 (the
+  Type column stays out, its center is ~0.49+); the full realm list is now read
+  on both the Era and TBC layouts.
+- Escape passthrough: in login mode Escape was swallowed unless renaming or
+  deleting a character, so it never reached the game. It now forwards to the game
+  when not in a name-entry/delete flow, so Escape backs out of the realm dialog
+  and character creation again.
+
+## V2 (unreleased — OCR rework)
+
+Full rework, developed in [Sku75/Sku-WoW-Addon-TBC](https://github.com/Sku75/Sku-WoW-Addon-TBC)
+under `logintool/` (see `dev/rework-docs/LOGINTOOL-REWORK-PLAN.md`).
+
+- New V2 driver (AutoHotkey v2) + `SkuLoginSense.exe` sensing helper:
+  Windows.Graphics.Capture window capture + Windows.Media.Ocr, fully
+  offline and out-of-process (never reads game memory, never injects).
+- Character menu announces real names/levels/classes/zones.
+- The character list is counted with the arrow keys before the main menu
+  appears, the way r1.x did it: a realm holds up to 50 characters while only
+  nine slots are visible, so reading the visible section alone dropped every
+  character below the fold — the menu numbered the topmost *visible* character
+  as 1 and logging in picked the wrong one. Characters out of sight are
+  selected with the arrow keys instead of a click, and the walk leaves the
+  game's own selection on character 1, matching the menu numbering.
+  - The selection highlight is matched by its colour shape (little red, some
+    green, strong blue) instead of r1.x's exact texture value: the redesigned
+    bar renders anywhere from 0,40,120 to 22,69,152 along its length, so the
+    old ±5 window around the texture value never matched it.
+  - Both list behaviours are handled: the selection wrapping around past the
+    last character (2.5.6, and what r1.x assumed) and stopping at the end.
+  - OCR lines that do not sit on the list's left edge are dropped — a sliver
+    of background art came back as a line of its own and became the "name" of
+    character 1. A block whose first line is the level line is re-read once
+    rather than announced as "Stufe 39 Priester".
+- Counting a 14-character realm takes ~5 s (r1.x: ~12 s). Two things pay for
+  that: probing the nine slots reads one copy of the slot column instead of
+  36 single screen pixels (600 ms → 17 ms per keypress — a screen pixel read
+  is a compositor round trip, which dwarfed the OCR), and a step ends as soon
+  as the highlight has moved instead of always sleeping out the settle time.
+  Sensing during the walk OCRs only the character panel (`--region`).
+- Race and class names are localized again. Localization keys are matched
+  case-insensitively, the way AutoHotkey v1 matched object keys: data.ini asks
+  for `human`/`warrior` while the localization files answer with
+  `Human==Mensch`/`Warrior==Krieger`, and a v2 Map compares case-sensitively by
+  default — so all 19 race and class names fell back to the raw English key in
+  every language and every game type. The translations were there all along.
+- `flows.ahk` carries a UTF-8 BOM. Without it AutoHotkey reads a UTF-8 file as
+  ANSI, which turned the delete keyword `LÖSCHEN` into `LÃ–SCHEN` (and the
+  Russian `УДАЛИТЬ` into mojibake): the client rejected the typed word, so
+  deleting a character could not be confirmed. The same corruption hit the
+  realm-name filter, which stripped umlauts instead of keeping them.
+- The delete prompts name the keyword in capitals ("LÖSCHEN wurde in
+  Großbuchstaben eingetragen…"), since the field is case-sensitive in practice.
+  All five localization files carry the reworded prompts (LÖSCHEN / DELETE /
+  EFFACER / BORRAR / УДАЛИТЬ) and the new announcements (list rebuild, unknown
+  screen, list may be incomplete) — the tool no longer types the keyword
+  itself, so a prompt that still said "press enter to confirm" would have
+  walked French, Spanish and Russian users into a failed deletion.
+- The character screen is no longer mistaken for the creation screen. The
+  helper recognizes the creation screen partly by darkness at a fixed point,
+  but that point sits on the 3D scene behind the UI - which is the selected
+  character's starting zone. A night elf's zone is dark enough (measured 3,2,4
+  against 0,0,0 on the real creation screen) to fire the marker, so the helper
+  reported charselect AND charcreate at once and settled on charcreate. The
+  tool then escaped out of the "creation screen", which opened WoW's own menu -
+  a screen it does not know, so it fell silent right after announcing login
+  mode. On the real creation screen charselect is never set, so it now settles
+  the tie (`IsCharCreateScreen`, sense.ahk). This hit every night elf, not just
+  newly created ones.
+- A creation in progress is left alone. Tabbing away and back re-initialized
+  the tool, which escaped out of the creation screen the user was naming a
+  character on, and then waited 30 s for a creation that could no longer
+  finish - indistinguishable from a hang.
+- The tool never goes silent. On a screen it has no marker for - WoW's own
+  menu is the common one - it used to do nothing at all, which leaves a blind
+  user unable to tell "thinking" from "dead"; it now says so and names the way
+  out (close the dialog, Alt+F1 twice). Pressing Alt+F1 twice on such a screen
+  was silent for the same reason and now answers too.
+- A list that could not be counted says so ("may be incomplete") instead of
+  presenting the nine visible characters as the whole realm.
+- Every count is announced ("the character list is being rebuilt") - after
+  login, creating, deleting and realm switching alike - so the seconds of
+  silence are explained. The walk no longer beeps; the announcement replaces it.
+  Wait beeps remain where the tool waits without an announcement (for the
+  creation screen, for the realm dialog).
+- Rebuilding the menu waits for the character highlight instead of walking a
+  screen that is still busy. Five call sites could hit a screen that was not
+  ready - a dialog still covering the list, or the list still being drawn - and
+  each silently fell back to the visible section.
+- Cancelling a creation no longer re-counts the whole list: nothing changed, so
+  the walk was seconds wasted.
+- Realm switching reads the live realm list (all regions/languages);
+  hardcoded realm tables removed.
+- Popups spoken verbatim; delete confirmation types the localized keyword
+  (deDE/enEN/frFR/ruRU/esES).
+- Fiducial texture redesign: dark-red buttons, dark-blue selection bar,
+  unique char-create marker — OCR-readable and low-vision friendly.
+- Readable font override (Atkinson Hyperlegible, OFL) in `fonts\`.
+- SAPI: voice applied once (no swap race), deliberate purge-vs-queue,
+  configurable output device (`gAudioOutputMatch` in settings.ini),
+  errors logged.
+- Menu navigation interrupts the screen reader again when the voice is
+  SAPI2SR. That voice is a bridge, not a synthesizer: it hands the text to
+  NVDA and returns, so SAPI's queue is already empty and SVSFPurgeBeforeSpeak
+  purges nothing while NVDA reads every queued entry — arrowing down three
+  characters spoke all three (with a real voice such as Hedda the same purge
+  interrupts correctly). Purging announcements now call NVDA's own
+  cancelSpeech, via the controller client that ships with SAPI2SR. Queued
+  announcements (SayQueued) are untouched, as are real voices.
+- Addons menu removed (the Sku installer handles addon enabling);
+  "select region" restored as menu item 9.
+- Legacy v1 tool retained as fallback (`START.ahk`).
+
+## [r1.16](https://github.com/Duugu/WoW-Login-Tool/tree/r1.16) (2025-02-17)
+[Full Changelog](https://github.com/Duugu/WoW-Login-Tool/compare/r1.15...r1.16) [Previous Releases](https://github.com/Duugu/WoW-Login-Tool/releases)
+
+- 	r1.16 		- Fixed a bug with character creation on Classic Era.  

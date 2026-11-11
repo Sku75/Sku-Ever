@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sku TBC - Screen Reader Interface for World of Warcraft The Burning Crusade</title>
+    <meta name="description" content="Sku makes World of Warcraft The Burning Crusade Anniversary playable with a screen reader. Downloads, installer and guides for blind and visually impaired players.">
+    <link rel="stylesheet" href="sku.css">
+    <link rel="alternate" hreflang="en" href="https://sku75.github.io/Sku-WoW-Addon-TBC/index.html">
+    <link rel="alternate" hreflang="de" href="https://sku75.github.io/Sku-WoW-Addon-TBC/index-de.html">
+    <link rel="alternate" hreflang="fr" href="https://sku75.github.io/Sku-WoW-Addon-TBC/index-fr.html">
+    <link rel="alternate" hreflang="x-default" href="https://sku75.github.io/Sku-WoW-Addon-TBC/index.html">
+    <script>
+    /* This page is the entry point, so it is where the language is decided.
+       Order: an explicit ?lang= wins and is remembered, then an earlier
+       choice, then the browser's own language list. English stays put.
+       The translations do NOT redirect - a link someone was handed must
+       open the page it names.  Without JavaScript nothing happens and the
+       language links at the top of the page do the job by hand. */
+    (function () {
+        var codes = ['en', 'de', 'fr'];
+        var pages = ['index.html', 'index-de.html', 'index-fr.html'];
+        var here = 'en';
+        function idx(v) { return codes.indexOf(String(v || '').slice(0, 2).toLowerCase()); }
+        try {
+            var i = idx((location.search.match(/[?&]lang=([a-zA-Z-]+)/) || [])[1]);
+            if (i >= 0) {
+                localStorage.setItem('sku-lang', codes[i]);
+                if (codes[i] !== here) { location.replace(pages[i]); }
+                return;
+            }
+            i = idx(localStorage.getItem('sku-lang'));
+            if (i < 0) {
+                var list = navigator.languages || [navigator.language || ''];
+                for (var n = 0; n < list.length && i < 0; n++) { i = idx(list[n]); }
+            }
+            if (i >= 0 && codes[i] !== here) { location.replace(pages[i]); }
+        } catch (e) { /* private mode, no storage: stay on this page */ }
+    })();
+    </script>
+</head>
+<body>
+
+<a class="skiplink" href="#main">Skip to the page content</a>
+
+<nav aria-label="Page language">
+    <ul class="langnav">
+        <li><span aria-current="page">English</span></li>
+        <li><a href="index-de.html?lang=de" lang="de" hreflang="de">Deutsch</a></li>
+        <li><a href="index-fr.html?lang=fr" lang="fr" hreflang="fr">Fran&ccedil;ais</a></li>
+    </ul>
+</nav>
+
+<h1>Sku TBC - Screen Reader Interface for World of Warcraft The Burning Crusade</h1>
+
+<p>
+    Sku is a World of Warcraft addon that provides a complete screen reader interface,
+    making the game accessible for blind and visually impaired players.
+    It works with screen readers like NVDA and JAWS.
+</p>
+
+<main id="main">
+
+<nav aria-labelledby="onthispage">
+    <h2 id="onthispage">On this page</h2>
+    <ul class="toc">
+        <li><a href="#installer">Automated installation (recommended)</a></li>
+        <li><a href="#docs">Documentation and help</a></li>
+        <li><a href="#patchnotes">Patch notes</a></li>
+        <li><a href="#manual">Manual installation</a></li>
+        <li><a href="#downloads">Required downloads</a></li>
+        <li><a href="#languagepack">Language pack</a></li>
+        <li><a href="#optional">Optional extensions</a></li>
+        <li><a href="#logintool">Start menu (Login Tool)</a></li>
+        <li><a href="#mapper">Mapping tool (for sighted mappers)</a></li>
+    </ul>
+</nav>
+
+<h2 id="installer">Automated Installation (recommended)</h2>
+<h3>Sku Installer - Version 5.6</h3>
+<p>The Sku Installer is a small, screen-reader-friendly Windows program that does the whole addon setup for you: it finds your World of Warcraft folder, downloads Sku together with all required companion addons, copies everything into place, and switches on the game settings Sku needs. It also sets up the WoW Login Tool (see below) including its login-screen textures, fonts and the AutoHotkey runtime, and keeps it up to date on later runs. This is the easiest way to install or update Sku. When Windows asks, allow it to run as administrator.</p>
+<p>The installer speaks English, German and French; it picks its language from Windows and you can change it at any time in the "Language of this installer" list.</p>
+<p><a class="download-link" href="https://github.com/Sku75/Sku-WoW-Addon-TBC/releases/latest/download/SkuInstaller.exe">Download Sku Installer (Windows)</a></p>
+<p><a class="download-link" href="https://github.com/Sku75/Sku-WoW-Addon-TBC/releases/latest/download/Install-SkuUpdater-macOS.zip">Download Sku Installer (macOS)</a></p>
+<p>The macOS installer is new and fully usable with VoiceOver. On first launch macOS may ask you to allow it once via "Open Anyway" in Privacy &amp; Security.</p>
+<p>You still need the game itself installed first, and sighted help once for the Battle.net login screens and the in-game license agreement &mdash; see the manual installation guide below for those steps.</p>
+<p>The installer has its own version number, separate from the Sku addon version below. The download link above always gives you the newest installer, whichever Sku version is current.</p>
+
+<h2 id="docs">Documentation &amp; Help</h2>
+<p>Guides for setting up and playing Sku.</p>
+
+<section>
+    <h3>First Steps &mdash; complete setup guide</h3>
+    <p>The full walkthrough for a blind player, from creating a Battle.net account to installing Sku and playing &mdash; using the automated installer. Choose your language:</p>
+    <p><a class="download-link" href="First-Steps-English.html">First Steps (English)</a></p>
+    <p><a class="download-link" href="First-Steps-Deutsch.html" lang="de">Erste Schritte (Deutsch)</a></p>
+    <p><a class="download-link" href="First-Steps-Russian.html" lang="ru">&#1055;&#1077;&#1088;&#1074;&#1099;&#1077; &#1096;&#1072;&#1075;&#1080; (&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081;)</a></p>
+</section>
+
+<section>
+    <h3>How to play &mdash; standard key bindings</h3>
+    <p>The recommended keyboard layout for blind players: movement, targeting, wingman play and looting, audio-beacon navigation, professions and soft-targeting. This is the layout the addon sets when you reset the Sku key bindings.</p>
+    <p><a class="download-link" href="Key-Bindings-English.txt" download>Key bindings (English)</a></p>
+    <p><a class="download-link" href="Tastenbelegung-Deutsch.txt" lang="de" download>Tastenbelegung (Deutsch)</a></p>
+    <p><a class="download-link" href="Raccourcis-Francais.txt" lang="fr" download>Raccourcis clavier (Fran&ccedil;ais)</a></p>
+</section>
+
+<section id="patchnotes">
+    <h3>Patch notes</h3>
+    <p>What changed in each Sku version, as web pages you can read with headings and links &mdash; one page per version, newest first. The French notes start at v42.11, the release Sku began speaking French; older versions are in the English and German notes.</p>
+    <p><a class="download-link" href="patchnotes/en/v43.10.html">What is new in Sku v43.10</a></p>
+    <p><a class="download-link" href="patchnotes/en/index.html">All patch notes (English)</a></p>
+    <p><a class="download-link" href="patchnotes/de/index.html" lang="de">Alle Patchnotes (Deutsch)</a></p>
+    <p><a class="download-link" href="patchnotes/fr/index.html" lang="fr">Toutes les notes de version (Fran&ccedil;ais)</a></p>
+</section>
+
+<h2 id="manual">Manual Installation</h2>
+<p>Prefer to install everything by hand, or want the full step-by-step walkthrough? Download the guide in your language:</p>
+<p><a class="download-link" href="Installation-Guide-English.txt" download>Manual installation guide (English)</a></p>
+<p><a class="download-link" href="Installationsanleitung-Deutsch.txt" lang="de" download>Anleitung zur manuellen Installation (Deutsch)</a></p>
+
+<div class="crosslink">
+    Looking for the Classic Era version? <a href="https://sku75.github.io/Sku-WoW-Addon-Era/">Go to the Sku Era version here.</a>
+</div>
+
+<div class="notice">
+    <strong>Notice:</strong> The addon versions on this page are for World of Warcraft &ndash; The Burning Crusade Anniversary Server.
+</div>
+
+<div class="notice">
+    <strong>Updating to a new version?</strong> You must replace <strong>all</strong> Sku addons in your WoW AddOns folder &mdash; not just the main addon. Download everything listed on this page and replace your existing files. Leaving old versions of Sku addons alongside a new one can cause errors.
+</div>
+
+<h2 id="downloads">Required Downloads</h2>
+
+<p>You need both of these addons to use Sku. Download and install them into your WoW AddOns folder.</p>
+
+<section>
+    <h3>Sku (Main Addon) - Version 43.10</h3>
+    <p>The core addon that provides the screen reader interface.</p>
+    <a class="download-link" href="https://github.com/Sku75/Sku-WoW-Addon-TBC/releases/download/v43.10/Sku-43.10.zip">Download Sku v43.10</a>
+</section>
+
+<section>
+    <h3>SkuBeaconSoundsets</h3>
+    <p>Required sound sets for Sku's audio beacon navigation system.</p>
+    <a class="download-link" href="https://github.com/Sku75/Sku-WoW-Addon-TBC/releases/download/v41.02.05/SkuBeaconSoundsets.zip">Download SkuBeaconSoundsets</a>
+</section>
+
+<h2 id="languagepack">Language Pack (choose one)</h2>
+
+<p>Choose the language pack that matches your preferred language. You only need one of these. There is no French voice pack yet: on a French client Sku speaks through your screen reader, and the English pack is the right choice there.</p>
+
+<section>
+    <h3>English</h3>
+    <a class="download-link" href="https://github.com/Sku75/Sku-WoW-Addon-TBC/releases/download/v41.02.05/SkuAudioData_en.zip">Download SkuAudioData English</a>
+</section>
+
+<section>
+    <h3>German (Deutsch)</h3>
+    <a class="download-link" href="https://github.com/Sku75/Sku-WoW-Addon-TBC/releases/download/v41.02.05/SkuAudioData.zip">Download SkuAudioData German</a>
+</section>
+
+<section>
+    <h3>German Fast (Deutsch schnell)</h3>
+    <p>German language pack with faster speech output.</p>
+    <a class="download-link" href="https://github.com/Sku75/Sku-WoW-Addon-TBC/releases/download/v41.02.05/SkuAudioData_fast_de.zip">Download SkuAudioData German Fast</a>
+</section>
+
+<h2 id="optional">Optional Extensions</h2>
+
+<p>These are additional sound packs that add more beacon sounds. They are not required to use Sku.</p>
+
+<section>
+    <h3>SkuCustomBeaconsEssential</h3>
+    <p>A small collection of essential custom beacon sounds.</p>
+    <a class="download-link" href="https://github.com/Sku75/Sku-WoW-Addon-TBC/releases/download/v41.02.05/SkuCustomBeaconsEssential.zip">Download SkuCustomBeaconsEssential</a>
+</section>
+
+<section>
+    <h3>SkuCustomBeaconsAdditional</h3>
+    <p>A larger collection of additional custom beacon sounds.</p>
+    <a class="download-link" href="https://github.com/Sku75/Sku-WoW-Addon-TBC/releases/download/v41.02.05/SkuCustomBeaconsAdditional.zip">Download SkuCustomBeaconsAdditional</a>
+</section>
+
+<h2 id="logintool">Start Menu (Login Tool)</h2>
+
+<section>
+    <h3>WoW Login Tool 4.1 (originally by Yennister)</h3>
+    <p>Here is the current start menu tool. It helps with login, character creation, character selection and server selection. Version 2 reads the actual screen content (character names, realm lists and popups) out loud via OCR. Supported game versions: The Burning Crusade Anniversary, Classic Era and, since 4.0, WoW Forever. On WoW Forever the game's own screen narration reads the screens and the tool moves the cursor for you with the arrow keys, including the complete character creation with all appearance options. Please read the included readme files. The automated installer above sets it up for you, including the required login-screen textures, fonts and the AutoHotkey runtime.</p>
+    <a class="download-link" href="https://github.com/Sku75/Sku-WoW-Addon-TBC/releases/download/login-tool/WoW-Login-Tool.zip">Download WoW Login Tool</a>
+</section>
+
+<h2 id="mapper">Mapping Tool (for sighted mappers)</h2>
+
+<section>
+    <h3>SkuMapper 5.0</h3>
+    <p>A visible tool for sighted helpers to create and edit Sku map data (waypoints and routes). In game, open the map via the "Open Sku Minimap" keybinding (Key Bindings, "Other" category); import and export map data with /sku import and /sku export.</p>
+    <a class="download-link" href="https://github.com/Sku75/Sku-WoW-Addon-TBC/releases/download/skumapper-5.0/SkuMapper-5.0.zip">Download SkuMapper 5.0</a>
+</section>
+
+</main>
+
+<hr>
+
+<footer>
+    <p>Sku is an open source project. For questions and support, visit the
+    <a href="https://github.com/Sku75/Sku-WoW-Addon-TBC">GitHub repository</a>.</p>
+</footer>
+
+</body>
+</html>

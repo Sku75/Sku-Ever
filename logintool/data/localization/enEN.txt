@@ -1,0 +1,178 @@
+﻿English==English
+German / Deutsch==German
+French / Français==French
+Russian / Русский==Russian
+Spanish / Español==Spanish
+Setup completed. Start the game now.==Setup completed. Start the game now.
+selected==selected
+go right to select a voice==Go right to select a voice
+go right to select a game type==Go right to select a game type
+go right to select a language==Go right to select a language
+pause mode==Pause mode
+play mode==Play mode
+login mode==Login mode
+login mode for==Login mode for
+script exited==Terminated
+select language==Select language
+main menu==Main menu
+selected, restart script to apply==selected. Restarting script to apply. Please wait.
+wait==Wait
+go right to select a region==Go right to select a region
+Europe==Europe
+USA==USA
+Cata==Cataclysm
+Classic==Classic Era
+BurningCrusade==Burning Crusade
+Retail==Retail
+Not_available==Not_available
+Something went wrong. Please restart the game and try again.==Something went wrong. Please restart the game and try again.
+you don't have any characters on the selected server==You don't have any characters on the selected server
+character==character
+selected==selected
+this race is locked for your account. Try a different race.==This race is locked for your account. Try a different race.
+create new character==Create new character
+login with selected character==Login with selected character
+select character==Select character
+enter the name for the new character and press enter, or escape to cancel character creation.==Enter the name for the new character and press enter, or escape to cancel character creation.
+Failed You already have the maximum number of character on this server.==Failed. You already have the maximum number of character on this server.
+switching to server. please wait.==Changing server. Please wait.
+Deleting failed. Type delete again and press enter, or press escape to cancel the deleting process.==Deleting failed. Type the word DELETE in capital letters and press enter. Or press escape to cancel.
+character deleted==Character deleted
+Please wait, the character list is being rebuilt.==Please wait, the character list is being rebuilt.
+Failed. The name is not available, or the names format is not allowed.==Failed. The name is not available, or the name is not allowed.
+Character created==Character created
+Empty - No characters on this server.==Empty. No characters on this server.
+switch server==Change server
+select region==Select region
+select game type==Select game type
+select voice==Select voice
+enter delete and press enter, or press escape to cancel the deleting process.==Enter Delete and press enter, or press escape to cancel the deleting process.
+press enter to confirm the deletion, or press escape to cancel.==Type the word DELETE in capital letters and press enter. Or press escape to cancel.
+delete character==Delete character
+switched to Server==Server changed
+Could not switch server.==Could not switch server.
+The server is full. You are in queue.==The server is full. You are in the queue.
+Please wait.==Please wait.
+Creation is canceled. Please wait.==Creation is canceled. Please wait.
+Deleting is canceled. Please wait==Deleting is canceled. Please wait
+setup mode==Setup mode
+server full. Waiting in queue.==The server is full. You are in the queue.
+character number:==Character number:
+Fail. Client is reporting incorrect language.==Failed. Client is reporting an incorrect client language for this server. Server not switched.
+Exile's_Reach==Exile's Reach
+Race_starting_zone==Race starting zone
+male==male
+female==female
+Alliance==Alliance
+Horde==Horde
+Human==Human
+Dwarf==Dwarf
+Night_Elf==Night Elf
+Gnome==Gnome
+Draenei==Draenei
+Worgen==Worgen
+Pandaren_(Alliance)==Pandaren (Alliance)
+Dracthyr_(Alliance)==Dracthyr (Alliance)
+Void_Elf==Void Elf
+Light_Forge_Draenei==Light Forge Draenei
+Dark_Iron_Dwarf==Dark Iron Dwarf
+Kul_Tiran==Kul Tiran
+Mecha_Gnome==Mecha Gnome
+Orc==Orc
+Undead==Undead
+Tauren==Tauren
+Troll==Troll
+Blood_Elf==Blood Elf
+Goblin==Goblin
+Pandaren_(Horde)==Pandaren (Horde)
+Dracthyr_(Horde)==Dracthyr (Horde)
+Night_Borne==Night Borne
+High_Mountain_Tauren==High Mountain Tauren
+Mag_Har_Ork==Mag Har Ork
+Zandalari_Troll==Zandalari Troll
+Vulpera==Vulpera
+Warrior==Warrior
+Hunter==Hunter
+Mage==Mage
+Rogue==Rogue
+Priest==Priest
+Warlock==Warlock
+Paladin==Paladin
+Druid==Druid
+Shaman==Shaman
+Monk==Monk
+Demon_Hunter==Demon Hunter
+Death_Knight==Death Knight
+Evoker==Evoker
+Version==Version
+Anniversary==Anniversary
+hardcore==hardcore
+hardcore_pve==hardcore_pve
+hardcore_pvp==hardcore_pvp
+hardcore_rp==hardcore_rp
+addons==Addons
+activate all addons==Activate all addons
+deactivate all addons==Deactivate all addons
+load out of date addons==Load out of date addons
+yes==Yes
+no==No
+all addons activated==All addons activated
+all addons deactivated==All addons deactivated
+out of date addons will be loaded==Out of date addons will be loaded
+out of date addons will not be loaded==Out of date addons will not be loaded
+addon menu only available on character selection screen==The addon menu is only available on the character selection screen
+Unknown screen. Close the dialog in the game, then press Alt F1 twice.==Unknown screen. Close the dialog in the game, then press Alt F1 twice.
+The screen recognition textures are missing from the game folder. Please run the Sku installer to reinstall the login tool.==The screen recognition textures are missing from the game folder. Please run the Sku installer to reinstall the login tool.
+Login tool version==Login tool version
+The character list may be incomplete. Press Alt F1 twice to rebuild it.==The character list may be incomplete. Press Alt F1 twice to rebuild it.
+The game has opened the server selection.==The game has opened the server selection.
+close server selection==close server selection
+server selection closed==server selection closed
+The tool does not know this dialog yet. Answer it in the game.==The tool does not know this dialog yet. Answer it in the game.
+Press Enter to agree, or press Escape to decline.==Press Enter to agree, or press Escape to decline.
+Agreed. Connecting to the server. Please wait.==Agreed. Connecting to the server. Please wait.
+Declined.==Declined.
+select category==select category
+this category holds no servers==This category holds no servers.
+the server list did not load. please try again.==The server list did not load. Please try again.
+The game is still connecting. Press Escape to cancel.==The game is still connecting. Press Escape to cancel.
+the server list may be incomplete.==The server list may be incomplete.
+This game version is not supported yet.==This game version is not supported yet.
+game version detected==game version detected
+detect game type automatically==detect game type automatically
+game type is detected automatically now==Game type is detected automatically now.
+login screen, not logged in==Login screen, not logged in
+Not logged in. Either there is no connection to the server, or account name and password still have to be entered in the game.==Not logged in. Either there is no connection to the server, or account name and password still have to be entered in the game.
+account name==Account name
+password==Password
+log in==Log in
+save account name==Save account name
+empty==empty
+on==on
+off==off
+Type now. Enter ends the entry, Escape leaves it.==Type now. Enter ends the entry, Escape leaves it.
+Type now. The password is never read back. Enter ends the entry, Escape leaves it.==Type now. The password is never read back. Enter ends the entry, Escape leaves it.
+Entry ended.==Entry ended.
+Logging in. Please wait.==Logging in. Please wait.
+The login did not go through.==The login did not go through.
+This is not available on this screen.==This is not available on this screen.
+No characters on this realm yet.==No characters on this realm yet.
+The server was not found in the list. The list is being read again.==The server was not found in the list. The list is being read again.
+Attention. The game is on a different server:==Attention. The game is on a different server:
+Change the server again before you play here.==Change the server again before you play here.
+Agreed. Please wait.==Agreed. Please wait.
+The game is starting. Please wait.==The game is starting. Please wait.
+The hardcore rules are still open.==The hardcore rules are still open.
+Blizzard's social contract is open. Accepting it, please wait.==Blizzard's social contract is open. Accepting it, please wait.
+Social contract accepted.==Social contract accepted.
+The social contract could not be accepted. Sighted help is needed once: scroll the text to the end and press accept.==The social contract could not be accepted. Sighted help is needed once: scroll the text to the end and press accept.
+The PvP realm warning is still open.==The PvP realm warning is still open.
+no voices found, press enter to keep the system voice==No voices found, press Enter to keep the system voice
+keeping the system voice==Keeping the system voice
+this voice does not work, choose another one==This voice does not work, choose another one
+Forever==WoW Forever
+Forever mode: the game reads the screen itself. Press Control Alt F3 to save a screenshot for calibration.==Forever mode: the game reads the screen itself. Press Control Alt F3 to save a screenshot for calibration.
+screenshot saved==screenshot saved
+narration settings written for Forever==narration settings written for Forever
+nothing to select on this screen==nothing to select on this screen
+typing mode, Enter or Escape to leave==typing mode, Enter or Escape to leave
