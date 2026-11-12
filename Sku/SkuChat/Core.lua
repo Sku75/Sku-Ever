@@ -4808,7 +4808,7 @@ function SkuChat:InitTab(tNewTabIndex)
 				-- Blizzard TTS. tVoice (per-category/channel, 1-based index) rides
 				-- along on the queued string and overrides the global voice for
 				-- just this line; nil => global voice (unchanged legacy behaviour).
-				SkuOptions.Voice:OutputStringBTtts(tFlatBody, {wait = true, length = 0.2, engine = 2, voice = tVoice, protect = Sku.isForever or nil})
+				SkuOptions.Voice:OutputStringBTtts(tFlatBody, {wait = true, length = 0.2, engine = 2, voice = tVoice})
 			elseif tAudio == skuTts and not tIsBareAuctionCreated then
 				-- Sku's own TTS (pre-recorded audio-file engine).
 				SkuOptions.Voice:OutputString(tFlatBody, false, true, 0.2)
