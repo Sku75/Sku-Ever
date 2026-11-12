@@ -14,6 +14,8 @@ local HideQuestLog = Sku.Compat.HideQuestLog
 local SelectQuestLogEntry = Sku.Compat.SelectQuestLogEntry
 local SetAbandonQuest = Sku.Compat.SetAbandonQuest
 local AbandonQuest = Sku.Compat.AbandonQuest
+local GetQuestLogPushable = Sku.Compat.GetQuestLogPushable
+local QuestLogPushQuest = Sku.Compat.QuestLogPushQuest
 
 local PLAYER_ENTERING_WORLD_flag = true
 
@@ -349,7 +351,11 @@ function SkuQuest:OnDisable()
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
-function SkuQuest:OnSkuQuestPush()
+function SkuQuest:OnSkuQuestPush(aQuestID)
+	-- Forever: the quest chosen in the menu (quest ID) becomes the selected one, the share acts on it
+	if aQuestID and C_QuestLog and C_QuestLog.SetSelectedQuest and C_QuestLog.GetLogIndexForQuestID and C_QuestLog.GetLogIndexForQuestID(aQuestID) then
+		C_QuestLog.SetSelectedQuest(aQuestID)
+	end
 	if (GetQuestLogPushable()) then
 		QuestLogPushQuest()
 		SkuOptions.Voice:OutputStringBTtts(L["quest;geteilt"], true, true, 0.2, true)

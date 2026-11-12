@@ -9,6 +9,7 @@
 --   wpSize (optional, 1-5) size of the route waypoints = how close one must get to count as reached (SkuNavWpSize); default 1
 --   idBase/idSize reserved dbIndex block for the pack's route waypoints (custom waypoint range, below 200000)
 --   route         {{id, x, y}, ...}                  route waypoints (world coordinates)
+--   routeSize     {routeId, size, ...}               optional, flat: waypoints whose size differs from wpSize (from the data's arrival radius)
 --   links         {a, b, length, dir, ...}           flat; a/b are route ids, dir 0 both ways, 1 a->b only, 2 b->a only
 --   spawns        {{type, gameId, spawnNr, x, y, nameEn, nameDe, roleEn, roleDe, pctX, pctY, dbId}, ...}
 --                 type 2 = creature, 3 = object; the wpId is built like Sku's own creature/object waypoints
@@ -27,7 +28,8 @@
 --                 exits) that are tied to Sku's own network. Pack route waypoints are never a target of that tying.
 --                 bridge (yards, optional): EVERY route waypoint of the pack is tied to the nearest route waypoint of Sku's own
 --                 network within that distance (one link, both ways; none when nothing is that close), so the pack network and
---                 Sku's older network of the same area form one network where they overlap.
+--                 Sku's older network of the same area form one network where they overlap. bridgeAreas = {areaId, ...}
+--                 (optional) adds the Sku waypoints of those other areaIds as bridge targets (a city split over districts).
 --
 -- The pack only ADDS: existing waypoints, names and ids are never replaced (collisions are skipped and counted).
 -- Without a pack nothing here runs.
@@ -197,16 +199,28 @@ local function tApplyPack(aPackName, aPack)
 
 	-- route waypoints
 	local tRouteIndex = {}
+	-- routeSize (optional) = {routeId, size, ...}: waypoints whose size differs from wpSize (the arrival radius of the data
+	-- per waypoint: narrow passages get a small size, open ground a large one)
+	local tRouteSize = {}
+	if type(aPack.routeSize) == "table" then
+		for i = 1, #aPack.routeSize - 1, 2 do
+			local tSz = aPack.routeSize[i + 1]
+			if type(tSz) == "number" and tSz >= 1 and tSz <= 5 then
+				tRouteSize[aPack.routeSize[i]] = tSz
+			end
+		end
+	end
 	for _, tR in ipairs(aPack.route) do
 		local tId = tR[1]
 		if tId >= 0 and tId < aPack.idSize then
 			local tWpId = SkuNav:BuildWpIdFromData(1, aPack.idBase + tId, 1, tAreaId)
-			local tIndex = tNewRecord("auto " .. tRouteZone .. ";" .. (tId + 1), 1, tWpId, tR[2], tR[3], nil, tonumber(aPack.wpSize))
+			local tIndex = tNewRecord("auto " .. tRouteZone .. ";" .. (tId + 1), 1, tWpId, tR[2], tR[3], nil, tRouteSize[tId] or tonumber(aPack.wpSize))
 			if tIndex then
 				tRouteIndex[tId] = tIndex
 				tStats.route = tStats.route + 1
 				if aPack.existingArea and type(aPack.bridge) == "number" and aPack.bridge > 0 then
 					SkuNav.navPackBridge[tIndex] = aPack.bridge
+					SkuNav.navPackBridgeAreas[tAreaId] = aPack.bridgeAreas
 					SkuNav.navPackAttachForce[tAreaId] = SkuNav.navPackAttachForce[tAreaId] or {}
 					table.insert(SkuNav.navPackAttachForce[tAreaId], tIndex)
 				end
@@ -239,6 +253,20 @@ local function tApplyPack(aPackName, aPack)
 				tAddLink(tCache[tB], tA, tLen)
 			end
 			tStats.links = tStats.links + 1
+		end
+	end
+
+	-- explicit, checked seams to Sku's own network (bridgeLinks, flat: routeId, areaId, skuIndex, length, ...): the pack
+	-- route waypoint is tied to exactly that Sku route waypoint (id = Sku's own wp id, index is 1-based in WaypointsNew).
+	-- The link itself is made in SkuNav:AttachPackSpawns, when Sku's own links exist. Built and validated offline.
+	local tBL = aPack.bridgeLinks
+	if type(tBL) == "table" then
+		SkuNav.navPackBridgeLinks = SkuNav.navPackBridgeLinks or {}
+		for i = 1, #tBL - 3, 4 do
+			local tRouteIdx = tRouteIndex[tBL[i]]
+			if tRouteIdx then
+				table.insert(SkuNav.navPackBridgeLinks, {pack = aPackName, route = tRouteIdx, skuId = SkuNav:BuildWpIdFromData(1, tBL[i + 2], 1, tBL[i + 1]), len = tBL[i + 3]})
+			end
 		end
 	end
 
@@ -302,6 +330,8 @@ function SkuNav:ApplyNavPacks()
 	SkuNav.navPackAttachList = {}
 	SkuNav.navPackAttachForce = {}
 	SkuNav.navPackBridge = {}
+	SkuNav.navPackBridgeAreas = {}
+	SkuNav.navPackBridgeLinks = {}
 	for _, tEntry in ipairs(SkuNav:GetNavPacks()) do
 		local tStats = tApplyPack(tEntry.name, tEntry.data)
 		if not tEntry.data.existingArea then
@@ -609,34 +639,73 @@ function SkuNav:AttachPackSpawns(aYield)
 			tTodoCount = tTodoCount + 1
 		end
 	end
+	-- explicit seams (bridgeLinks of the packs): tie each pack route waypoint to its Sku route waypoint, both ways
+	local tSeamStats = {total = 0, ok = 0, missing = 0, noLinks = 0}
+	for _, tB in ipairs(SkuNav.navPackBridgeLinks or {}) do
+		tSeamStats.total = tSeamStats.total + 1
+		local tSkuIdx = tLookupId[tB.skuId]
+		local tSkuRec = tSkuIdx and tCache[tSkuIdx]
+		if not tSkuRec then
+			tSeamStats.missing = tSeamStats.missing + 1
+		else
+			local tSkuLinks = rawget(tSkuRec, "links")
+			if not (tSkuLinks and tSkuLinks.byId and next(tSkuLinks.byId)) then
+				tSeamStats.noLinks = tSeamStats.noLinks + 1
+			else
+				tAddLink(tCache[tB.route], tSkuIdx, tB.len)
+				tAddLink(tSkuRec, tB.route, tB.len)
+				tSeamStats.ok = tSeamStats.ok + 1
+			end
+		end
+	end
+	SkuNav.navPackSeams = tSeamStats
+	if tSeamStats.total > 0 then
+		dprint("nav pack seams to Sku's network:", tSeamStats.ok, "of", tSeamStats.total, "missing", tSeamStats.missing, "without links", tSeamStats.noLinks)
+	end
 	SkuNav.navPackAttach = {todo = tTodoCount, attached = 0}
 	if tTodoCount == 0 then
 		return
 	end
 
 	-- 2) grid of the linked route waypoints in those areas
+	-- A pack's bridge reaches the Sku waypoints of its own area AND those of the areas it lists in bridgeAreas (a city
+	-- is split over several areaIds: districts, sub zones), so tTarget[areaId] = the zones whose grid takes that waypoint.
+	local tTarget = {}
+	for tZone in pairs(tTodo) do
+		tTarget[tZone] = tTarget[tZone] or {}
+		table.insert(tTarget[tZone], tZone)
+		for _, tOther in ipairs((SkuNav.navPackBridgeAreas and SkuNav.navPackBridgeAreas[tZone]) or {}) do
+			if tOther ~= tZone then
+				tTarget[tOther] = tTarget[tOther] or {}
+				table.insert(tTarget[tOther], tZone)
+			end
+		end
+	end
 	local tGrid = {}
 	for tIdx = 1, #tCache do
 		if aYield and tIdx % 20000 == 0 then
 			aYield()
 		end
 		local tRec = tCache[tIdx]
-		if tRec and tRec.typeId == 1 and tTodo[tRec.areaId] and not rawget(tRec, "pack") then
+		local tZones = tRec and tRec.typeId == 1 and tTarget[tRec.areaId]
+		if tZones and not rawget(tRec, "pack") then
 			local tLinks = rawget(tRec, "links")
 			if tLinks and tLinks.byId and next(tLinks.byId) then
 				local tCx, tCy = math.floor(tRec.worldX / ATTACH_CELL), math.floor(tRec.worldY / ATTACH_CELL)
-				local tArea = tGrid[tRec.areaId]
-				if not tArea then
-					tArea = {}
-					tGrid[tRec.areaId] = tArea
-				end
 				local tKey = tCx * 65536 + tCy
-				local tCell = tArea[tKey]
-				if not tCell then
-					tCell = {}
-					tArea[tKey] = tCell
+				for _, tZone in ipairs(tZones) do
+					local tArea = tGrid[tZone]
+					if not tArea then
+						tArea = {}
+						tGrid[tZone] = tArea
+					end
+					local tCell = tArea[tKey]
+					if not tCell then
+						tCell = {}
+						tArea[tKey] = tCell
+					end
+					tCell[#tCell + 1] = tIdx
 				end
-				tCell[#tCell + 1] = tIdx
 			end
 		end
 	end
@@ -763,6 +832,48 @@ local function tDiagOut(aText)
 	dprint("skupackdiag", aText)
 end
 
+function SkuNav:PackProbe()
+	-- Messung 12.11.2026: Anleger Sturmwind (Objekt 390005) erreichbar? Kuerzester Weg vom Anleger bis zum Spieler.
+		local tCache2, _, tLookup2 = SkuNav:GetWpCacheInternals()
+		local tPx, tPy = UnitPosition("player")
+		for _, tProbe in ipairs({{3, 390005, 1, 1519, "Anleger"}, {3, 390004, 1, 1519, "Am Schiff"}}) do
+			local tI = tLookup2[SkuNav:BuildWpIdFromData(tProbe[1], tProbe[2], tProbe[3], tProbe[4])]
+			local tRec = tI and tCache2[tI]
+			if not tRec then
+				tDiagOut("Messung " .. tProbe[5] .. ": Eintrag nicht im Cache")
+			else
+				local tLinks = rawget(tRec, "links")
+				local tN = 0
+				for _ in pairs((tLinks and tLinks.byId) or {}) do tN = tN + 1 end
+				local tDist, tHeap, tReached, tBestD, tBestName = {[tI] = 0}, {{0, tI}}, 0, nil, nil
+				while #tHeap > 0 do
+					local tBi = 1
+					for k = 2, #tHeap do if tHeap[k][1] < tHeap[tBi][1] then tBi = k end end
+					local tTop = table.remove(tHeap, tBi)
+					local tD, tU = tTop[1], tTop[2]
+					if tD <= tDist[tU] then
+						tReached = tReached + 1
+						local tR = tCache2[tU]
+						if tR.typeId == 1 and not rawget(tR, "pack") and tPx then
+							local tdx, tdy = tR.worldX - tPx, tR.worldY - tPy
+							local tE = math.sqrt(tdx * tdx + tdy * tdy)
+							if tE < 25 and (not tBestD or tD < tBestD) then tBestD, tBestName = tD, tR.name end
+						end
+						local tL = rawget(tR, "links")
+						for tV, tLen in pairs((tL and tL.byId) or {}) do
+							local tNd = tD + tLen
+							if tNd < 4000 and (not tDist[tV] or tDist[tV] > tNd) then
+								tDist[tV] = tNd
+								tHeap[#tHeap + 1] = {tNd, tV}
+							end
+						end
+					end
+				end
+				tDiagOut("Messung " .. tProbe[5] .. ": " .. tN .. " Verbindungen, bis 4000 yd erreichbar " .. tReached .. " Wegpunkte, Weg bis ans Netz neben dir: " .. tostring(tBestD and math.floor(tBestD) or "keiner"))
+			end
+		end
+end
+
 function SkuNav:PackDiagnose()
 	local tUiMap = SkuNav.Geo:GetBestMapForUnit("player")
 	local tArea = SkuNav.Geo:GetAreaIdFromUiMapId(tUiMap)
@@ -774,6 +885,11 @@ function SkuNav:PackDiagnose()
 	for tName, tS in pairs(SkuNav.navPacksApplied or {}) do
 		tDiagOut("Wegpack " .. tName .. ": " .. tS.route .. " Wegpunkte, " .. tS.links .. " Verbindungen, uebersprungen " .. tS.skipped)
 	end
+	local tSeams = SkuNav.navPackSeams
+	if tSeams and tSeams.total > 0 then
+		tDiagOut("Naehte zu Skus Netz: " .. tSeams.ok .. " von " .. tSeams.total .. " verbunden, Wegpunkt fehlt " .. tSeams.missing .. ", ohne Verbindungen " .. tSeams.noLinks)
+	end
+	SkuNav:PackProbe()
 	local tAttach = SkuNav.navPackAttach
 	if tAttach then
 		tDiagOut("Neue Spawns in Gebieten ohne Wegpack: " .. tAttach.todo .. " ohne Verbindung, " .. tAttach.attached .. " ans Netz gehaengt")

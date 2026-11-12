@@ -2049,7 +2049,7 @@ local function CreateQuestSubmenu(aParent, aQuestID)
 				local tNewMenuEntryShare = SkuOptions:InjectMenuItems(aParent, {L["Share quest"]}, SkuGenericMenuItem)
 				tNewMenuEntryShare.dynamic = false
 				tNewMenuEntryShare.OnAction = function(self, aValue, aName)
-					SkuQuest:OnSkuQuestPush()
+					SkuQuest:OnSkuQuestPush(aQuestID)
 				end
 				tHasEntries = true
 			end

@@ -678,7 +678,9 @@ function SkuMob:PLAYER_TARGET_CHANGED(event, aUnitId)
 		-- [Forever] In an instance the threat and target-of-target answers above can be nil or unusable for an enemy, so the
 		-- "in combat" beep stayed silent. The unit's own combat flag is not secret there (same reading the nameplate enemy
 		-- counter in aqCombat.lua relies on).
-		if not status and Sku.isForever and UnitCanAttack("player", aUnitId) then
+		-- Only in an instance (there every enemy in combat fights the group, same rule as the nameplate counter in aqCombat.lua).
+		-- In the open world the threat check above answers, and an enemy that only fights a STRANGER must stay silent.
+		if not status and Sku.isForever and IsInInstance() and UnitCanAttack("player", aUnitId) then
 			local tUnitInCombat = UnitAffectingCombat(aUnitId)
 			if tUnitInCombat ~= nil and not Sku.IsSecret(tUnitInCombat) and tUnitInCombat then
 				status = true

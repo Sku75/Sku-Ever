@@ -1,5 +1,5 @@
 ﻿## Interface: 20506, 11508, 11509, 16001
-## Title: Sku v44.0 Forever 2.4
+## Title: Sku v44.0 Forever 2.5
 ## SavedVariables: SkuOptionsDB, SkuTranslatedData, SkuErrorLog, SkuDebugLog
 ## Version: 44.0
 
@@ -171,6 +171,7 @@ SkuMob\Options.lua
 
 SkuNav\Core.lua
 SkuNav\Packs.lua
+SkuNav\EngineRoute.lua
 SkuNav\Geo.lua
 SkuNav\specialNavigationTasks.lua
 SkuNav\Visited.lua

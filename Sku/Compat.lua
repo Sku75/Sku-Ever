@@ -298,6 +298,22 @@ end
 -- SetAbandonQuest/AbandonQuest moved into C_QuestLog on Forever; both act on the selected quest.
 C.SetAbandonQuest = _G.SetAbandonQuest or (C_QuestLog and C_QuestLog.SetAbandonQuest)
 C.AbandonQuest = _G.AbandonQuest or (C_QuestLog and C_QuestLog.AbandonQuest)
+-- Share quest: GetQuestLogPushable() / QuestLogPushQuest() act on the selected quest; on Forever the push goes by quest log
+-- index (C_QuestLog.IsPushableQuest for the check), the selected quest is a quest ID.
+C.GetQuestLogPushable = _G.GetQuestLogPushable
+C.QuestLogPushQuest = _G.QuestLogPushQuest
+if not C.GetQuestLogPushable and C_QuestLog and C_QuestLog.IsPushableQuest and C_QuestLog.GetSelectedQuest then
+	C.GetQuestLogPushable = function()
+		local tId = C_QuestLog.GetSelectedQuest()
+		return tId and tId > 0 and C_QuestLog.IsPushableQuest(tId) or false
+	end
+	local tPush = _G.QuestLogPushQuest
+	C.QuestLogPushQuest = function()
+		local tId = C_QuestLog.GetSelectedQuest()
+		local tIndex = tId and C_QuestLog.GetLogIndexForQuestID(tId)
+		if tIndex and tPush then tPush(tIndex) end
+	end
+end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- Reputation
