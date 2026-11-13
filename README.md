@@ -7,7 +7,11 @@ Entwickelt von gitana83, veröffentlicht unter Sku75.
 
 ## Herunterladen
 
-Alle Dateien liegen auf der [Releases-Seite](../../releases/latest).
+Homepage mit Installer und allen Downloads: https://sku75.github.io/Sku-Ever/
+
+Der einfachste Weg ist der **Sku-Ever installer**: [Sku-Ever-Installer.exe herunterladen](https://github.com/Sku75/Sku-Ever/releases/latest/download/Sku-Ever-Installer.exe). Er findet WoW: Forever selbst und installiert Sku-Ever mit allen Begleit-Addons.
+
+Alle Dateien liegen auch auf der [Releases-Seite](../../releases/latest).
 
 - **Sku-Ever-Spielordner.zip**: das Addon. Enthält die Ordner Sku, SkuPacks und SkuEngineEK.
 - **SkuAudioData_fast_de.zip**: deutsche Sprachausgabe.
