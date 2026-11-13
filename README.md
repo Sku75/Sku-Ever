@@ -1,47 +1,40 @@
-# Sku — WoW Screen Reader Addon (TBC)
+# Sku-Ever
 
-**Sku** makes World of Warcraft playable for blind and visually impaired
-players, providing a complete screen-reader interface (NVDA / JAWS). This
-build targets the Burning Crusade Classic Anniversary client
-(Interface `20506, 11508` — TBC 2.5.6 + Era 1.15.8).
+Sku-Ever macht WoW: Forever für blinde und sehbehinderte Spielerinnen und Spieler spielbar.
+Es ist eine Weiterentwicklung des Screenreader-Addons Sku, angepasst an den Forever-Client (Interface 16001).
 
-This repository is the **single home** for Sku TBC:
+Entwickelt von gitana83, veröffentlicht unter Sku75.
 
-- **Source code** — the full addon source lives under [`Sku/`](Sku/): all Lua,
-  XML and TOC code, data tables (creatures, items, spells, quests, routes,
-  wiki), locales and UI definitions.
-- **Ready-to-play downloads** — the packaged, playable ZIPs are published on
-  the [Releases page](../../releases).
-- **Download / install page** — served via GitHub Pages from [`docs/`](docs/)
-  at <https://sku75.github.io/Sku-WoW-Addon-TBC/>.
+## Herunterladen
 
-> Previously the source lived in a separate repository
-> (`Sku-WoW-Addon-TBC-Source`). It has been consolidated here; that repo is now
-> archived and read-only.
+Alle Dateien liegen auf der [Releases-Seite](../../releases/latest).
 
-## Building / running from source
+- **Sku-Ever-Spielordner.zip**: das Addon. Enthält die Ordner Sku, SkuPacks und SkuEngineEK.
+- **SkuAudioData_fast_de.zip**: deutsche Sprachausgabe.
+- **SkuBeaconSoundsets.zip**: Grundtöne für Navigation und Klick-Töne. Ohne dieses Paket bleiben die Beacons stumm.
+- **SkuCustomBeaconsEssential.zip** und **SkuCustomBeaconsAdditional.zip**: zusätzliche Beacon-Töne, freiwillig.
 
-The tracked source under `Sku/` deliberately **excludes bulky binary assets**
-(voice audio `*.mp3`/`*.ogg`, fonts, images, and the large generated game-data
-tables). These ship inside the release ZIPs. So:
+Die Audio-Pakete sind bereits für WoW: Forever eingestellt (Interface 16001).
 
-- To **play**, download the latest ZIP from [Releases](../../releases) and
-  follow the install guide in [`docs/`](docs/).
-- To **develop**, clone this repo and overlay the asset files from a release
-  ZIP (or your existing install) into `Sku/`. See `Sku/.gitignore` for the
-  exact excluded patterns.
+## Installieren
 
-## Companion addons
+1. WoW schließen.
+2. Alle ZIP-Dateien entpacken.
+3. Die entpackten Ordner nach `World of Warcraft\_forever_\Interface\AddOns` kopieren. Alte Ordner mit gleichem Namen ersetzen.
+4. WoW starten. In der Addon-Liste steht „Sku-Ever“ mit der Versionsnummer.
 
-Sku relies on separately-distributed companion packages (voice audio packs,
-navigation data, beacon soundsets, health assets). These are not tracked here;
-grab them from the download page.
+Der Addon-Ordner heißt weiterhin `Sku`. So bleiben vorhandene Sku-Einstellungen erhalten.
 
-## Contributing
+## Quellcode
 
-Fork, branch, and open a pull request against this repository. Patches are
-code-only by design (assets are not tracked).
+Der Quellcode des Addons liegt im Ordner [`Sku/`](Sku/).
+Große Dateien wie Sprachaufnahmen, Schriften und Spieldaten-Tabellen sind nicht im Quellcode, sie stecken im Spielordner-ZIP.
 
-## License
+## English
 
-See [`Sku/LICENSE.txt`](Sku/LICENSE.txt).
+Sku-Ever makes WoW: Forever playable for blind and visually impaired players. It is a continuation of the Sku screen-reader addon, adapted to the Forever client.
+Download everything from the [Releases page](../../releases/latest), unzip all archives and copy the folders into `World of Warcraft\_forever_\Interface\AddOns`. The addon folder is still named `Sku`.
+
+## Lizenz
+
+Siehe [`Sku/LICENSE.txt`](Sku/LICENSE.txt).

@@ -57,7 +57,7 @@ SkuCore:RegisterToggleableModule("UpdateCheck", function()
 end)
 
 local ADDON_NAME   = "Sku"
-local COMM_PREFIX  = "SkuVer"       -- <= 16 chars
+local COMM_PREFIX  = "SkuEverVer"   -- <= 16 chars; eigener Kanal, damit Sku-Ever sich nur mit Sku-Ever vergleicht
 local CHANNEL_NAME = "SkuChat"      -- the shared channel every Sku user joins
 
 -- Tunables — TODO(review): adjust cadence to taste.
