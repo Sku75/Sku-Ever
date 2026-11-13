@@ -178,6 +178,6 @@ namespace SkuInstaller
         /// self-updater compares against the same number, and it must not be
         /// derived twice.
         /// </summary>
-        public static string InstallerVersion() => AppVersion.Display();
+        public static string InstallerVersion() => AppVersion.Number();   // Sku-Ever: "Sku-Ever installer 1.0"
     }
 }

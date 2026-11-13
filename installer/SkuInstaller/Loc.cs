@@ -29,7 +29,7 @@ namespace SkuInstaller
                 switch (CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)
                 {
                     case "de": Current = Lang.De; break;
-                    case "fr": Current = Lang.Fr; break;
+                    case "fr": Current = Lang.En; break;   // Sku-Ever: nur Deutsch und Englisch
                     default:   Current = Lang.En; break;
                 }
             }
@@ -58,7 +58,7 @@ namespace SkuInstaller
 
         private static readonly Dictionary<string, string> En = new Dictionary<string, string>
         {
-            ["app.title"]            = "Sku Installer & Updater",
+            ["app.title"]            = "Sku-Ever installer",
 
             // ── wizard navigation ────────────────────────────────────────────
             ["nav.back"]             = "< &Back",
@@ -69,28 +69,28 @@ namespace SkuInstaller
             ["cancel.text"]          = "The installation has not been carried out yet. Really quit?",
 
             // ── opening screen (UpdatePromptForm) ────────────────────────────
-            ["update.heading.available"]   = "An update for Sku is available",
-            ["update.heading.current"]     = "Sku is installed and up to date",
-            ["update.heading.notInstalled"]= "Sku is not installed yet",
+            ["update.heading.available"]   = "An update for Sku-Ever is available",
+            ["update.heading.current"]     = "Sku-Ever is installed and up to date",
+            ["update.heading.notInstalled"]= "Sku-Ever is not installed yet",
             ["update.heading.noClient"]    = "No World of Warcraft installation found",
             ["update.noClientBody"]        = "The installer could not find World of Warcraft automatically. Use Browse to select your World of Warcraft folder, a game version folder, or its Interface\\AddOns folder.",
-            ["update.explainUpdate"]       = "Update now: updates Sku in {0} and keeps your current settings.",
-            ["update.explainInstall"]      = "Install now: installs Sku into {0} with the recommended setup.",
+            ["update.explainUpdate"]       = "Update now: updates Sku-Ever in {0} and keeps your current settings.",
+            ["update.explainInstall"]      = "Install now: installs Sku-Ever into {0} with the recommended setup.",
             ["update.explainCustomize"]    = "Change what gets installed: pick the game versions, the voice language and the optional components yourself.",
             ["update.updateBtn"]           = "&Update now",
             ["update.installBtn"]          = "&Install now",
             ["update.browseBtn"]           = "&Browse…",
-            ["update.customizeBtn"]        = "Install Sku &fresh, or for further game versions",
+            ["update.customizeBtn"]        = "Install Sku-Ever &fresh, or for further game versions",
             ["update.updateAcc"]           = "Update now, using the current settings",
             ["update.installAcc"]          = "Install now, using the recommended setup",
             ["update.browseAcc"]           = "Browse for your World of Warcraft folder",
-            ["update.customizeAcc"]        = "Install Sku fresh, or for further game versions — choose versions and components yourself",
+            ["update.customizeAcc"]        = "Install Sku-Ever fresh, or for further game versions — choose versions and components yourself",
             ["update.closeAcc"]            = "Close the installer without changing anything",
 
             // ── log collection (LogCollector) ────────────────────────────────
             ["logs.btn"]                   = "Collect all &logs…",
             ["logs.btnAcc"]                = "Collect all logs of every detected game version into one zip file in your Downloads folder, for a bug report",
-            ["logs.explain"]               = "Collect all logs: writes one zip file to your Downloads folder containing the logs of every detected game version — Sku's debug and error log, BugGrabber, WVDebug, the game's own logs, the login tool's log and this installer's log. Attach that file to a bug report.",
+            ["logs.explain"]               = "Collect all logs: writes one zip file to your Downloads folder containing the logs of every detected game version — Sku-Ever's debug and error log, BugGrabber, WVDebug, the game's own logs, the login tool's log and this installer's log. Attach that file to a bug report.",
             ["logs.working"]               = "Collecting logs, please wait.",
             ["logs.doneTitle"]             = "Logs collected",
             ["logs.done"]                  = "The logs were saved to:\n{0}\n\n{1} files from {2} game version(s), {3} in total.\n\nAttach this zip file to your bug report.",
@@ -104,7 +104,7 @@ namespace SkuInstaller
             // update will do to their machine (nothing, beyond this one exe) and
             // what happens if they decline (everything still works).
             ["selfupdate.heading"]     = "An update for the installer itself is available",
-            ["selfupdate.body"]        = "You are using version {0} of the Sku installer. Version {1} is available.\n\nUpdating the installer first is strongly recommended: it is a small download, it takes a few seconds, and installing Sku afterwards then runs with all the current fixes. The installer closes and reopens on its own — nothing else on your computer is changed.\n\nYou can also carry on with version {0}; installing and updating Sku still works.",
+            ["selfupdate.body"]        = "You are using version {0} of the Sku-Ever installer. Version {1} is available.\n\nUpdating the installer first is strongly recommended: it is a small download, it takes a few seconds, and installing Sku-Ever afterwards then runs with all the current fixes. The installer closes and reopens on its own — nothing else on your computer is changed.\n\nYou can also carry on with version {0}; installing and updating Sku-Ever still works.",
             ["selfupdate.updateBtn"]   = "&Update the installer now (recommended)",
             ["selfupdate.updateAcc"]   = "Update the installer to version {0} now, recommended — it downloads the new version, restarts itself and then carries on",
             ["selfupdate.skipBtn"]     = "&Continue with the current version",
@@ -117,7 +117,7 @@ namespace SkuInstaller
             ["selfupdate.applying"]    = "Installing the new version…",
             ["selfupdate.restarting"]  = "The installer is restarting as version {0}. The window reopens in a moment.",
             ["selfupdate.failedTitle"] = "The installer could not update itself",
-            ["selfupdate.failed"]      = "The installer could not update itself.\n\n{0}\n\nIt carries on with version {1}. Installing and updating Sku works normally.",
+            ["selfupdate.failed"]      = "The installer could not update itself.\n\n{0}\n\nIt carries on with version {1}. Installing and updating Sku-Ever works normally.",
             ["selfupdate.badHash"]     = "The downloaded file does not match the published checksum and was discarded.",
             ["selfupdate.done"]        = "The installer updated itself to version {0}.",
 
@@ -137,23 +137,23 @@ namespace SkuInstaller
             // State first, version numbers after — heard aloud, the state is what
             // the user is listening for.
             ["target.notFound"]        = "Not found on this computer — tick it anyway and point to it in the next step.",
-            ["target.freshInstall"]    = "New install — Sku {0} will be installed here.",
-            ["target.upToDate"]        = "Up to date — Sku {0} is installed.",
-            ["target.updateAvailable"] = "Update available — Sku {0} is installed, {1} is available.",
+            ["target.freshInstall"]    = "New install — Sku-Ever {0} will be installed here.",
+            ["target.upToDate"]        = "Up to date — Sku-Ever {0} is installed.",
+            ["target.updateAvailable"] = "Update available — Sku-Ever {0} is installed, {1} is available.",
             ["target.versionUnknown"]  = "(version unknown)",
-            ["target.devSymlink"]      = "Developer symlink — Sku {0}, managed outside the installer and left untouched.",
-            ["target.foreverNotYet"]   = "Sku for WoW Forever comes with Sku {0}. The newest release is {1}, so nothing is installed into this client yet. The installer offers it as soon as Sku {0} is out.",
+            ["target.devSymlink"]      = "Developer symlink — Sku-Ever {0}, managed outside the installer and left untouched.",
+            ["target.foreverNotYet"]   = "Sku-Ever for WoW Forever comes with Sku-Ever {0}. The newest release is {1}, so nothing is installed into this client yet. The installer offers it as soon as Sku-Ever {0} is out.",
 
             // ── version selection ────────────────────────────────────────────
-            ["versions.heading"]        = "Which game versions should Sku be installed into?",
+            ["versions.heading"]        = "Which game versions should Sku-Ever be installed into?",
             ["versions.body"]           = "Tick every World of Warcraft version you play — both can be done in one run. The next step confirms where each one lives.",
             ["versions.needOne.title"]  = "Nothing selected",
             ["versions.needOne.text"]   = "Tick at least one game version before continuing, or use Back to leave the installer.",
-            ["versions.foreverNotYet"] = "WoW Forever cannot be installed yet: Sku for WoW Forever comes with Sku {0}, and the newest release is {1}. Untick WoW Forever to continue with the other game versions.",
+            ["versions.foreverNotYet"] = "WoW Forever cannot be installed yet: Sku-Ever for WoW Forever comes with Sku-Ever {0}, and the newest release is {1}. Untick WoW Forever to continue with the other game versions.",
 
             // ── per-version folders ──────────────────────────────────────────
             ["folders.heading"]         = "Where is each version installed?",
-            ["folders.body"]            = "These are the folders Sku will be written to. If one is wrong or missing, use the Browse button next to it.",
+            ["folders.body"]            = "These are the folders Sku-Ever will be written to. If one is wrong or missing, use the Browse button next to it.",
             ["folders.notFound"]        = "(not found — use Browse)",
             ["folders.pathAcc"]         = "{0}, AddOns folder: {1}",
             ["folders.browseAcc"]       = "Browse for the {0} folder",
@@ -162,7 +162,7 @@ namespace SkuInstaller
             ["folders.missing.title"]   = "Folder missing",
             ["folders.missing.text"]    = "No folder is set for: {0}.\n\nUse Browse to pick one, or go Back and untick that version.",
             ["folders.duplicate.title"] = "Same folder twice",
-            ["folders.duplicate.text"]  = "{0} and {1} point at the same folder, so Sku would be installed there twice.\n\nCorrect one of them, or go Back and untick one.",
+            ["folders.duplicate.text"]  = "{0} and {1} point at the same folder, so Sku-Ever would be installed there twice.\n\nCorrect one of them, or go Back and untick one.",
 
             // ── components ───────────────────────────────────────────────────
             ["components.heading"]   = "What should be installed?",
@@ -175,10 +175,10 @@ namespace SkuInstaller
             ["acc.status"]           = "Status",
             ["acc.progressLog"]      = "Progress history",
 
-            ["opt.shortcut.label"]   = "Create a desktop shortcut to the Sku Updater",
+            ["opt.shortcut.label"]   = "Create a desktop shortcut to the Sku-Ever Updater",
             ["opt.shortcut.desc"]    = "Puts a shortcut on the desktop and in the Start menu, so you can run this updater again later without downloading it.",
             ["opt.sapi2sr.label"]    = "Enable NVDA as a voice in WoW (recommended)",
-            ["opt.sapi2sr.desc"]     = "Installs and signs the NVDA-SAPI bridge so the game's speech goes through NVDA. Without it, Sku falls back to a Windows voice.",
+            ["opt.sapi2sr.desc"]     = "Installs and signs the NVDA-SAPI bridge so the game's speech goes through NVDA. Without it, Sku-Ever falls back to a Windows voice.",
             ["opt.windowsVoices.label"] = "Make all Windows voices available to WoW (recommended)",
             ["opt.windowsVoices.desc"]  = "Windows keeps its newer voices (for example Katja and Stefan) in a list the game cannot see. Copies them into the game's voice list, backed up first. The game's voice numbers can shift.",
             ["opt.loginTool.label"]  = "Install the WoW Login Tool (recommended)",
@@ -187,14 +187,14 @@ namespace SkuInstaller
             ["opt.force.desc"]       = "Downloads and replaces every addon even when it is already current. Use this to repair a broken install — it takes considerably longer.",
 
             ["managed.label"]        = "Additional recommended addons (Anniversary, Classic Era and WoW Forever)",
-            ["managed.acc"]          = "Additional recommended addons. These well-known addons are installed and kept up to date together with Sku, in the Anniversary, Classic Era and WoW Forever clients; each client gets the build that matches it. Space toggles the highlighted addon.",
+            ["managed.acc"]          = "Additional recommended addons. These well-known addons are installed and kept up to date together with Sku-Ever, in the Anniversary, Classic Era and WoW Forever clients; each client gets the build that matches it. Space toggles the highlighted addon.",
             ["update.managedUpdates"]  = "{0}: updates available for additional addons: {1}.",
             ["update.managedInstalls"] = "{0}: additional addons that will be installed: {1}.",
             ["managed.badHash"]      = "{0}: the download failed its integrity check and was not installed.",
             ["managed.obsoleteRemoved"] = "{0}: removed the old folder {1}, which would clash with the new version.",
 
             // ── progress ─────────────────────────────────────────────────────
-            ["progress.heading"]          = "Installing Sku",
+            ["progress.heading"]          = "Installing Sku-Ever",
             ["progress.starting"]         = "Starting…",
             ["progress.historyLabel"]     = "Progress (use the arrow keys to review):",
             ["progress.finishedHeading"]  = "Finished",
@@ -234,8 +234,8 @@ namespace SkuInstaller
             ["dlg.error.title"]        = "Error",
 
             // ── end-of-run summary ───────────────────────────────────────────
-            ["summary.headline.done"]     = "Sku installation complete.",
-            ["summary.headline.upToDate"] = "Sku is already up to date.",
+            ["summary.headline.done"]     = "Sku-Ever installation complete.",
+            ["summary.headline.upToDate"] = "Sku-Ever is already up to date.",
             ["summary.updated"]           = "Installed {0} ({1}).",
             ["summary.addonsCurrent"]     = "Addons were already current.",
             ["summary.settings"]          = "Required game settings were adjusted.",
@@ -297,7 +297,7 @@ namespace SkuInstaller
 
         private static readonly Dictionary<string, string> De = new Dictionary<string, string>
         {
-            ["app.title"]            = "Sku Installer & Updater",
+            ["app.title"]            = "Sku-Ever installer",
 
             // ── Navigation ───────────────────────────────────────────────────
             ["nav.back"]             = "< &Zurück",
@@ -308,22 +308,22 @@ namespace SkuInstaller
             ["cancel.text"]          = "Die Installation wurde noch nicht durchgeführt. Wirklich beenden?",
 
             // ── Startbildschirm (UpdatePromptForm) ───────────────────────────
-            ["update.heading.available"]   = "Eine Aktualisierung für Sku ist verfügbar",
-            ["update.heading.current"]     = "Sku ist installiert und aktuell",
-            ["update.heading.notInstalled"]= "Sku ist noch nicht installiert",
+            ["update.heading.available"]   = "Eine Aktualisierung für Sku-Ever ist verfügbar",
+            ["update.heading.current"]     = "Sku-Ever ist installiert und aktuell",
+            ["update.heading.notInstalled"]= "Sku-Ever ist noch nicht installiert",
             ["update.heading.noClient"]    = "Keine World-of-Warcraft-Installation gefunden",
             ["update.noClientBody"]        = "Der Installer konnte World of Warcraft nicht automatisch finden. Wähle über „Durchsuchen“ deinen World-of-Warcraft-Ordner, einen Spielversions-Ordner oder dessen Ordner Interface\\AddOns.",
-            ["update.explainUpdate"]       = "Jetzt aktualisieren: aktualisiert Sku in {0} und behält deine bisherigen Einstellungen bei.",
-            ["update.explainInstall"]      = "Jetzt installieren: installiert Sku in {0} mit der empfohlenen Einrichtung.",
+            ["update.explainUpdate"]       = "Jetzt aktualisieren: aktualisiert Sku-Ever in {0} und behält deine bisherigen Einstellungen bei.",
+            ["update.explainInstall"]      = "Jetzt installieren: installiert Sku-Ever in {0} mit der empfohlenen Einrichtung.",
             ["update.explainCustomize"]    = "Auswahl ändern: Spielversionen, Sprachausgabe und optionale Bestandteile selbst festlegen.",
             ["update.updateBtn"]           = "&Jetzt aktualisieren",
             ["update.installBtn"]          = "&Jetzt installieren",
             ["update.browseBtn"]           = "&Durchsuchen…",
-            ["update.customizeBtn"]        = "Sku &neu oder für weitere Spielversionen installieren",
+            ["update.customizeBtn"]        = "Sku-Ever &neu oder für weitere Spielversionen installieren",
             ["update.updateAcc"]           = "Jetzt aktualisieren, mit den bisherigen Einstellungen",
             ["update.installAcc"]          = "Jetzt installieren, mit der empfohlenen Einrichtung",
             ["update.browseAcc"]           = "Nach deinem World-of-Warcraft-Ordner suchen",
-            ["update.customizeAcc"]        = "Sku neu oder für weitere Spielversionen installieren – Versionen und Bestandteile selbst wählen",
+            ["update.customizeAcc"]        = "Sku-Ever neu oder für weitere Spielversionen installieren – Versionen und Bestandteile selbst wählen",
             ["update.closeAcc"]            = "Installer schließen, ohne etwas zu ändern",
 
             // ── Protokolle sammeln (LogCollector) ────────────────────────────
@@ -338,7 +338,7 @@ namespace SkuInstaller
 
             // ── Installer aktualisiert sich selbst (SelfUpdatePromptForm) ────
             ["selfupdate.heading"]     = "Für den Installer selbst ist eine neue Version verfügbar",
-            ["selfupdate.body"]        = "Du verwendest Version {0} des Sku-Installers. Version {1} ist verfügbar.\n\nEs wird dringend empfohlen, zuerst den Installer zu aktualisieren: Der Download ist klein, dauert wenige Sekunden, und die Installation von Sku läuft danach mit allen aktuellen Korrekturen. Der Installer schließt sich dabei selbst und öffnet sich neu — sonst wird nichts auf dem Computer verändert.\n\nDu kannst auch mit Version {0} weiterarbeiten; Sku installieren und aktualisieren funktioniert weiterhin.",
+            ["selfupdate.body"]        = "Du verwendest Version {0} des Sku-Ever-Installers. Version {1} ist verfügbar.\n\nEs wird dringend empfohlen, zuerst den Installer zu aktualisieren: Der Download ist klein, dauert wenige Sekunden, und die Installation von Sku-Ever läuft danach mit allen aktuellen Korrekturen. Der Installer schließt sich dabei selbst und öffnet sich neu — sonst wird nichts auf dem Computer verändert.\n\nDu kannst auch mit Version {0} weiterarbeiten; Sku-Ever installieren und aktualisieren funktioniert weiterhin.",
             ["selfupdate.updateBtn"]   = "&Installer jetzt aktualisieren (empfohlen)",
             ["selfupdate.updateAcc"]   = "Den Installer jetzt auf Version {0} aktualisieren, empfohlen — er lädt die neue Version, startet sich neu und macht dann weiter",
             ["selfupdate.skipBtn"]     = "Mit der &vorhandenen Version fortfahren",
@@ -351,7 +351,7 @@ namespace SkuInstaller
             ["selfupdate.applying"]    = "Die neue Version wird eingerichtet…",
             ["selfupdate.restarting"]  = "Der Installer startet als Version {0} neu. Das Fenster öffnet sich gleich wieder.",
             ["selfupdate.failedTitle"] = "Der Installer konnte sich nicht selbst aktualisieren",
-            ["selfupdate.failed"]      = "Der Installer konnte sich nicht selbst aktualisieren.\n\n{0}\n\nEr arbeitet mit Version {1} weiter. Sku installieren und aktualisieren funktioniert ganz normal.",
+            ["selfupdate.failed"]      = "Der Installer konnte sich nicht selbst aktualisieren.\n\n{0}\n\nEr arbeitet mit Version {1} weiter. Sku-Ever installieren und aktualisieren funktioniert ganz normal.",
             ["selfupdate.badHash"]     = "Die heruntergeladene Datei stimmt nicht mit der veröffentlichten Prüfsumme überein und wurde verworfen.",
             ["selfupdate.done"]        = "Der Installer hat sich auf Version {0} aktualisiert.",
 
@@ -371,23 +371,23 @@ namespace SkuInstaller
             // Zustand zuerst, Versionsnummern danach – vorgelesen ist der Zustand
             // das, worauf man wartet.
             ["target.notFound"]        = "Nicht gefunden auf diesem Computer – trotzdem ankreuzen und im nächsten Schritt den Ordner angeben.",
-            ["target.freshInstall"]    = "Neuinstallation – Sku {0} wird hier installiert.",
-            ["target.upToDate"]        = "Aktuell – Sku {0} ist installiert.",
-            ["target.updateAvailable"] = "Aktualisierung verfügbar – Sku {0} ist installiert, {1} ist verfügbar.",
+            ["target.freshInstall"]    = "Neuinstallation – Sku-Ever {0} wird hier installiert.",
+            ["target.upToDate"]        = "Aktuell – Sku-Ever {0} ist installiert.",
+            ["target.updateAvailable"] = "Aktualisierung verfügbar – Sku-Ever {0} ist installiert, {1} ist verfügbar.",
             ["target.versionUnknown"]  = "(Version unbekannt)",
-            ["target.devSymlink"]      = "Entwickler-Symlink – Sku {0}, wird außerhalb des Installers verwaltet und bleibt unverändert.",
-            ["target.foreverNotYet"]   = "Sku für WoW Forever kommt mit Sku {0}. Die neueste Version ist {1}, darum wird in diesen Client noch nichts installiert. Der Installer bietet ihn an, sobald Sku {0} erschienen ist.",
+            ["target.devSymlink"]      = "Entwickler-Symlink – Sku-Ever {0}, wird außerhalb des Installers verwaltet und bleibt unverändert.",
+            ["target.foreverNotYet"]   = "Sku-Ever für WoW Forever kommt mit Sku-Ever {0}. Die neueste Version ist {1}, darum wird in diesen Client noch nichts installiert. Der Installer bietet ihn an, sobald Sku-Ever {0} erschienen ist.",
 
             // ── Auswahl der Spielversionen ───────────────────────────────────
-            ["versions.heading"]        = "In welche Spielversionen soll Sku installiert werden?",
+            ["versions.heading"]        = "In welche Spielversionen soll Sku-Ever installiert werden?",
             ["versions.body"]           = "Kreuze jede World-of-Warcraft-Version an, die du spielst – beide lassen sich in einem Durchgang erledigen. Im nächsten Schritt wird bestätigt, wo sie jeweils liegen.",
             ["versions.needOne.title"]  = "Nichts ausgewählt",
             ["versions.needOne.text"]   = "Kreuze mindestens eine Spielversion an, um fortzufahren, oder verlasse den Installer über „Zurück“.",
-            ["versions.foreverNotYet"] = "WoW Forever kann noch nicht installiert werden: Sku für WoW Forever kommt mit Sku {0}, die neueste Version ist {1}. Entferne den Haken bei WoW Forever, um mit den anderen Spielversionen fortzufahren.",
+            ["versions.foreverNotYet"] = "WoW Forever kann noch nicht installiert werden: Sku-Ever für WoW Forever kommt mit Sku-Ever {0}, die neueste Version ist {1}. Entferne den Haken bei WoW Forever, um mit den anderen Spielversionen fortzufahren.",
 
             // ── Ordner je Spielversion ───────────────────────────────────────
             ["folders.heading"]         = "Wo ist welche Version installiert?",
-            ["folders.body"]            = "In diese Ordner wird Sku geschrieben. Ist einer falsch oder fehlt er, nutze die Schaltfläche „Durchsuchen“ daneben.",
+            ["folders.body"]            = "In diese Ordner wird Sku-Ever geschrieben. Ist einer falsch oder fehlt er, nutze die Schaltfläche „Durchsuchen“ daneben.",
             ["folders.notFound"]        = "(nicht gefunden – bitte „Durchsuchen“)",
             ["folders.pathAcc"]         = "{0}, AddOns-Ordner: {1}",
             ["folders.browseAcc"]       = "Ordner für {0} suchen",
@@ -396,7 +396,7 @@ namespace SkuInstaller
             ["folders.missing.title"]   = "Ordner fehlt",
             ["folders.missing.text"]    = "Für {0} ist kein Ordner festgelegt.\n\nWähle einen über „Durchsuchen“, oder gehe zurück und entferne das Häkchen bei dieser Version.",
             ["folders.duplicate.title"] = "Ordner doppelt vergeben",
-            ["folders.duplicate.text"]  = "{0} und {1} zeigen auf denselben Ordner – Sku würde dort zweimal installiert.\n\nKorrigiere einen davon, oder gehe zurück und entferne ein Häkchen.",
+            ["folders.duplicate.text"]  = "{0} und {1} zeigen auf denselben Ordner – Sku-Ever würde dort zweimal installiert.\n\nKorrigiere einen davon, oder gehe zurück und entferne ein Häkchen.",
 
             // ── Bestandteile ─────────────────────────────────────────────────
             ["components.heading"]   = "Was soll installiert werden?",
@@ -409,10 +409,10 @@ namespace SkuInstaller
             ["acc.status"]           = "Status",
             ["acc.progressLog"]      = "Fortschrittsverlauf",
 
-            ["opt.shortcut.label"]   = "Desktop-Verknüpfung zum Sku-Updater erstellen",
+            ["opt.shortcut.label"]   = "Desktop-Verknüpfung zum Sku-Ever-Updater erstellen",
             ["opt.shortcut.desc"]    = "Legt eine Verknüpfung auf dem Desktop und im Startmenü an, damit du diesen Updater später erneut starten kannst, ohne ihn neu herunterzuladen.",
             ["opt.sapi2sr.label"]    = "NVDA als Stimme in WoW aktivieren (empfohlen)",
-            ["opt.sapi2sr.desc"]     = "Installiert und signiert die NVDA-SAPI-Brücke, damit die Sprachausgabe des Spiels über NVDA läuft. Ohne sie nutzt Sku eine Windows-Stimme.",
+            ["opt.sapi2sr.desc"]     = "Installiert und signiert die NVDA-SAPI-Brücke, damit die Sprachausgabe des Spiels über NVDA läuft. Ohne sie nutzt Sku-Ever eine Windows-Stimme.",
             ["opt.windowsVoices.label"] = "Alle Windows-Stimmen für WoW verfügbar machen (empfohlen)",
             ["opt.windowsVoices.desc"]  = "Windows führt neuere Stimmen (z. B. Katja, Stefan) in einer Liste, die das Spiel nicht sieht. Kopiert sie nach einer Sicherung in die Liste des Spiels. Stimmnummern können sich verschieben.",
             ["opt.loginTool.label"]  = "WoW Login Tool installieren (empfohlen)",
@@ -421,14 +421,14 @@ namespace SkuInstaller
             ["opt.force.desc"]       = "Lädt jedes AddOn erneut herunter und ersetzt es, auch wenn es bereits aktuell ist. Für die Reparatur einer defekten Installation – dauert deutlich länger.",
 
             ["managed.label"]        = "Zusätzliche empfohlene AddOns (Anniversary, Classic Era und WoW Forever)",
-            ["managed.acc"]          = "Zusätzliche empfohlene AddOns. Diese bekannten AddOns werden zusammen mit Sku installiert und aktuell gehalten, im Anniversary-, im Classic-Era- und im WoW-Forever-Client; jeder Client erhält die zu ihm passende Fassung. Die Leertaste schaltet das markierte AddOn um.",
+            ["managed.acc"]          = "Zusätzliche empfohlene AddOns. Diese bekannten AddOns werden zusammen mit Sku-Ever installiert und aktuell gehalten, im Anniversary-, im Classic-Era- und im WoW-Forever-Client; jeder Client erhält die zu ihm passende Fassung. Die Leertaste schaltet das markierte AddOn um.",
             ["update.managedUpdates"]  = "{0}: Updates für zusätzliche AddOns verfügbar: {1}.",
             ["update.managedInstalls"] = "{0}: Zusätzliche AddOns, die neu installiert werden: {1}.",
             ["managed.badHash"]      = "{0}: Der Download hat die Integritätsprüfung nicht bestanden und wurde nicht installiert.",
             ["managed.obsoleteRemoved"] = "{0}: alten Ordner {1} entfernt, er würde mit der neuen Fassung kollidieren.",
 
             // ── Fortschritt ──────────────────────────────────────────────────
-            ["progress.heading"]          = "Sku wird installiert",
+            ["progress.heading"]          = "Sku-Ever wird installiert",
             ["progress.starting"]         = "Starte…",
             ["progress.historyLabel"]     = "Fortschritt (zum Nachlesen die Pfeiltasten benutzen):",
             ["progress.finishedHeading"]  = "Fertig",
@@ -468,8 +468,8 @@ namespace SkuInstaller
             ["dlg.error.title"]        = "Fehler",
 
             // ── Abschlussbericht ─────────────────────────────────────────────
-            ["summary.headline.done"]     = "Sku-Installation abgeschlossen.",
-            ["summary.headline.upToDate"] = "Sku ist bereits aktuell.",
+            ["summary.headline.done"]     = "Sku-Ever-Installation abgeschlossen.",
+            ["summary.headline.upToDate"] = "Sku-Ever ist bereits aktuell.",
             ["summary.updated"]           = "{0} installiert ({1}).",
             ["summary.addonsCurrent"]     = "AddOns waren bereits aktuell.",
             ["summary.settings"]          = "Erforderliche Spieleinstellungen wurden angepasst.",
@@ -537,7 +537,7 @@ namespace SkuInstaller
         // instead, which is why the pack default for Fr is the English one.
         private static readonly Dictionary<string, string> Fr = new Dictionary<string, string>
         {
-            ["app.title"]            = "Sku Installer & Updater",
+            ["app.title"]            = "Sku-Ever installer",
 
             // ── navigation de l'assistant ────────────────────────────────────
             ["nav.back"]             = "< &Retour",
@@ -548,28 +548,28 @@ namespace SkuInstaller
             ["cancel.text"]          = "L'installation n'a pas encore été effectuée. Voulez-vous vraiment quitter ?",
 
             // ── écran d'accueil (UpdatePromptForm) ───────────────────────────
-            ["update.heading.available"]   = "Une mise à jour de Sku est disponible",
-            ["update.heading.current"]     = "Sku est installé et à jour",
-            ["update.heading.notInstalled"]= "Sku n'est pas encore installé",
+            ["update.heading.available"]   = "Une mise à jour de Sku-Ever est disponible",
+            ["update.heading.current"]     = "Sku-Ever est installé et à jour",
+            ["update.heading.notInstalled"]= "Sku-Ever n'est pas encore installé",
             ["update.heading.noClient"]    = "Aucune installation de World of Warcraft trouvée",
             ["update.noClientBody"]        = "L'installateur n'a pas trouvé World of Warcraft automatiquement. Utilisez « Parcourir » pour choisir votre dossier World of Warcraft, un dossier de version du jeu, ou son dossier Interface\\AddOns.",
-            ["update.explainUpdate"]       = "Mettre à jour maintenant : met Sku à jour dans {0} et conserve vos réglages actuels.",
-            ["update.explainInstall"]      = "Installer maintenant : installe Sku dans {0} avec la configuration recommandée.",
+            ["update.explainUpdate"]       = "Mettre à jour maintenant : met Sku-Ever à jour dans {0} et conserve vos réglages actuels.",
+            ["update.explainInstall"]      = "Installer maintenant : installe Sku-Ever dans {0} avec la configuration recommandée.",
             ["update.explainCustomize"]    = "Modifier ce qui sera installé : choisissez vous-même les versions du jeu, la langue de la voix et les composants facultatifs.",
             ["update.updateBtn"]           = "&Mettre à jour maintenant",
             ["update.installBtn"]          = "&Installer maintenant",
             ["update.browseBtn"]           = "&Parcourir…",
-            ["update.customizeBtn"]        = "Installer Sku à &neuf, ou pour d'autres versions du jeu",
+            ["update.customizeBtn"]        = "Installer Sku-Ever à &neuf, ou pour d'autres versions du jeu",
             ["update.updateAcc"]           = "Mettre à jour maintenant, avec les réglages actuels",
             ["update.installAcc"]          = "Installer maintenant, avec la configuration recommandée",
             ["update.browseAcc"]           = "Rechercher votre dossier World of Warcraft",
-            ["update.customizeAcc"]        = "Installer Sku à neuf, ou pour d'autres versions du jeu — choisir soi-même les versions et les composants",
+            ["update.customizeAcc"]        = "Installer Sku-Ever à neuf, ou pour d'autres versions du jeu — choisir soi-même les versions et les composants",
             ["update.closeAcc"]            = "Fermer l'installateur sans rien modifier",
 
             // ── collecte des journaux (LogCollector) ─────────────────────────
             ["logs.btn"]                   = "Collecter tous les &journaux…",
             ["logs.btnAcc"]                = "Collecter tous les journaux de chaque version du jeu détectée dans un seul fichier zip du dossier Téléchargements, pour un rapport de bogue",
-            ["logs.explain"]               = "Collecter tous les journaux : crée un fichier zip dans votre dossier Téléchargements contenant les journaux de chaque version du jeu détectée — le journal de débogage et d'erreurs de Sku, BugGrabber, WVDebug, les journaux du jeu, le journal de l'outil de connexion et celui de cet installateur. Joignez ce fichier à un rapport de bogue.",
+            ["logs.explain"]               = "Collecter tous les journaux : crée un fichier zip dans votre dossier Téléchargements contenant les journaux de chaque version du jeu détectée — le journal de débogage et d'erreurs de Sku-Ever, BugGrabber, WVDebug, les journaux du jeu, le journal de l'outil de connexion et celui de cet installateur. Joignez ce fichier à un rapport de bogue.",
             ["logs.working"]               = "Collecte des journaux, veuillez patienter.",
             ["logs.doneTitle"]             = "Journaux collectés",
             ["logs.done"]                  = "Les journaux ont été enregistrés dans :\n{0}\n\n{1} fichiers de {2} version(s) du jeu, {3} au total.\n\nJoignez ce fichier zip à votre rapport de bogue.",
@@ -578,7 +578,7 @@ namespace SkuInstaller
 
             // ── l'installateur se met à jour lui-même (SelfUpdatePromptForm) ─
             ["selfupdate.heading"]     = "Une mise à jour de l'installateur lui-même est disponible",
-            ["selfupdate.body"]        = "Vous utilisez la version {0} de l'installateur Sku. La version {1} est disponible.\n\nIl est fortement recommandé de mettre d'abord à jour l'installateur : le téléchargement est petit, il prend quelques secondes, et l'installation de Sku bénéficiera ensuite de toutes les corrections récentes. L'installateur se ferme et se rouvre tout seul — rien d'autre n'est modifié sur votre ordinateur.\n\nVous pouvez aussi continuer avec la version {0} ; installer et mettre à jour Sku fonctionne toujours.",
+            ["selfupdate.body"]        = "Vous utilisez la version {0} de l'installateur Sku-Ever. La version {1} est disponible.\n\nIl est fortement recommandé de mettre d'abord à jour l'installateur : le téléchargement est petit, il prend quelques secondes, et l'installation de Sku-Ever bénéficiera ensuite de toutes les corrections récentes. L'installateur se ferme et se rouvre tout seul — rien d'autre n'est modifié sur votre ordinateur.\n\nVous pouvez aussi continuer avec la version {0} ; installer et mettre à jour Sku-Ever fonctionne toujours.",
             ["selfupdate.updateBtn"]   = "&Mettre à jour l'installateur maintenant (recommandé)",
             ["selfupdate.updateAcc"]   = "Mettre l'installateur à jour vers la version {0} maintenant, recommandé — il télécharge la nouvelle version, redémarre puis poursuit",
             ["selfupdate.skipBtn"]     = "&Continuer avec la version actuelle",
@@ -591,7 +591,7 @@ namespace SkuInstaller
             ["selfupdate.applying"]    = "Installation de la nouvelle version…",
             ["selfupdate.restarting"]  = "L'installateur redémarre en version {0}. La fenêtre se rouvre dans un instant.",
             ["selfupdate.failedTitle"] = "L'installateur n'a pas pu se mettre à jour",
-            ["selfupdate.failed"]      = "L'installateur n'a pas pu se mettre à jour.\n\n{0}\n\nIl poursuit avec la version {1}. Installer et mettre à jour Sku fonctionne normalement.",
+            ["selfupdate.failed"]      = "L'installateur n'a pas pu se mettre à jour.\n\n{0}\n\nIl poursuit avec la version {1}. Installer et mettre à jour Sku-Ever fonctionne normalement.",
             ["selfupdate.badHash"]     = "Le fichier téléchargé ne correspond pas à la somme de contrôle publiée ; il a été écarté.",
             ["selfupdate.done"]        = "L'installateur s'est mis à jour vers la version {0}.",
 
@@ -611,23 +611,23 @@ namespace SkuInstaller
             // L'état d'abord, les numéros de version ensuite — à l'écoute, c'est
             // l'état que l'on attend.
             ["target.notFound"]        = "Introuvable sur cet ordinateur — cochez-la quand même et indiquez le dossier à l'étape suivante.",
-            ["target.freshInstall"]    = "Nouvelle installation — Sku {0} sera installé ici.",
-            ["target.upToDate"]        = "À jour — Sku {0} est installé.",
-            ["target.updateAvailable"] = "Mise à jour disponible — Sku {0} est installé, {1} est disponible.",
+            ["target.freshInstall"]    = "Nouvelle installation — Sku-Ever {0} sera installé ici.",
+            ["target.upToDate"]        = "À jour — Sku-Ever {0} est installé.",
+            ["target.updateAvailable"] = "Mise à jour disponible — Sku-Ever {0} est installé, {1} est disponible.",
             ["target.versionUnknown"]  = "(version inconnue)",
-            ["target.devSymlink"]      = "Lien symbolique de développement — Sku {0}, géré en dehors de l'installateur et laissé intact.",
-            ["target.foreverNotYet"]   = "Sku pour WoW Forever arrive avec Sku {0}. La dernière version est la {1}, donc rien n'est encore installé dans ce client. L'installateur le proposera dès la sortie de Sku {0}.",
+            ["target.devSymlink"]      = "Lien symbolique de développement — Sku-Ever {0}, géré en dehors de l'installateur et laissé intact.",
+            ["target.foreverNotYet"]   = "Sku-Ever pour WoW Forever arrive avec Sku-Ever {0}. La dernière version est la {1}, donc rien n'est encore installé dans ce client. L'installateur le proposera dès la sortie de Sku-Ever {0}.",
 
             // ── choix des versions du jeu ────────────────────────────────────
-            ["versions.heading"]        = "Dans quelles versions du jeu faut-il installer Sku ?",
+            ["versions.heading"]        = "Dans quelles versions du jeu faut-il installer Sku-Ever ?",
             ["versions.body"]           = "Cochez chaque version de World of Warcraft à laquelle vous jouez — les deux peuvent être faites en une seule fois. L'étape suivante confirme où chacune se trouve.",
             ["versions.needOne.title"]  = "Aucune sélection",
             ["versions.needOne.text"]   = "Cochez au moins une version du jeu pour continuer, ou utilisez « Retour » pour quitter l'installateur.",
-            ["versions.foreverNotYet"] = "WoW Forever ne peut pas encore être installé : Sku pour WoW Forever arrive avec Sku {0}, et la dernière version est la {1}. Décochez WoW Forever pour continuer avec les autres versions du jeu.",
+            ["versions.foreverNotYet"] = "WoW Forever ne peut pas encore être installé : Sku-Ever pour WoW Forever arrive avec Sku-Ever {0}, et la dernière version est la {1}. Décochez WoW Forever pour continuer avec les autres versions du jeu.",
 
             // ── dossiers par version ─────────────────────────────────────────
             ["folders.heading"]         = "Où chaque version est-elle installée ?",
-            ["folders.body"]            = "Voici les dossiers dans lesquels Sku sera écrit. Si l'un est erroné ou manquant, utilisez le bouton « Parcourir » à côté.",
+            ["folders.body"]            = "Voici les dossiers dans lesquels Sku-Ever sera écrit. Si l'un est erroné ou manquant, utilisez le bouton « Parcourir » à côté.",
             ["folders.notFound"]        = "(introuvable — utilisez « Parcourir »)",
             ["folders.pathAcc"]         = "{0}, dossier AddOns : {1}",
             ["folders.browseAcc"]       = "Rechercher le dossier de {0}",
@@ -636,7 +636,7 @@ namespace SkuInstaller
             ["folders.missing.title"]   = "Dossier manquant",
             ["folders.missing.text"]    = "Aucun dossier n'est défini pour : {0}.\n\nUtilisez « Parcourir » pour en choisir un, ou revenez en arrière et décochez cette version.",
             ["folders.duplicate.title"] = "Deux fois le même dossier",
-            ["folders.duplicate.text"]  = "{0} et {1} pointent vers le même dossier, Sku y serait donc installé deux fois.\n\nCorrigez l'un des deux, ou revenez en arrière et décochez-en un.",
+            ["folders.duplicate.text"]  = "{0} et {1} pointent vers le même dossier, Sku-Ever y serait donc installé deux fois.\n\nCorrigez l'un des deux, ou revenez en arrière et décochez-en un.",
 
             // ── composants ───────────────────────────────────────────────────
             ["components.heading"]   = "Que faut-il installer ?",
@@ -649,10 +649,10 @@ namespace SkuInstaller
             ["acc.status"]           = "État",
             ["acc.progressLog"]      = "Historique de progression",
 
-            ["opt.shortcut.label"]   = "Créer un raccourci vers Sku Updater sur le bureau",
+            ["opt.shortcut.label"]   = "Créer un raccourci vers Sku-Ever Updater sur le bureau",
             ["opt.shortcut.desc"]    = "Place un raccourci sur le bureau et dans le menu Démarrer, pour relancer cet updater plus tard sans le retélécharger.",
             ["opt.sapi2sr.label"]    = "Activer NVDA comme voix dans WoW (recommandé)",
-            ["opt.sapi2sr.desc"]     = "Installe et signe la passerelle NVDA-SAPI afin que la parole du jeu passe par NVDA. Sans elle, Sku se rabat sur une voix Windows.",
+            ["opt.sapi2sr.desc"]     = "Installe et signe la passerelle NVDA-SAPI afin que la parole du jeu passe par NVDA. Sans elle, Sku-Ever se rabat sur une voix Windows.",
             ["opt.windowsVoices.label"] = "Rendre toutes les voix Windows disponibles dans WoW (recommandé)",
             ["opt.windowsVoices.desc"]  = "Windows range ses voix récentes (ex. Hortense, Paul) dans une liste que le jeu ne voit pas. Les copie dans la liste du jeu après sauvegarde. Les numéros des voix peuvent changer.",
             ["opt.loginTool.label"]  = "Installer le WoW Login Tool (recommandé)",
@@ -661,14 +661,14 @@ namespace SkuInstaller
             ["opt.force.desc"]       = "Télécharge et remplace chaque addon même s'il est déjà à jour. À utiliser pour réparer une installation défectueuse — c'est nettement plus long.",
 
             ["managed.label"]        = "Addons supplémentaires recommandés (Anniversary, Classic Era et WoW Forever)",
-            ["managed.acc"]          = "Addons supplémentaires recommandés. Ces addons connus sont installés et maintenus à jour avec Sku, dans les clients Anniversary, Classic Era et WoW Forever ; chaque client reçoit la version qui lui correspond. La barre d'espace bascule l'addon en surbrillance.",
+            ["managed.acc"]          = "Addons supplémentaires recommandés. Ces addons connus sont installés et maintenus à jour avec Sku-Ever, dans les clients Anniversary, Classic Era et WoW Forever ; chaque client reçoit la version qui lui correspond. La barre d'espace bascule l'addon en surbrillance.",
             ["update.managedUpdates"]  = "{0} : mises à jour disponibles pour les addons supplémentaires : {1}.",
             ["update.managedInstalls"] = "{0} : addons supplémentaires qui seront installés : {1}.",
             ["managed.badHash"]      = "{0} : le téléchargement a échoué au contrôle d'intégrité et n'a pas été installé.",
             ["managed.obsoleteRemoved"] = "{0} : ancien dossier {1} supprimé, il entrerait en conflit avec la nouvelle version.",
 
             // ── progression ──────────────────────────────────────────────────
-            ["progress.heading"]          = "Installation de Sku",
+            ["progress.heading"]          = "Installation de Sku-Ever",
             ["progress.starting"]         = "Démarrage…",
             ["progress.historyLabel"]     = "Progression (utilisez les flèches pour relire) :",
             ["progress.finishedHeading"]  = "Terminé",
@@ -708,8 +708,8 @@ namespace SkuInstaller
             ["dlg.error.title"]        = "Erreur",
 
             // ── récapitulatif de fin ─────────────────────────────────────────
-            ["summary.headline.done"]     = "Installation de Sku terminée.",
-            ["summary.headline.upToDate"] = "Sku est déjà à jour.",
+            ["summary.headline.done"]     = "Installation de Sku-Ever terminée.",
+            ["summary.headline.upToDate"] = "Sku-Ever est déjà à jour.",
             ["summary.updated"]           = "{0} installé ({1}).",
             ["summary.addonsCurrent"]     = "Les addons étaient déjà à jour.",
             ["summary.settings"]          = "Les réglages du jeu nécessaires ont été ajustés.",

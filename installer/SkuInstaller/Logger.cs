@@ -47,7 +47,7 @@ namespace SkuInstaller
             try
             {
                 string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                string path = Path.Combine(desktop, "SkuInstaller.log");
+                string path = Path.Combine(desktop, "Sku-Ever-Installer.log");
                 File.WriteAllLines(path, _lines);
                 return path;
             }

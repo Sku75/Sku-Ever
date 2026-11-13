@@ -15,7 +15,7 @@
     <TargetFramework>net48</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <LangVersion>latest</LangVersion>
-    <AssemblyName>SkuInstaller</AssemblyName>
+    <AssemblyName>Sku-Ever-Installer</AssemblyName>
     <RootNamespace>SkuInstaller</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Single source of truth for the installer's own version. Surfaced in the
@@ -117,18 +117,19 @@
          on the Forever login screens only); the signing run signs it as an
          optional third target. Login tool 4.1.
          -->
-    <Version>5.6</Version>
+    <!-- Sku-Ever installer 1.0 = Fork des SkuInstaller 5.6 nur fuer WoW Forever und das Repo Sku75/Sku-Ever. -->
+    <Version>1.0</Version>
     <!-- File properties (Explorer "Details", and what antivirus reputation
          scoring reads). Left at the SDK defaults every field said just
          "SkuInstaller" and the copyright was blank, which is what throwaway
          droppers look like. The exe is NOT Authenticode-signed (no paid
          certificate), so this is the only identity it carries. -->
-    <Company>Sku</Company>
-    <Product>Sku Installer</Product>
-    <AssemblyTitle>Sku Installer - World of Warcraft screen reader addon setup</AssemblyTitle>
-    <Description>Installs and updates the Sku accessibility addon for World of Warcraft. https://github.com/Sku75/Sku-WoW-Addon-TBC</Description>
+    <Company>Sku-Ever</Company>
+    <Product>Sku-Ever installer</Product>
+    <AssemblyTitle>Sku-Ever installer - screen reader addon setup for WoW Forever</AssemblyTitle>
+    <Description>Installs and updates the Sku-Ever accessibility addon for WoW Forever. https://github.com/Sku75/Sku-Ever</Description>
     <Authors>JeanStiletto</Authors>
-    <Copyright>Copyright (c) 2026 JeanStiletto and the Sku contributors</Copyright>
+    <Copyright>Copyright (c) 2026 JeanStiletto, gitana83 and the Sku contributors</Copyright>
   </PropertyGroup>
 
   <ItemGroup>

@@ -162,7 +162,7 @@ namespace SkuInstaller
                         return result;
                     }
 
-                    string zipPath = Path.Combine(downloadsDir, "Sku-Logs-" + stamp + ".zip");
+                    string zipPath = Path.Combine(downloadsDir, "Sku-Ever-Logs-" + stamp + ".zip");
                     if (File.Exists(zipPath)) File.Delete(zipPath);
                     ZipFile.CreateFromDirectory(staging, zipPath, CompressionLevel.Optimal, includeBaseDirectory: false);
 

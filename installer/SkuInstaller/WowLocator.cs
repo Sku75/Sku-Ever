@@ -48,8 +48,7 @@ namespace SkuInstaller
         /// </summary>
         public static readonly string[] SupportedProducts =
         {
-            Config.AnniversaryFlavor,   // wow_anniversary
-            Config.EraFlavor,           // wow_classic_era
+            // Sku-Ever: nur WoW Forever.
             Config.ForeverFlavor,       // WoW Forever (the live "wowf" is normalized onto it)
         };
 
@@ -462,7 +461,7 @@ namespace SkuInstaller
         public static string InterfaceVersionList(string addonsFolder)
         {
             var versions = new System.Collections.Generic.List<int>();
-            bool forever = ProductForAddOnsFolder(addonsFolder) == Config.ForeverFlavor;
+            bool forever = true;   // Sku-Ever: nur WoW Forever, also immer die Forever-Nummer (16001)
 
             string baseDir = BaseDirOf(addonsFolder);
             if (baseDir != null)

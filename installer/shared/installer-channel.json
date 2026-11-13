@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "repository": "Sku75/Sku-WoW-Addon-TBC",
+  "repository": "Sku75/Sku-Ever",
   "platforms": {
     "windows-x64": {
-      "asset": "SkuInstaller.exe",
+      "asset": "Sku-Ever-Installer.exe",
       "metadata": "installer-version.txt",
       "installer": "Install-SkuUpdater.ps1"
     },

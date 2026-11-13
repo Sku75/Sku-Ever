@@ -1,0 +1,2175 @@
+-- Sku-Ever Startprofil: Einstellungen fuer eine Erstinstallation.
+-- Wird nur benutzt, wenn auf diesem WoW-Konto noch keine Sku-Einstellungen existieren
+-- (SkuOptionsDB fehlt). Vorhandene Einstellungen werden nie angefasst.
+SkuEverStartProfile = {
+	["profile"] = {
+		["SkuCore"] = {
+			["trainerSkillsUnavailableDisabled"] = false,
+			["followBreakWarn"] = true,
+			["auraEndSwitchedViewerOn"] = true,
+			["visualAids"] = {
+				["textWindow"] = {
+					["outline"] = false,
+					["font"] = "standard",
+					["scheme"] = "whiteOnBlack",
+					["opacity"] = 4,
+					["size"] = 2,
+				},
+				["lineBar"] = {
+					["enabled"] = false,
+					["font"] = "standard",
+					["position"] = "top",
+					["scheme"] = "whiteOnBlack",
+					["opacity"] = 5,
+					["size"] = 3,
+				},
+				["plateColors"] = {
+					["enabled"] = false,
+					["colorFriend"] = "green",
+					["colorEnemy"] = "red",
+					["colorNeutral"] = "yellow",
+					["mode"] = "target",
+					["alpha"] = 4,
+					["size"] = 40,
+				},
+				["mouseFinder"] = {
+					["enabled"] = false,
+					["shape"] = "pulse",
+				},
+				["namePlates"] = {
+					["otherAlpha"] = 1,
+					["userSet"] = false,
+					["friendlyNamesOnly"] = false,
+					["scale"] = 1,
+					["targetScale"] = 1,
+					["classColorEnemy"] = false,
+					["classColorFriend"] = false,
+				},
+			},
+			["dialTargeting"] = {
+				["keySound"] = "Bei erster und zweiter Taste",
+				["enabled"] = "Aus",
+			},
+		},
+		["SkuOptions"] = {
+			["vocalizeMenuNumbers"] = false,
+			["vocalizeSubmenus"] = false,
+			["keyboardEcho"] = false,
+			["overviewPages"] = {
+				[1] = {
+					["overviewSections"] = {
+						["debuffs"] = {
+							["locName"] = "Debuffs",
+							["pos"] = 4,
+						},
+						["general"] = {
+							["locName"] = "Allgemeines",
+							["pos"] = 2,
+						},
+						["reputation"] = {
+							["locName"] = "Ruf",
+							["pos"] = 6,
+						},
+						["pet"] = {
+							["locName"] = "Tier",
+							["pos"] = 8,
+						},
+						["party"] = {
+							["locName"] = "Gruppe",
+							["pos"] = 1,
+						},
+						["skills"] = {
+							["locName"] = "Fertigkeiten",
+							["pos"] = 5,
+						},
+						["Cooldowns"] = {
+							["locName"] = "Cooldowns",
+							["pos"] = 9,
+						},
+						["raid"] = {
+							["locName"] = "Raid",
+							["pos"] = 999,
+						},
+						["guild"] = {
+							["locName"] = "Gilde",
+							["pos"] = 7,
+						},
+						["buffs"] = {
+							["locName"] = "Buffs",
+							["pos"] = 3,
+						},
+					},
+				},
+				[2] = {
+					["overviewSections"] = {
+						["debuffs"] = {
+							["locName"] = "Debuffs",
+							["pos"] = 999,
+						},
+						["general"] = {
+							["locName"] = "Allgemeines",
+							["pos"] = 999,
+						},
+						["reputation"] = {
+							["locName"] = "Ruf",
+							["pos"] = 999,
+						},
+						["pet"] = {
+							["locName"] = "Tier",
+							["pos"] = 999,
+						},
+						["party"] = {
+							["locName"] = "Gruppe",
+							["pos"] = 999,
+						},
+						["skills"] = {
+							["locName"] = "Fertigkeiten",
+							["pos"] = 999,
+						},
+						["Cooldowns"] = {
+							["locName"] = "Cooldowns",
+							["pos"] = 999,
+						},
+						["raid"] = {
+							["locName"] = "Raid",
+							["pos"] = 2,
+						},
+						["guild"] = {
+							["locName"] = "Gilde",
+							["pos"] = 1,
+						},
+						["buffs"] = {
+							["locName"] = "Buffs",
+							["pos"] = 999,
+						},
+					},
+				},
+				[3] = {
+					["overviewSections"] = {
+						["debuffs"] = {
+							["locName"] = "Debuffs",
+							["pos"] = 999,
+						},
+						["general"] = {
+							["locName"] = "Allgemeines",
+							["pos"] = 999,
+						},
+						["reputation"] = {
+							["locName"] = "Ruf",
+							["pos"] = 999,
+						},
+						["pet"] = {
+							["locName"] = "Tier",
+							["pos"] = 999,
+						},
+						["party"] = {
+							["locName"] = "Gruppe",
+							["pos"] = 999,
+						},
+						["skills"] = {
+							["locName"] = "Fertigkeiten",
+							["pos"] = 999,
+						},
+						["Cooldowns"] = {
+							["locName"] = "Cooldowns",
+							["pos"] = 999,
+						},
+						["raid"] = {
+							["locName"] = "Raid",
+							["pos"] = 999,
+						},
+						["guild"] = {
+							["locName"] = "Gilde",
+							["pos"] = 999,
+						},
+						["buffs"] = {
+							["locName"] = "Buffs",
+							["pos"] = 999,
+						},
+					},
+				},
+				[4] = {
+					["overviewSections"] = {
+						["debuffs"] = {
+							["locName"] = "Debuffs",
+							["pos"] = 999,
+						},
+						["general"] = {
+							["locName"] = "Allgemeines",
+							["pos"] = 999,
+						},
+						["reputation"] = {
+							["locName"] = "Ruf",
+							["pos"] = 999,
+						},
+						["pet"] = {
+							["locName"] = "Tier",
+							["pos"] = 999,
+						},
+						["party"] = {
+							["locName"] = "Gruppe",
+							["pos"] = 999,
+						},
+						["skills"] = {
+							["locName"] = "Fertigkeiten",
+							["pos"] = 999,
+						},
+						["Cooldowns"] = {
+							["locName"] = "Cooldowns",
+							["pos"] = 999,
+						},
+						["raid"] = {
+							["locName"] = "Raid",
+							["pos"] = 999,
+						},
+						["guild"] = {
+							["locName"] = "Gilde",
+							["pos"] = 999,
+						},
+						["buffs"] = {
+							["locName"] = "Buffs",
+							["pos"] = 999,
+						},
+					},
+				},
+			},
+			["SkuKeyBinds"] = {
+				["SKU_KEY_TURNTOUNIT4"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_FOCUSGET1"] = {
+					["key"] = "NUMPADPLUS",
+					["key2"] = "",
+				},
+				["SKU_KEY_NOTIFYONRESOURCES"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_MOUSEFINDER"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_ROLLINFO"] = {
+					["key"] = "CTRL-SHIFT-C",
+					["key2"] = "",
+				},
+				["SKU_KEY_MOVETONEXTWP"] = {
+					["key"] = "CTRL-SHIFT-W",
+					["key2"] = "",
+				},
+				["SKU_KEY_TURNTOUNIT5"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_SUBGROUPTARGET3"] = {
+					["key"] = "ALT-NUMPAD3",
+					["key2"] = "",
+				},
+				["SKU_KEY_GROUPMEMBERSRANGECHECK"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_TOGGLEMMSIZE"] = {
+					["key"] = "SHIFT-M",
+					["key2"] = "",
+				},
+				["SKU_KEY_QUICKWP1SET"] = {
+					["key"] = "CTRL-SHIFT-F5",
+					["key2"] = "",
+				},
+				["SKU_KEY_FOCUSGET4"] = {
+					["key"] = "NUMPADMINUS",
+					["key2"] = "",
+				},
+				["SKU_KEY_SELECTNEXTBASEWAYPOINT"] = {
+					["key"] = "-",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK1SET"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_ADDSMALLWP"] = {
+					["key"] = "ALT-P",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK1"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_QUICKWP4"] = {
+					["key"] = "SHIFT-F8",
+					["key2"] = "",
+				},
+				["SKU_KEY_QUESTSHARE"] = {
+					["key"] = "CTRL-SHIFT-T",
+					["key2"] = "",
+				},
+				["SKU_KEY_SKUMARKERSET1WHITE"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_ENABLESOFTTARGETINGFRIENDLY"] = {
+					["key"] = "SHIFT-P",
+					["key2"] = "",
+				},
+				["SKU_KEY_OPENATLASLOOT"] = {
+					["key"] = "CTRL-SHIFT-L",
+					["key2"] = "",
+				},
+				["SKU_KEY_ROLLPASS"] = {
+					["key"] = "CTRL-SHIFT-X",
+					["key2"] = "",
+				},
+				["SKU_KEY_TURNTOUNIT6"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_SKUMARKERSET6YELLOW"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_SCAN5"] = {
+					["key"] = "CTRL-SHIFT-U",
+					["key2"] = "",
+				},
+				["SKU_KEY_SKUMARKERSET4GREEN"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_PANICMODE"] = {
+					["key"] = "CTRL-SHIFT-Y",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK6"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_ENABLEPARTYRAIDHEALTHMONITOR"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_TURNTOUNIT3"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_QUICKWP3SET"] = {
+					["key"] = "CTRL-SHIFT-F7",
+					["key2"] = "",
+				},
+				["SKU_KEY_TOGGLEREACHRANGE"] = {
+					["key"] = "CTRL-SHIFT-Q",
+					["key2"] = "",
+				},
+				["SKU_KEY_TARGETDISTANCE"] = {
+					["key"] = "ü",
+					["key2"] = "",
+				},
+				["SKU_KEY_MOVETOPREVWP"] = {
+					["key"] = "CTRL-SHIFT-S",
+					["key2"] = "",
+				},
+				["SKU_KEY_COMBATMENU_UP"] = {
+					["key"] = "UP",
+					["key2"] = "",
+				},
+				["SKU_KEY_SCAN4"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_DEBUGMODE"] = {
+					["key"] = "CTRL-SHIFT-F3",
+					["key2"] = "",
+				},
+				["SKU_KEY_FEEDPET"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK10SET"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_SCAN7"] = {
+					["key"] = "CTRL-SHIFT-P",
+					["key2"] = "",
+				},
+				["SKU_KEY_COMBATMENU_HOME"] = {
+					["key"] = "HOME",
+					["key2"] = "",
+				},
+				["SKU_KEY_OPENDAMAGEMETER"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_COMBATMONOUTPUTNUMBERINCOMBAT"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_ACTIONBARSOPEN"] = {
+					["key"] = "SHIFT-F11",
+					["key2"] = "",
+				},
+				["SKU_KEY_CHATOPEN"] = {
+					["key"] = "SHIFT-F2",
+					["key2"] = "",
+				},
+				["SKU_KEY_TURNTOUNIT2"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK3"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_FOCUSGET8"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK5"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_NAVWAYPOINTSQUICK"] = {
+					["key"] = "SHIFT-F9",
+					["key2"] = "",
+				},
+				["SKU_KEY_ROLLGREED"] = {
+					["key"] = "CTRL-SHIFT-G",
+					["key2"] = "",
+				},
+				["SKU_KEY_COMBATMENU_BACK"] = {
+					["key"] = "BACKSPACE",
+					["key2"] = "",
+				},
+				["SKU_KEY_OPENMENU"] = {
+					["key"] = "SHIFT-F1",
+					["key2"] = "",
+				},
+				["SKU_KEY_SUBGROUPTARGET1"] = {
+					["key"] = "ALT-NUMPAD1",
+					["key2"] = "",
+				},
+				["SKU_KEY_OUTPUTSOFTTARGET"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_STARTRRFOLLOW"] = {
+					["key"] = "CTRL-SHIFT-Z",
+					["key2"] = "",
+				},
+				["SKU_KEY_SKUMARKERSET5PURPLE"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_STOPROUTEORWAYPOINT"] = {
+					["key"] = "SHIFT-F12",
+					["key2"] = "",
+				},
+				["SKU_KEY_SCAN1"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_QUICKWP3"] = {
+					["key"] = "SHIFT-F7",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK4"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_SCAN3"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK2SET"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_OUTPUTHARDTARGET"] = {
+					["key"] = "+",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK9SET"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_MMSCANWIDE"] = {
+					["key"] = "CTRL-SHIFT-F",
+					["key2"] = "",
+				},
+				["SKU_KEY_FOCUSGET5"] = {
+					["key"] = "NUMPADMULTIPLY",
+					["key2"] = "",
+				},
+				["SKU_KEY_ENABLESOFTTARGETINGINTERACT"] = {
+					["key"] = "SHIFT-O",
+					["key2"] = "",
+				},
+				["SKU_KEY_COMBATMENU_LEFT"] = {
+					["key"] = "LEFT",
+					["key2"] = "",
+				},
+				["SKU_KEY_NAVROUTEDESTINATIONSQUICK"] = {
+					["key"] = "SHIFT-F10",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK7SET"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_QUESTTARGET"] = {
+					["key"] = "ALT-H",
+					["key2"] = "",
+				},
+				["SKU_KEY_SUBGROUPTARGET6"] = {
+					["key"] = "ALT-NUMPAD6",
+					["key2"] = "",
+				},
+				["SKU_KEY_QUICKWP4SET"] = {
+					["key"] = "CTRL-SHIFT-F8",
+					["key2"] = "",
+				},
+				["SKU_KEY_QUICKWP2"] = {
+					["key"] = "SHIFT-F6",
+					["key2"] = "",
+				},
+				["SKU_KEY_MMSCANNARROW"] = {
+					["key"] = "CTRL-SHIFT-R",
+					["key2"] = "",
+				},
+				["SKU_KEY_COMBATMONSETFOLLOWTARGET"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_TURNTOUNITTURN180"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_ADDLARGEWP"] = {
+					["key"] = "ALT-O",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK6SET"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_FOCUSSET6"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_COMBATMENU_CLOSE"] = {
+					["key"] = "ESCAPE",
+					["key2"] = "",
+				},
+				["SKU_KEY_TRADEACCEPT"] = {
+					["key"] = "CTRL-T",
+					["key2"] = "",
+				},
+				["SKU_KEY_FOCUSSET3"] = {
+					["key"] = "CTRL-NUMPAD9",
+					["key2"] = "",
+				},
+				["SKU_KEY_SUBGROUPTARGET8"] = {
+					["key"] = "ALT-NUMPAD8",
+					["key2"] = "",
+				},
+				["SKU_KEY_SCAN6"] = {
+					["key"] = "CTRL-SHIFT-O",
+					["key2"] = "",
+				},
+				["SKU_KEY_COMBATMENU_RIGHT"] = {
+					["key"] = "RIGHT",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENULEFTCLICK"] = {
+					["key"] = "ENTER",
+					["key2"] = "",
+				},
+				["SKU_KEY_SKUMARKERSET3BLUE"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_FOCUSGET2"] = {
+					["key"] = "NUMPAD6",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK8"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_FOCUSGET7"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_QUICKWP1"] = {
+					["key"] = "SHIFT-F5",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK5SET"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_OUTPUTTARGETTOOLTIP"] = {
+					["key"] = "CTRL-SHIFT-V",
+					["key2"] = "",
+				},
+				["SKU_KEY_TURNTOBEACON"] = {
+					["key"] = "I",
+					["key2"] = "T",
+				},
+				["SKU_KEY_FOCUSSET1"] = {
+					["key"] = "CTRL-NUMPADPLUS",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK10"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_SUBGROUPTARGET5"] = {
+					["key"] = "ALT-NUMPAD5",
+					["key2"] = "",
+				},
+				["SKU_KEY_ROLLNEED"] = {
+					["key"] = "CTRL-SHIFT-B",
+					["key2"] = "",
+				},
+				["SKU_KEY_SUBGROUPTARGET4"] = {
+					["key"] = "ALT-NUMPAD4",
+					["key2"] = "",
+				},
+				["SKU_KEY_SUBGROUPTARGET7"] = {
+					["key"] = "ALT-NUMPAD7",
+					["key2"] = "",
+				},
+				["SKU_KEY_TAXICANCEL"] = {
+					["key"] = "CTRL-SHIFT-E",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK9"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_QUESTABANDON"] = {
+					["key"] = "CTRL-SHIFT-D",
+					["key2"] = "",
+				},
+				["SKU_KEY_FOCUSGET3"] = {
+					["key"] = "NUMPAD9",
+					["key2"] = "",
+				},
+				["SKU_KEY_PITCHLOCK"] = {
+					["key"] = "CTRL-SHIFT-N",
+					["key2"] = "",
+				},
+				["SKU_KEY_SUBGROUPTARGET2"] = {
+					["key"] = "ALT-NUMPAD2",
+					["key2"] = "",
+				},
+				["SKU_KEY_COMBATMENU_END"] = {
+					["key"] = "END",
+					["key2"] = "",
+				},
+				["SKU_KEY_SCANCONTINUE"] = {
+					["key"] = "SHIFT-L",
+					["key2"] = "",
+				},
+				["SKU_KEY_TARGETHEALTH"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_NEXTCOMBATENEMY"] = {
+					["key"] = "CTRL-H",
+					["key2"] = "",
+				},
+				["SKU_KEY_SCAN2"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_QUICKWP2SET"] = {
+					["key"] = "CTRL-SHIFT-F6",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK2"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK8SET"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_SKUMARKERSET8GREY"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_COMBATMENU_DOWN"] = {
+					["key"] = "DOWN",
+					["key2"] = "",
+				},
+				["SKU_KEY_FOCUSGET6"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_FOCUSSET4"] = {
+					["key"] = "CTRL-NUMPADMINUS",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK3SET"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_FOCUSSET7"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_SCAN8"] = {
+					["key"] = "CTRL-SHIFT-I",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK4SET"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_FOCUSSET5"] = {
+					["key"] = "CTRL-NUMPADMULTIPLY",
+					["key2"] = "",
+				},
+				["SKU_KEY_TURNTOUNIT1"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_FOCUSSET2"] = {
+					["key"] = "CTRL-NUMPAD6",
+					["key2"] = "",
+				},
+				["SKU_KEY_PETHEALTH"] = {
+					["key"] = "#",
+					["key2"] = "",
+				},
+				["SKU_KEY_OPENDUNGEONBROWSER"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_SKUMARKERSET7ORANGE"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_FOCUSSET8"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENURIGHTCLICK"] = {
+					["key"] = "CTRL-ENTER",
+					["key2"] = "",
+				},
+				["SKU_KEY_SKUMARKERSET2RED"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_SKUMARKERCLEARALL"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_STOPTTSOUTPUT"] = {
+					["key"] = "CTRL-V",
+					["key2"] = "",
+				},
+				["SKU_KEY_ENABLESOFTTARGETINGENEMY"] = {
+					["key"] = "SHIFT-I",
+					["key2"] = "",
+				},
+				["SKU_KEY_DOMONITORPARTYHEALTH2CONTI"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+				["SKU_KEY_MENUQUICK7"] = {
+					["key"] = "",
+					["key2"] = "",
+				},
+			},
+		},
+		["SkuNav"] = {
+			["beaconVolume"] = 1,
+			["wotlkMapReset"] = true,
+		},
+		["SkuMob"] = {
+			["InCombatSound"] = "Interface\\AddOns\\SkuAudioData_fast_de\\assets\\audio\\sound-notification17.mp3",
+			["vocalizePlayerNamePlaceholders"] = false,
+			["dontVocalizePlayerReactionAndLevelInCombat"] = false,
+		},
+		["SkuChat"] = {
+			["chatSettings"] = {
+				["filter"] = {
+					["terms"] = {},
+				},
+			},
+			["CombatLog"] = {
+				["enabled"] = false,
+				["currentFilter"] = 1,
+			},
+			["AudioLog"] = {
+				["enabled"] = false,
+			},
+			["WowTtsVolume"] = 86,
+			["WowTtsSpeed"] = 7,
+			["tabs"] = {
+				[1] = {
+					["enabled"] = true,
+					["historyMax"] = 100,
+					["frameName"] = "SkuChatChatFrame1",
+					["messageTypes"] = {
+						["COMBAT"] = {
+							[1] = true,
+							[2] = true,
+							[3] = true,
+						},
+						["OTHER"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+							[4] = false,
+							[5] = false,
+							[6] = false,
+						},
+						["PLAYER_MESSAGES"] = {
+							[1] = 2,
+							[2] = 2,
+							[3] = 2,
+							[4] = false,
+							[5] = false,
+							[6] = false,
+							[7] = false,
+							[8] = false,
+							[9] = false,
+							[10] = false,
+							[11] = false,
+							[12] = false,
+							[13] = false,
+							[14] = false,
+						},
+						["CREATURE_MESSAGES"] = {
+							[1] = 2,
+							[2] = 2,
+							[3] = 2,
+							[4] = false,
+							[5] = false,
+							[6] = false,
+						},
+						["PVP"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+						},
+						["SYSTEM"] = {
+							[1] = true,
+							[2] = true,
+							[3] = true,
+							[4] = true,
+							[5] = true,
+							[6] = true,
+							[7] = 2,
+						},
+						["SKU"] = {
+							[1] = false,
+							[2] = false,
+						},
+					},
+					["createdAt"] = 1794338712,
+					["name"] = "Standard",
+					["channels"] = {
+						[1] = {
+							["name"] = "General",
+							["status"] = true,
+						},
+						[2] = {
+							["name"] = "Trade",
+							["status"] = true,
+						},
+						[3] = {
+							["name"] = "LocalDefense",
+							["status"] = true,
+						},
+						[4] = {
+							["name"] = "WorldDefense",
+							["status"] = true,
+						},
+						[5] = {
+							["name"] = "GuildRecruitment",
+							["status"] = true,
+						},
+						[6] = {
+							["name"] = "LookingForGroup",
+							["status"] = true,
+						},
+						[7] = {
+							["name"] = "SkuChat",
+							["status"] = 2,
+						},
+						[8] = {
+							["status"] = true,
+						},
+						[9] = {
+							["status"] = false,
+						},
+						[10] = {
+							["status"] = false,
+						},
+						[11] = {
+							["status"] = false,
+						},
+						[12] = {
+							["status"] = true,
+						},
+						[13] = {
+							["status"] = false,
+						},
+						[14] = {
+							["status"] = false,
+						},
+						[15] = {
+							["status"] = false,
+						},
+						[16] = {
+							["status"] = true,
+						},
+						[17] = {
+							["status"] = false,
+						},
+						[18] = {
+							["status"] = false,
+						},
+						[19] = {
+							["status"] = false,
+						},
+						[20] = {
+							["status"] = true,
+						},
+						[21] = {
+							["status"] = false,
+						},
+						[22] = {
+							["status"] = false,
+						},
+						[23] = {
+							["status"] = false,
+						},
+						[24] = {
+							["status"] = true,
+						},
+						[25] = {
+							["status"] = false,
+						},
+						[26] = {
+							["status"] = false,
+						},
+						[27] = {
+							["status"] = false,
+						},
+						[28] = {
+							["status"] = true,
+						},
+						[29] = {
+							["status"] = false,
+						},
+						[30] = {
+							["status"] = false,
+						},
+						[31] = {
+							["status"] = false,
+						},
+						[32] = {
+							["status"] = true,
+						},
+						[33] = {
+							["status"] = false,
+						},
+						[34] = {
+							["status"] = false,
+						},
+						[35] = {
+							["status"] = false,
+						},
+						[36] = {
+							["status"] = true,
+						},
+						[37] = {
+							["status"] = false,
+						},
+						[38] = {
+							["status"] = false,
+						},
+						[39] = {
+							["status"] = false,
+						},
+						[40] = {
+							["status"] = true,
+						},
+						[41] = {
+							["status"] = false,
+						},
+						[42] = {
+							["status"] = false,
+						},
+						[43] = {
+							["status"] = false,
+						},
+						[44] = {
+							["status"] = true,
+						},
+						[45] = {
+							["status"] = false,
+						},
+						[46] = {
+							["status"] = false,
+						},
+						[47] = {
+							["status"] = false,
+						},
+						[48] = {
+							["status"] = true,
+						},
+						[49] = {
+							["status"] = false,
+						},
+						[50] = {
+							["status"] = false,
+						},
+						[51] = {
+							["status"] = false,
+						},
+						[52] = {
+							["status"] = true,
+						},
+						[53] = {
+							["status"] = false,
+						},
+						[54] = {
+							["status"] = false,
+						},
+						[55] = {
+							["status"] = false,
+						},
+						[56] = {
+							["status"] = true,
+						},
+						[57] = {
+							["status"] = false,
+						},
+						[58] = {
+							["status"] = false,
+						},
+						[59] = {
+							["status"] = false,
+						},
+						[60] = {
+							["status"] = true,
+						},
+						[61] = {
+							["status"] = false,
+						},
+						[62] = {
+							["status"] = false,
+						},
+						[63] = {
+							["status"] = false,
+						},
+					},
+					["audioOnNewMessage"] = "sound-silence0.1",
+					["historyCurrentLine"] = 1,
+					["history"] = {},
+					["lastActivityAt"] = 1794579564,
+				},
+				[2] = {
+					["enabled"] = true,
+					["historyMax"] = 100,
+					["frameName"] = "SkuChatChatFrame2",
+					["messageTypes"] = {
+						["COMBAT"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+						},
+						["OTHER"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+							[4] = false,
+							[5] = false,
+							[6] = false,
+						},
+						["PLAYER_MESSAGES"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+							[4] = 2,
+							[5] = 2,
+							[6] = false,
+							[7] = false,
+							[8] = 2,
+							[9] = 2,
+							[10] = 2,
+							[11] = 2,
+							[12] = 2,
+							[13] = 2,
+							[14] = 2,
+						},
+						["CREATURE_MESSAGES"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+							[4] = 2,
+							[5] = 2,
+							[6] = 2,
+						},
+						["PVP"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+						},
+						["SYSTEM"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+							[4] = false,
+							[5] = false,
+							[6] = false,
+							[7] = false,
+						},
+						["SKU"] = {
+							[1] = false,
+							[2] = false,
+						},
+					},
+					["createdAt"] = 1794338712,
+					["name"] = "Kommunikation",
+					["channels"] = {
+						[1] = {
+							["name"] = "General",
+							["status"] = false,
+						},
+						[2] = {
+							["name"] = "Trade",
+							["status"] = false,
+						},
+						[3] = {
+							["name"] = "LocalDefense",
+							["status"] = false,
+						},
+						[4] = {
+							["name"] = "WorldDefense",
+							["status"] = false,
+						},
+						[5] = {
+							["name"] = "GuildRecruitment",
+							["status"] = false,
+						},
+						[6] = {
+							["name"] = "LookingForGroup",
+							["status"] = false,
+						},
+						[7] = {
+							["name"] = "SkuChat",
+							["status"] = false,
+						},
+					},
+					["audioOnNewMessage"] = "sound-silence0.1",
+					["historyCurrentLine"] = 1,
+					["history"] = {},
+					["lastActivityAt"] = 1794578860,
+				},
+				[3] = {
+					["enabled"] = true,
+					["historyMax"] = 100,
+					["frameName"] = "SkuChatChatFrame3",
+					["messageTypes"] = {
+						["COMBAT"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+						},
+						["OTHER"] = {
+							[1] = true,
+							[2] = true,
+							[3] = true,
+							[4] = true,
+							[5] = true,
+							[6] = true,
+						},
+						["PLAYER_MESSAGES"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+							[4] = false,
+							[5] = false,
+							[6] = false,
+							[7] = false,
+							[8] = false,
+							[9] = false,
+							[10] = false,
+							[11] = false,
+							[12] = false,
+							[13] = false,
+							[14] = false,
+						},
+						["CREATURE_MESSAGES"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+							[4] = false,
+							[5] = false,
+							[6] = false,
+						},
+						["PVP"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+						},
+						["SYSTEM"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+							[4] = false,
+							[5] = false,
+							[6] = false,
+							[7] = 2,
+						},
+						["SKU"] = {
+							[1] = false,
+							[2] = false,
+						},
+					},
+					["createdAt"] = 1794338712,
+					["name"] = "Anderes",
+					["channels"] = {
+						[1] = {
+							["name"] = "General",
+							["status"] = false,
+						},
+						[2] = {
+							["name"] = "Trade",
+							["status"] = false,
+						},
+						[3] = {
+							["name"] = "LocalDefense",
+							["status"] = false,
+						},
+						[4] = {
+							["name"] = "WorldDefense",
+							["status"] = false,
+						},
+						[5] = {
+							["name"] = "GuildRecruitment",
+							["status"] = false,
+						},
+						[6] = {
+							["name"] = "LookingForGroup",
+							["status"] = false,
+						},
+						[7] = {
+							["name"] = "SkuChat",
+							["status"] = false,
+						},
+					},
+					["audioOnNewMessage"] = "sound-silence0.1",
+					["historyCurrentLine"] = 1,
+					["history"] = {},
+					["lastActivityAt"] = 1794579675,
+				},
+				[4] = {
+					["enabled"] = true,
+					["historyMax"] = 100,
+					["frameName"] = "SkuChatChatFrame4",
+					["messageTypes"] = {
+						["COMBAT"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+						},
+						["OTHER"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+							[4] = false,
+							[5] = false,
+							[6] = false,
+						},
+						["PLAYER_MESSAGES"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+							[4] = false,
+							[5] = false,
+							[6] = 2,
+							[7] = 2,
+							[8] = false,
+							[9] = false,
+							[10] = false,
+							[11] = false,
+							[12] = false,
+							[13] = false,
+							[14] = false,
+						},
+						["CREATURE_MESSAGES"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+							[4] = false,
+							[5] = false,
+							[6] = false,
+						},
+						["PVP"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+						},
+						["SYSTEM"] = {
+							[1] = false,
+							[2] = false,
+							[3] = false,
+							[4] = false,
+							[5] = false,
+							[6] = false,
+							[7] = false,
+						},
+						["SKU"] = {
+							[1] = false,
+							[2] = false,
+						},
+					},
+					["createdAt"] = 1794338712,
+					["name"] = "Flüstern",
+					["channels"] = {
+						[1] = {
+							["name"] = "General",
+							["status"] = false,
+						},
+						[2] = {
+							["name"] = "Trade",
+							["status"] = false,
+						},
+						[3] = {
+							["name"] = "LocalDefense",
+							["status"] = false,
+						},
+						[4] = {
+							["name"] = "WorldDefense",
+							["status"] = false,
+						},
+						[5] = {
+							["name"] = "GuildRecruitment",
+							["status"] = false,
+						},
+						[6] = {
+							["name"] = "LookingForGroup",
+							["status"] = false,
+						},
+						[7] = {
+							["name"] = "SkuChat",
+							["status"] = false,
+						},
+					},
+					["audioOnNewMessage"] = "sound-silence0.1",
+					["historyCurrentLine"] = 1,
+					["history"] = {},
+					["lastActivityAt"] = 1794575841,
+				},
+			},
+		},
+	},
+	["global"] = {
+		["SkuChat"] = {
+			["CombatLogFilters"] = {
+				[1] = {
+					["quickButtonName"] = "Everything",
+					["hasQuickButton"] = true,
+					["tooltip"] = "Everything",
+					["custom"] = false,
+					["name"] = "Everything",
+					["quickButtonDisplay"] = {
+						["party"] = true,
+						["solo"] = true,
+						["raid"] = true,
+					},
+					["settings"] = {
+						["unitColoring"] = false,
+						["lineColoring"] = true,
+						["spellBraces"] = false,
+						["sourceColoring"] = true,
+						["showHistory"] = true,
+						["destColoring"] = true,
+						["amountHighlighting"] = true,
+						["schoolNameColoring"] = false,
+						["abilitySchoolColoring"] = false,
+						["sourceBraces"] = true,
+						["missColoring"] = true,
+						["itemBraces"] = true,
+						["abilityColoring"] = false,
+						["amountActorColoring"] = false,
+						["destBraces"] = true,
+						["timestamp"] = false,
+						["actionColoring"] = false,
+						["fullText"] = false,
+						["lineColorPriority"] = 1,
+						["lineHighlighting"] = true,
+						["abilityActorColoring"] = false,
+						["abilityHighlighting"] = true,
+						["braces"] = false,
+						["schoolNameHighlighting"] = true,
+						["hideBuffs"] = true,
+						["unitIcons"] = true,
+						["hideDebuffs"] = true,
+						["amountSchoolColoring"] = false,
+						["amountColoring"] = false,
+						["noMeleeSwingColoring"] = false,
+						["schoolNameActorColoring"] = false,
+						["actionHighlighting"] = false,
+						["unitBraces"] = true,
+						["actionActorColoring"] = false,
+					},
+					["colors"] = {
+						["unitColoring"] = {
+							[32334] = {
+								["a"] = 1,
+								["b"] = 0.05,
+								["g"] = 0.05,
+								["r"] = 0.75,
+							},
+							[2147483648] = {
+								["a"] = 1,
+								["b"] = 0.75,
+								["g"] = 0.75,
+								["r"] = 0.75,
+							},
+							[12561] = {
+								["a"] = 1,
+								["b"] = 0.7,
+								["g"] = 0.7,
+								["r"] = 0.7,
+							},
+							[32078] = {
+								["a"] = 1,
+								["b"] = 0.05,
+								["g"] = 0.05,
+								["r"] = 0.75,
+							},
+							[17681] = {
+								["a"] = 1,
+								["b"] = 0.7,
+								["g"] = 0.7,
+								["r"] = 0.7,
+							},
+							[32542] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 0.64,
+								["r"] = 0.34,
+							},
+							[32558] = {
+								["a"] = 1,
+								["b"] = 0.05,
+								["g"] = 0.05,
+								["r"] = 0.75,
+							},
+						},
+						["highlightedEvents"] = {
+							["PARTY_KILL"] = true,
+						},
+						["eventColoring"] = {},
+						["defaults"] = {
+							["damage"] = {
+								["a"] = 1,
+								["b"] = 0,
+								["g"] = 1,
+								["r"] = 1,
+							},
+							["spell"] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 1,
+								["r"] = 1,
+							},
+						},
+						["schoolColoring"] = {
+							[1] = {
+								["a"] = 1,
+								["b"] = 0,
+								["g"] = 1,
+								["r"] = 1,
+							},
+							[2] = {
+								["a"] = 1,
+								["b"] = 0.5,
+								["g"] = 0.9,
+								["r"] = 1,
+							},
+							[3] = nil,
+							[4] = {
+								["a"] = 1,
+								["b"] = 0,
+								["g"] = 0.5,
+								["r"] = 1,
+							},
+							[0] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 1,
+								["r"] = 1,
+							},
+							[8] = {
+								["a"] = 1,
+								["b"] = 0.3,
+								["g"] = 1,
+								["r"] = 0.3,
+							},
+							[32] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 0.5,
+								["r"] = 0.5,
+							},
+							[16] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 1,
+								["r"] = 0.5,
+							},
+							[64] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 0.5,
+								["r"] = 1,
+							},
+						},
+					},
+					["filters"] = {
+						[1] = {
+							["eventList"] = {
+								["SPELL_PERIODIC_MISSED"] = true,
+								["SPELL_EMPOWER_START"] = true,
+								["SPELL_BUILDING_HEAL"] = true,
+								["UNIT_DESTROYED"] = true,
+								["SPELL_RESURRECT"] = true,
+								["DAMAGE_SHIELD_MISSED"] = true,
+								["SPELL_LEECH"] = true,
+								["SPELL_AURA_BROKEN"] = true,
+								["UNIT_DIED"] = true,
+								["SPELL_PERIODIC_ENERGIZE"] = true,
+								["DAMAGE_SPLIT"] = true,
+								["UNIT_DISSIPATES"] = true,
+								["SPELL_INSTAKILL"] = true,
+								["SPELL_PERIODIC_DAMAGE"] = true,
+								["SPELL_PERIODIC_HEAL"] = true,
+								["PARTY_KILL"] = true,
+								["SPELL_DAMAGE"] = true,
+								["RANGE_DAMAGE"] = true,
+								["ENVIRONMENTAL_DAMAGE"] = true,
+								["SPELL_DISPEL"] = true,
+								["SPELL_EXTRA_ATTACKS"] = true,
+								["DAMAGE_SHIELD"] = true,
+								["SPELL_EMPOWER_INTERRUPT"] = true,
+								["SPELL_STOLEN"] = true,
+								["SPELL_ENERGIZE"] = true,
+								["SPELL_EMPOWER_END"] = true,
+								["SPELL_BUILDING_DAMAGE"] = true,
+								["SPELL_INTERRUPT"] = true,
+								["SPELL_CAST_START"] = true,
+								["SWING_MISSED"] = true,
+								["RANGE_MISSED"] = true,
+								["SPELL_MISSED"] = true,
+								["SPELL_DURABILITY_DAMAGE_ALL"] = true,
+								["ENCHANT_REMOVED"] = true,
+								["SPELL_AURA_REMOVED"] = true,
+								["SPELL_DISPEL_FAILED"] = true,
+								["SPELL_DURABILITY_DAMAGE"] = true,
+								["SPELL_CAST_FAILED"] = true,
+								["ENCHANT_APPLIED"] = true,
+								["SPELL_PERIODIC_LEECH"] = true,
+								["SPELL_AURA_REFRESH"] = true,
+								["SPELL_AURA_APPLIED_DOSE"] = true,
+								["SPELL_AURA_REMOVED_DOSE"] = true,
+								["SWING_DAMAGE"] = true,
+								["SPELL_AURA_BROKEN_SPELL"] = true,
+								["SPELL_CREATE"] = true,
+								["SPELL_CAST_SUCCESS"] = true,
+								["SPELL_HEAL"] = true,
+								["SPELL_SUMMON"] = true,
+								["SPELL_AURA_APPLIED"] = true,
+								["SPELL_PERIODIC_DRAIN"] = true,
+								["SPELL_DRAIN"] = true,
+							},
+							["sourceFlags"] = {
+								[32334] = true,
+								[12561] = true,
+								[32558] = true,
+								[32078] = true,
+								[32542] = true,
+								[17681] = true,
+								[2147483648] = true,
+							},
+						},
+						[2] = {
+							["destFlags"] = {
+								[32334] = true,
+								[12561] = true,
+								[32558] = true,
+								[32078] = true,
+								[32542] = true,
+								[17681] = true,
+								[2147483648] = true,
+							},
+							["eventList"] = {
+								["SPELL_PERIODIC_MISSED"] = true,
+								["SPELL_EMPOWER_START"] = true,
+								["SPELL_BUILDING_HEAL"] = true,
+								["UNIT_DESTROYED"] = true,
+								["SPELL_RESURRECT"] = true,
+								["DAMAGE_SHIELD_MISSED"] = true,
+								["SPELL_LEECH"] = true,
+								["SPELL_AURA_BROKEN"] = true,
+								["UNIT_DIED"] = true,
+								["SPELL_PERIODIC_ENERGIZE"] = true,
+								["DAMAGE_SPLIT"] = true,
+								["UNIT_DISSIPATES"] = true,
+								["SPELL_INSTAKILL"] = true,
+								["SPELL_PERIODIC_DAMAGE"] = true,
+								["SPELL_PERIODIC_HEAL"] = true,
+								["PARTY_KILL"] = true,
+								["SPELL_DAMAGE"] = true,
+								["RANGE_DAMAGE"] = true,
+								["ENVIRONMENTAL_DAMAGE"] = true,
+								["SPELL_DISPEL"] = true,
+								["SPELL_EXTRA_ATTACKS"] = true,
+								["DAMAGE_SHIELD"] = true,
+								["SPELL_EMPOWER_INTERRUPT"] = true,
+								["SPELL_STOLEN"] = true,
+								["SPELL_ENERGIZE"] = true,
+								["SPELL_EMPOWER_END"] = true,
+								["SPELL_BUILDING_DAMAGE"] = true,
+								["SPELL_INTERRUPT"] = true,
+								["SPELL_CAST_START"] = true,
+								["SWING_MISSED"] = true,
+								["RANGE_MISSED"] = true,
+								["SPELL_MISSED"] = true,
+								["SPELL_DURABILITY_DAMAGE_ALL"] = true,
+								["ENCHANT_REMOVED"] = true,
+								["SPELL_AURA_REMOVED"] = true,
+								["SPELL_DISPEL_FAILED"] = true,
+								["SPELL_DURABILITY_DAMAGE"] = true,
+								["SPELL_CAST_FAILED"] = true,
+								["ENCHANT_APPLIED"] = true,
+								["SPELL_PERIODIC_LEECH"] = true,
+								["SPELL_AURA_REFRESH"] = true,
+								["SPELL_AURA_APPLIED_DOSE"] = true,
+								["SPELL_AURA_REMOVED_DOSE"] = true,
+								["SWING_DAMAGE"] = true,
+								["SPELL_AURA_BROKEN_SPELL"] = true,
+								["SPELL_CREATE"] = true,
+								["SPELL_CAST_SUCCESS"] = true,
+								["SPELL_HEAL"] = true,
+								["SPELL_SUMMON"] = true,
+								["SPELL_AURA_APPLIED"] = true,
+								["SPELL_PERIODIC_DRAIN"] = true,
+								["SPELL_DRAIN"] = true,
+							},
+						},
+					},
+				},
+				[2] = {
+					["quickButtonName"] = "My actions",
+					["hasQuickButton"] = true,
+					["tooltip"] = "My actions",
+					["custom"] = false,
+					["name"] = "My actions",
+					["quickButtonDisplay"] = {
+						["party"] = true,
+						["solo"] = true,
+						["raid"] = true,
+					},
+					["settings"] = {
+						["unitColoring"] = false,
+						["lineColoring"] = true,
+						["spellBraces"] = false,
+						["sourceColoring"] = true,
+						["showHistory"] = true,
+						["destColoring"] = true,
+						["amountHighlighting"] = true,
+						["schoolNameColoring"] = false,
+						["abilitySchoolColoring"] = false,
+						["sourceBraces"] = true,
+						["missColoring"] = true,
+						["itemBraces"] = true,
+						["abilityColoring"] = false,
+						["amountActorColoring"] = false,
+						["destBraces"] = true,
+						["timestamp"] = false,
+						["actionColoring"] = false,
+						["fullText"] = false,
+						["lineColorPriority"] = 1,
+						["lineHighlighting"] = true,
+						["abilityActorColoring"] = false,
+						["abilityHighlighting"] = true,
+						["braces"] = false,
+						["schoolNameHighlighting"] = true,
+						["hideBuffs"] = true,
+						["unitIcons"] = true,
+						["hideDebuffs"] = true,
+						["amountSchoolColoring"] = false,
+						["amountColoring"] = false,
+						["noMeleeSwingColoring"] = false,
+						["schoolNameActorColoring"] = false,
+						["actionHighlighting"] = false,
+						["unitBraces"] = true,
+						["actionActorColoring"] = false,
+					},
+					["colors"] = {
+						["unitColoring"] = {
+							[32334] = {
+								["a"] = 1,
+								["b"] = 0.05,
+								["g"] = 0.05,
+								["r"] = 0.75,
+							},
+							[2147483648] = {
+								["a"] = 1,
+								["b"] = 0.75,
+								["g"] = 0.75,
+								["r"] = 0.75,
+							},
+							[12561] = {
+								["a"] = 1,
+								["b"] = 0.7,
+								["g"] = 0.7,
+								["r"] = 0.7,
+							},
+							[32078] = {
+								["a"] = 1,
+								["b"] = 0.05,
+								["g"] = 0.05,
+								["r"] = 0.75,
+							},
+							[17681] = {
+								["a"] = 1,
+								["b"] = 0.7,
+								["g"] = 0.7,
+								["r"] = 0.7,
+							},
+							[32542] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 0.64,
+								["r"] = 0.34,
+							},
+							[32558] = {
+								["a"] = 1,
+								["b"] = 0.05,
+								["g"] = 0.05,
+								["r"] = 0.75,
+							},
+						},
+						["highlightedEvents"] = {
+							["PARTY_KILL"] = true,
+						},
+						["eventColoring"] = {},
+						["defaults"] = {
+							["damage"] = {
+								["a"] = 1,
+								["b"] = 0,
+								["g"] = 1,
+								["r"] = 1,
+							},
+							["spell"] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 1,
+								["r"] = 1,
+							},
+						},
+						["schoolColoring"] = {
+							[1] = {
+								["a"] = 1,
+								["b"] = 0,
+								["g"] = 1,
+								["r"] = 1,
+							},
+							[2] = {
+								["a"] = 1,
+								["b"] = 0.5,
+								["g"] = 0.9,
+								["r"] = 1,
+							},
+							[3] = nil,
+							[4] = {
+								["a"] = 1,
+								["b"] = 0,
+								["g"] = 0.5,
+								["r"] = 1,
+							},
+							[0] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 1,
+								["r"] = 1,
+							},
+							[8] = {
+								["a"] = 1,
+								["b"] = 0.3,
+								["g"] = 1,
+								["r"] = 0.3,
+							},
+							[32] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 0.5,
+								["r"] = 0.5,
+							},
+							[16] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 1,
+								["r"] = 0.5,
+							},
+							[64] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 0.5,
+								["r"] = 1,
+							},
+						},
+					},
+					["filters"] = {
+						[1] = {
+							["eventList"] = {
+								["SPELL_PERIODIC_MISSED"] = false,
+								["SPELL_INTERRUPT"] = false,
+								["UNIT_DESTROYED"] = true,
+								["SPELL_LEECH"] = false,
+								["SPELL_AURA_BROKEN"] = false,
+								["UNIT_DIED"] = false,
+								["SPELL_PERIODIC_ENERGIZE"] = true,
+								["DAMAGE_SPLIT"] = true,
+								["UNIT_DISSIPATES"] = true,
+								["SPELL_INSTAKILL"] = false,
+								["SPELL_PERIODIC_DAMAGE"] = true,
+								["SPELL_PERIODIC_HEAL"] = true,
+								["PARTY_KILL"] = true,
+								["SPELL_DAMAGE"] = true,
+								["RANGE_DAMAGE"] = true,
+								["ENVIRONMENTAL_DAMAGE"] = false,
+								["SPELL_DISPEL"] = false,
+								["SPELL_EXTRA_ATTACKS"] = false,
+								["SPELL_MISSED"] = false,
+								["SPELL_STOLEN"] = false,
+								["SPELL_ENERGIZE"] = true,
+								["SWING_MISSED"] = false,
+								["SPELL_DURABILITY_DAMAGE_ALL"] = false,
+								["UNIT_LOYALTY"] = false,
+								["SPELL_DURABILITY_DAMAGE"] = false,
+								["SPELL_PERIODIC_LEECH"] = false,
+								["SPELL_AURA_REMOVED_DOSE"] = false,
+								["SPELL_DISPEL_FAILED"] = false,
+								["SPELL_AURA_APPLIED_DOSE"] = false,
+								["SPELL_AURA_REMOVED"] = false,
+								["ENCHANT_APPLIED"] = false,
+								["SWING_DAMAGE"] = true,
+								["SPELL_AURA_BROKEN_SPELL"] = false,
+								["SPELL_AURA_REFRESH"] = false,
+								["RANGE_MISSED"] = false,
+								["SPELL_HEAL"] = true,
+								["ENCHANT_REMOVED"] = false,
+								["SPELL_AURA_APPLIED"] = false,
+								["SPELL_PERIODIC_DRAIN"] = false,
+								["SPELL_DRAIN"] = false,
+							},
+							["sourceFlags"] = {
+								[17681] = true,
+							},
+						},
+						[2] = {
+							["destFlags"] = {
+								[17681] = false,
+								[12561] = false,
+							},
+							["eventList"] = {
+								["SPELL_EXTRA_ATTACKS"] = true,
+								["SPELL_MISSED"] = true,
+								["SPELL_STOLEN"] = true,
+								["SPELL_ENERGIZE"] = true,
+								["SPELL_INTERRUPT"] = true,
+								["SWING_MISSED"] = true,
+								["SPELL_DURABILITY_DAMAGE_ALL"] = true,
+								["SPELL_LEECH"] = true,
+								["SPELL_DURABILITY_DAMAGE"] = true,
+								["UNIT_DIED"] = true,
+								["UNIT_LOYALTY"] = false,
+								["DAMAGE_SPLIT"] = true,
+								["ENCHANT_APPLIED"] = true,
+								["SPELL_DISPEL_FAILED"] = true,
+								["SPELL_INSTAKILL"] = true,
+								["UNIT_DISSIPATES"] = true,
+								["RANGE_DAMAGE"] = true,
+								["SWING_DAMAGE"] = true,
+								["PARTY_KILL"] = true,
+								["SPELL_DAMAGE"] = true,
+								["RANGE_MISSED"] = true,
+								["SPELL_HEAL"] = true,
+								["ENCHANT_REMOVED"] = true,
+								["UNIT_DESTROYED"] = true,
+								["SPELL_DISPEL"] = true,
+								["SPELL_DRAIN"] = true,
+							},
+						},
+					},
+				},
+				[3] = {
+					["quickButtonName"] = "What happend to me",
+					["hasQuickButton"] = true,
+					["tooltip"] = "What happend to me",
+					["custom"] = false,
+					["name"] = "What happend to me",
+					["quickButtonDisplay"] = {
+						["party"] = true,
+						["solo"] = true,
+						["raid"] = true,
+					},
+					["settings"] = {
+						["unitColoring"] = false,
+						["lineColoring"] = true,
+						["spellBraces"] = false,
+						["sourceColoring"] = true,
+						["showHistory"] = true,
+						["destColoring"] = true,
+						["amountHighlighting"] = true,
+						["schoolNameColoring"] = false,
+						["abilitySchoolColoring"] = false,
+						["sourceBraces"] = true,
+						["missColoring"] = true,
+						["itemBraces"] = true,
+						["abilityColoring"] = false,
+						["amountActorColoring"] = false,
+						["destBraces"] = true,
+						["timestamp"] = false,
+						["actionColoring"] = false,
+						["fullText"] = false,
+						["lineColorPriority"] = 1,
+						["lineHighlighting"] = true,
+						["abilityActorColoring"] = false,
+						["abilityHighlighting"] = true,
+						["braces"] = false,
+						["schoolNameHighlighting"] = true,
+						["hideBuffs"] = true,
+						["unitIcons"] = true,
+						["hideDebuffs"] = true,
+						["amountSchoolColoring"] = false,
+						["amountColoring"] = false,
+						["noMeleeSwingColoring"] = false,
+						["schoolNameActorColoring"] = false,
+						["actionHighlighting"] = false,
+						["unitBraces"] = true,
+						["actionActorColoring"] = false,
+					},
+					["colors"] = {
+						["unitColoring"] = {
+							[32334] = {
+								["a"] = 1,
+								["b"] = 0.05,
+								["g"] = 0.05,
+								["r"] = 0.75,
+							},
+							[2147483648] = {
+								["a"] = 1,
+								["b"] = 0.75,
+								["g"] = 0.75,
+								["r"] = 0.75,
+							},
+							[12561] = {
+								["a"] = 1,
+								["b"] = 0.7,
+								["g"] = 0.7,
+								["r"] = 0.7,
+							},
+							[32078] = {
+								["a"] = 1,
+								["b"] = 0.05,
+								["g"] = 0.05,
+								["r"] = 0.75,
+							},
+							[17681] = {
+								["a"] = 1,
+								["b"] = 0.7,
+								["g"] = 0.7,
+								["r"] = 0.7,
+							},
+							[32542] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 0.64,
+								["r"] = 0.34,
+							},
+							[32558] = {
+								["a"] = 1,
+								["b"] = 0.05,
+								["g"] = 0.05,
+								["r"] = 0.75,
+							},
+						},
+						["highlightedEvents"] = {
+							["PARTY_KILL"] = true,
+						},
+						["eventColoring"] = {},
+						["defaults"] = {
+							["damage"] = {
+								["a"] = 1,
+								["b"] = 0,
+								["g"] = 1,
+								["r"] = 1,
+							},
+							["spell"] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 1,
+								["r"] = 1,
+							},
+						},
+						["schoolColoring"] = {
+							[1] = {
+								["a"] = 1,
+								["b"] = 0,
+								["g"] = 1,
+								["r"] = 1,
+							},
+							[2] = {
+								["a"] = 1,
+								["b"] = 0.5,
+								["g"] = 0.9,
+								["r"] = 1,
+							},
+							[3] = nil,
+							[4] = {
+								["a"] = 1,
+								["b"] = 0,
+								["g"] = 0.5,
+								["r"] = 1,
+							},
+							[0] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 1,
+								["r"] = 1,
+							},
+							[8] = {
+								["a"] = 1,
+								["b"] = 0.3,
+								["g"] = 1,
+								["r"] = 0.3,
+							},
+							[32] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 0.5,
+								["r"] = 0.5,
+							},
+							[16] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 1,
+								["r"] = 0.5,
+							},
+							[64] = {
+								["a"] = 1,
+								["b"] = 1,
+								["g"] = 0.5,
+								["r"] = 1,
+							},
+						},
+					},
+					["filters"] = {
+						[1] = {
+							["eventList"] = {
+								["DAMAGE_SPLIT"] = true,
+								["UNIT_DISSIPATES"] = true,
+								["SPELL_PERIODIC_DAMAGE"] = true,
+								["SWING_DAMAGE"] = true,
+								["SPELL_DAMAGE"] = true,
+								["UNIT_DESTROYED"] = true,
+								["RANGE_DAMAGE"] = true,
+								["ENVIRONMENTAL_DAMAGE"] = true,
+								["SPELL_PERIODIC_HEAL"] = true,
+								["SPELL_HEAL"] = true,
+								["UNIT_DIED"] = true,
+							},
+							["sourceFlags"] = {
+								[32334] = false,
+								[2147483648] = false,
+								[12561] = false,
+								[32078] = false,
+								[17681] = false,
+								[32542] = false,
+								[32558] = false,
+							},
+						},
+						[2] = {
+							["destFlags"] = {
+								[17681] = true,
+								[12561] = false,
+							},
+							["eventList"] = {
+								["SPELL_PERIODIC_MISSED"] = true,
+								["SPELL_EMPOWER_START"] = true,
+								["SPELL_BUILDING_HEAL"] = true,
+								["UNIT_DESTROYED"] = true,
+								["SPELL_RESURRECT"] = true,
+								["DAMAGE_SHIELD_MISSED"] = true,
+								["SPELL_LEECH"] = true,
+								["SPELL_AURA_BROKEN"] = true,
+								["UNIT_DIED"] = true,
+								["SPELL_PERIODIC_ENERGIZE"] = true,
+								["DAMAGE_SPLIT"] = true,
+								["UNIT_DISSIPATES"] = true,
+								["SPELL_INSTAKILL"] = true,
+								["SPELL_PERIODIC_DAMAGE"] = true,
+								["SPELL_PERIODIC_HEAL"] = true,
+								["PARTY_KILL"] = true,
+								["SPELL_DAMAGE"] = true,
+								["RANGE_DAMAGE"] = true,
+								["ENVIRONMENTAL_DAMAGE"] = true,
+								["SPELL_DISPEL"] = true,
+								["SPELL_EXTRA_ATTACKS"] = true,
+								["DAMAGE_SHIELD"] = true,
+								["SPELL_EMPOWER_INTERRUPT"] = true,
+								["SPELL_STOLEN"] = true,
+								["SPELL_ENERGIZE"] = true,
+								["SPELL_EMPOWER_END"] = true,
+								["SPELL_BUILDING_DAMAGE"] = true,
+								["SPELL_INTERRUPT"] = true,
+								["SPELL_CAST_START"] = true,
+								["SWING_MISSED"] = true,
+								["RANGE_MISSED"] = true,
+								["SPELL_MISSED"] = true,
+								["SPELL_DURABILITY_DAMAGE_ALL"] = true,
+								["ENCHANT_REMOVED"] = true,
+								["SPELL_AURA_REMOVED"] = true,
+								["SPELL_DISPEL_FAILED"] = true,
+								["SPELL_DURABILITY_DAMAGE"] = true,
+								["SPELL_CAST_FAILED"] = true,
+								["ENCHANT_APPLIED"] = true,
+								["SPELL_PERIODIC_LEECH"] = true,
+								["SPELL_AURA_REFRESH"] = true,
+								["SPELL_AURA_APPLIED_DOSE"] = true,
+								["SPELL_AURA_REMOVED_DOSE"] = true,
+								["SWING_DAMAGE"] = true,
+								["SPELL_AURA_BROKEN_SPELL"] = true,
+								["SPELL_CREATE"] = true,
+								["SPELL_CAST_SUCCESS"] = true,
+								["SPELL_HEAL"] = true,
+								["SPELL_SUMMON"] = true,
+								["SPELL_AURA_APPLIED"] = true,
+								["SPELL_PERIODIC_DRAIN"] = true,
+								["SPELL_DRAIN"] = true,
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+}

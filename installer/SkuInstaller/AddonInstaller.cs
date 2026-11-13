@@ -142,7 +142,7 @@ namespace SkuInstaller
                 // "Latest" badge). A direction-agnostic tag-equality test would then
                 // plan a DOWNGRADE for a user already on a newer release; ordering
                 // makes that a no-op instead. Equal or newer installed -> skip.
-                if (spec.IsPrimary)
+                if (spec.IsPrimary || spec.FollowsMain)
                 {
                     string have = installedTag.TrimStart('v', 'V');
                     string want = VersionFromTagOrAsset(resolved);
@@ -168,6 +168,11 @@ namespace SkuInstaller
                 Logger.Info($"{spec.FolderName}: TOC {installed} >= latest {latest}; adopting {resolved.Tag}.");
                 return false;
             }
+
+            // Sku-Ever: SkuPacks/SkuEngineEK change with every release and are small;
+            // without a manifest record we cannot know their state, so refresh them.
+            if (spec.FollowsMain)
+                return true;
 
             _manifest.SetTag(spec.FolderName, resolved.Tag);       // companion -> adopt
             Logger.Info($"{spec.FolderName}: pre-existing, adopting {resolved.Tag} without re-download.");

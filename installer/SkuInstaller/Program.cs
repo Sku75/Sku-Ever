@@ -238,7 +238,7 @@ namespace SkuInstaller
                 }
             }
 
-            string want = Loc.Current == Lang.De ? "SkuAudioData_fast_de" : "SkuAudioData_en";
+            string want = "SkuAudioData_fast_de";   // Sku-Ever: nur deutsche Sprachausgabe
             int idx = Config.LanguagePacks.FindIndex(p => p.FolderName == want);
             return idx >= 0 ? idx : 0;
         }

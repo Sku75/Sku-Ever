@@ -19,9 +19,9 @@ namespace SkuInstaller
     /// </summary>
     public static class Shortcut
     {
-        public const string UpdaterDirName = "SkuUpdater";
-        public const string UpdaterExeName = "SkuUpdater.exe";
-        public const string ShortcutName = "Sku Updater.lnk";
+        public const string UpdaterDirName = "SkuEverUpdater";
+        public const string UpdaterExeName = "SkuEverUpdater.exe";
+        public const string ShortcutName = "Sku-Ever Updater.lnk";
 
         public static string PersistentDir =>
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

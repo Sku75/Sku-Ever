@@ -30,6 +30,12 @@ namespace SkuInstaller
         public bool Required;
 
         /// <summary>
+        /// True for addons that ship with every main release (SkuPacks, SkuEngineEK):
+        /// pinned to the main tag, compared by version like the primary.
+        /// </summary>
+        public bool FollowsMain;
+
+        /// <summary>
         /// True if this addon drives the "is there an update?" headline (the main
         /// Sku addon). Companions are checked too, but this is what we show first.
         /// </summary>
@@ -50,14 +56,14 @@ namespace SkuInstaller
     /// </summary>
     public static class Config
     {
-        public const string DisplayName = "Sku";
-        public const string Publisher = "Sku Project";
+        public const string DisplayName = "Sku-Ever";
+        public const string Publisher = "Sku-Ever";
 
         // GitHub repo that hosts the release zips.
         public const string RepoOwner = "Sku75";
-        public const string RepoName = "Sku-WoW-Addon-TBC";
+        public const string RepoName = "Sku-Ever";
 
-        public const string SiteUrl = "https://sku75.github.io/Sku-WoW-Addon-TBC/";
+        public const string SiteUrl = "https://github.com/Sku75/Sku-Ever";
 
         // ── MAIN-ADDON VERSION: live "Latest" redirect, this pin as fallback ──
         // At startup the installer resolves the newest main-addon version from the
@@ -82,10 +88,10 @@ namespace SkuInstaller
         // Tag and asset name both derive from the effective version:
         //   tag  = "v" + MainVersion       e.g. "v42.02"
         //   file = "Sku-" + MainVersion    e.g. "Sku-42.02.zip"
-        public const string FallbackMainVersion = "43.10";
+        public const string FallbackMainVersion = "0.26";
         public static string MainVersion { get; private set; } = FallbackMainVersion;
         public static string MainTag => "v" + MainVersion;
-        public static string MainAssetName => "Sku-" + MainVersion + ".zip";
+        public static string MainAssetName => "Sku-Ever-" + MainVersion + ".zip";
 
         /// <summary>
         /// Adopt a live-resolved main-addon version: updates <see cref="MainVersion"/>
@@ -101,11 +107,13 @@ namespace SkuInstaller
                 primary.Tag = MainTag;
                 primary.AssetName = MainAssetName;
             }
+            foreach (var follower in CoreAddons.FindAll(s => s.FollowsMain))
+                follower.Tag = MainTag;
         }
 
         // Companions + language packs rarely change; they are pinned to this
         // (older) release that carries all of their assets.
-        public const string CompanionTag = "v41.02.05";
+        public const string CompanionTag = "v0.26";
 
         // The WoW Login Tool (originally by Yennister/Duugu; reworked r2.0 with an
         // AutoHotkey v2 + OCR driver) — a standalone tool that gives the WoW
@@ -127,7 +135,7 @@ namespace SkuInstaller
         public const string LoginToolFolderName = "WoW Login Tool";
 
         /// <summary>Manifest filename written into the AddOns folder.</summary>
-        public const string ManifestFileName = "SkuInstall.json";
+        public const string ManifestFileName = "SkuEverInstall.json";
 
         /// <summary>Game process name (no extension) for the Anniversary client.</summary>
         public const string GameProcessName = "WowClassic";
@@ -181,7 +189,7 @@ namespace SkuInstaller
         /// newest release (live-resolved <see cref="MainVersion"/>) is at least
         /// this; until then it is listed with an explanation (InstallTarget.Installable).
         /// </summary>
-        public const string ForeverMinMainVersion = "44.0";
+        public const string ForeverMinMainVersion = "0.26";
 
         /// <summary>Every game process this installer cares about (Anniversary/Era share one exe name).</summary>
         public static readonly string[] GameProcessNames = { GameProcessName, ForeverProcessName };
@@ -196,7 +204,9 @@ namespace SkuInstaller
         /// </summary>
         public static readonly List<AddonSpec> CoreAddons = new List<AddonSpec>
         {
-            new AddonSpec { FolderName = "Sku",                        AssetName = MainAssetName,                    Tag = MainTag,      DisplayName = "Sku (main addon)",            Required = true, IsPrimary = true },
+            new AddonSpec { FolderName = "Sku",                        AssetName = MainAssetName,                    Tag = MainTag,      DisplayName = "Sku-Ever (main addon)",       Required = true, IsPrimary = true },
+            new AddonSpec { FolderName = "SkuPacks",                   AssetName = "SkuPacks.zip",                   Tag = MainTag,      DisplayName = "Sku-Ever navigation packs",   Required = true, FollowsMain = true },
+            new AddonSpec { FolderName = "SkuEngineEK",                AssetName = "SkuEngineEK.zip",                Tag = MainTag,      DisplayName = "Sku-Ever route engine data",  Required = true, FollowsMain = true },
             new AddonSpec { FolderName = "SkuBeaconSoundsets",         AssetName = "SkuBeaconSoundsets.zip",         Tag = CompanionTag, DisplayName = "Beacon Soundsets",            Required = true, IsMedia = true },
             new AddonSpec { FolderName = "SkuCustomBeaconsEssential",  AssetName = "SkuCustomBeaconsEssential.zip",  Tag = CompanionTag, DisplayName = "Custom Beacons (Essential)",  Required = true, IsMedia = true },
             new AddonSpec { FolderName = "SkuCustomBeaconsAdditional", AssetName = "SkuCustomBeaconsAdditional.zip", Tag = CompanionTag, DisplayName = "Custom Beacons (Additional)", Required = true, IsMedia = true },
@@ -209,8 +219,6 @@ namespace SkuInstaller
         public static readonly List<AddonSpec> LanguagePacks = new List<AddonSpec>
         {
             // Display names match the Sku GitHub download page verbatim (language-neutral).
-            new AddonSpec { FolderName = "SkuAudioData_en",      AssetName = "SkuAudioData_en.zip",      Tag = CompanionTag, DisplayName = "SkuAudioData English",     IsMedia = true },
-            new AddonSpec { FolderName = "SkuAudioData",         AssetName = "SkuAudioData.zip",         Tag = CompanionTag, DisplayName = "SkuAudioData German",      IsMedia = true },
             new AddonSpec { FolderName = "SkuAudioData_fast_de", AssetName = "SkuAudioData_fast_de.zip", Tag = CompanionTag, DisplayName = "SkuAudioData German Fast", IsMedia = true },
         };
 

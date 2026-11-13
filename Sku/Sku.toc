@@ -4,6 +4,7 @@
 ## Version: 0.26
 
 SkuPerfFileStamp.lua
+SkuEverStartProfile.lua
 
 SkuAudioData\assets\SkuAudioFileIndex.lua
 SkuAudioData\assets\SkuAudioDataLenIndex.lua

@@ -70,8 +70,8 @@ namespace SkuInstaller
         /// <summary>Asset holding the published installer version + hash.</summary>
         public const string VersionAssetName = "installer-version.txt";
 
-        private const string BackupName = "SkuUpdater.old.exe";
-        private const string StagingName = "SkuUpdater.new.exe";
+        private const string BackupName = "SkuEverUpdater.old.exe";
+        private const string StagingName = "SkuEverUpdater.new.exe";
 
         /// <summary>
         /// Set on the run that follows a successful self-update, so the opening
@@ -220,7 +220,7 @@ namespace SkuInstaller
                     Version = version,
                     RunningVersion = running,
                     Sha256 = sha,
-                    DownloadUrl = GitHubClient.BuildLatestDownloadUrl("SkuInstaller.exe"),
+                    DownloadUrl = GitHubClient.BuildLatestDownloadUrl("Sku-Ever-Installer.exe"),
                 };
             }
             catch (Exception ex)

@@ -4454,6 +4454,16 @@ function SkuOptions:OnInitialize()
 	SkuOptions.AceConfig:RegisterOptionsTable("Sku", options, {"taop"})
 	SkuOptions.AceConfigDialog = LibStub("AceConfigDialog-3.0")
 	SkuOptions.AceConfigDialog:AddToBlizOptions("Sku")
+	-- Sku-Ever: Eine Erstinstallation bekommt das Startprofil (SkuEverStartProfile.lua).
+	-- Nur wenn auf diesem WoW-Konto noch gar keine Sku-Einstellungen gespeichert sind;
+	-- beim ersten Einloggen schaltet SkuCore jeden neuen Charakter auf dieses Profil.
+	if SkuOptionsDB == nil and type(SkuEverStartProfile) == "table" then
+		SkuOptionsDB = {
+			profiles = { [L["Standard profil Allgemein"]] = SkuEverStartProfile.profile },
+			global = SkuEverStartProfile.global,
+		}
+	end
+	SkuEverStartProfile = nil
 	SkuOptions.db = LibStub("AceDB-3.0"):New("SkuOptionsDB", defaults, true)
 	-- [v43.5] The BTTS cache-buster counters live in the global section so a
 	-- /reload continues them: the client's TTS audio cache survives a reload,

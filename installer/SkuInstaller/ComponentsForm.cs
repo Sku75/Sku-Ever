@@ -36,7 +36,7 @@ namespace SkuInstaller
         // and no index literal anywhere has to be kept in step. Each entry is
         // named in its OWN language: someone looking for French is looking for
         // "Français", not for whatever the current UI language calls it.
-        private static readonly Lang[] _langOrder = { Lang.En, Lang.De, Lang.Fr };
+        private static readonly Lang[] _langOrder = { Lang.De, Lang.En };
 
         private static string LangDisplayName(Lang l)
         {

@@ -32,7 +32,7 @@ namespace SkuInstaller
     /// </summary>
     public static class PathMemory
     {
-        public const string FileName = "SkuPaths.txt";
+        public const string FileName = "SkuEverPaths.txt";
 
         /// <summary>
         /// Test hook: when set, BOTH stores collapse into this one folder, so the
