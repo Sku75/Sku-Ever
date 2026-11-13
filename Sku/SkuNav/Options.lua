@@ -423,6 +423,31 @@ function SkuNav:getAnnotatedWaypointLabel(originalLabel, id)
 	return originalLabel
 end
 
+-- [Engine route, Forever 13.11.2026] Floor question at the entry point. Forever tells Sku no height, so where several floors are
+-- possible at the player's position (Engine:FloorChoices) the entry point gets a level of its own: the floors from the lowest up,
+-- and only below the floor the target list of the entry point. The target entries carry the floor (self.floorZ of the level they
+-- are built on -> engineTarget.floorZ), the engine routes from that floor. A clear floor: nothing changes.
+local function SkuNav_WrapEntryWithFloors(aNode, aFloors)
+	local tBuild = aNode.BuildChildren
+	local tSorting = aNode.sorting
+	aNode.sorting = nil
+	aNode.BuildChildren = function(self)
+		local tN = #aFloors
+		for i, tZ in ipairs(aFloors) do
+			local tDe = (Sku.Loc == "deDE")
+			local tPos = ""
+			if tN > 1 and i == 1 then tPos = tDe and ", unterste" or ", lowest" end
+			if tN > 1 and i == tN then tPos = tDe and ", oberste" or ", highest" end
+			local tLabel = (tDe and "Ebene " or "Floor ")..i..(tDe and " von " or " of ")..tN..tPos
+			local tFloor = SkuOptions:InjectMenuItems(self, {tLabel}, SkuGenericMenuItem)
+			tFloor.dynamic = true
+			tFloor.sorting = tSorting
+			tFloor.floorZ = tZ
+			tFloor.BuildChildren = tBuild
+		end
+	end
+end
+
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- [Engine route, Forever 13.11.2026] "Nearby routes" of a waypoint: where Sku has no route from its entry points to the target (or
 -- the target is an engine target that is no Sku waypoint at all), the entry "<distance> Meter#<target>;Engine" stands in the list.
@@ -433,6 +458,22 @@ local function SkuNav_AddEngineRouteLeaf(aParent, aName, aX, aY)
 	local tLabel = tDist..L[";Meter"].."#"..aName
 	if string.sub(aName, -7) ~= ";Engine" then tLabel = tLabel..";Engine" end
 	local tLeaf = SkuOptions:InjectMenuItems(aParent, {tLabel}, SkuGenericMenuItem)
+	-- Floor question (like the entry points of Shift-F10): where the player's floor is unclear (Engine:FloorChoices) the engine entry
+	-- gets the floors below it, and below a floor the route (the target) to pick. A clear floor: the entry is a plain leaf.
+	local tFloors = SkuNav.Engine and SkuNav.Engine:FloorChoices()
+	if tFloors then
+		tLeaf.BuildChildren = function(self)
+			local tFloor = self.floorZ
+			local tRoute = SkuOptions:InjectMenuItems(self, {tDist..L[";Meter"].."#"..aName..((string.sub(aName, -7) ~= ";Engine") and ";Engine" or "")}, SkuGenericMenuItem)
+			tRoute.OnEnter = function(self)
+				SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_CloseRoute = nil
+				SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget = {x = aX, y = aY, name = aName, floorZ = tFloor}
+			end
+		end
+		SkuNav_WrapEntryWithFloors(tLeaf, tFloors)
+		tLeaf.dynamic = true
+		return tLeaf
+	end
 	tLeaf.OnEnter = function(self)
 		SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_CloseRoute = nil
 		SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget = {x = aX, y = aY, name = aName}
@@ -483,6 +524,7 @@ local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypoint
 					return
 				end
 				local tSortedWaypointList = BuildSortedUniqueRouteWps(tRoutesInRange)
+				local tFloors = SkuNav.Engine and SkuNav.Engine:FloorChoices()
 				-- Sku's way to the target from its nearest entry point? Otherwise the engine entry follows (same test as the engine entry
 				-- point of the route list: only where Sku has no route).
 				local tTargetData = SkuNav:GetWaypointData2(wpTable[1])
@@ -576,6 +618,7 @@ local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypoint
 									end
 								end
 							end
+							if tFloors then SkuNav_WrapEntryWithFloors(tNewMenuEntry, tFloors) end
 							tCount = tCount + 1
 						end
 					end
@@ -906,6 +949,7 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 			local tRoutesInRange = SkuNav:GetAllLinkedWPsInRangeToCoords(tPlayX, tPlayY, SkuNav.MaxMetaEntryRange)--SkuSettings:Sub("SkuNav").nearbyWpRange)
 
 			local tSortedWaypointList = BuildSortedUniqueRouteWps(tRoutesInRange)
+			local tFloors = SkuNav.Engine and SkuNav.Engine:FloorChoices()
 
 			-- [Engine route, Forever prototype 12.11.2026] where Sku has no waypoint near the player (farther than the nearby-waypoint
 			-- range), the engine is an entry point of its own: "Engine" at distance 0, the first entry. Under it stand the targets Sku
@@ -949,6 +993,7 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 						end
 						local tLabel = tT.dist..L[";Meter"]..tDir.."#"..tT.name..((tT.kind and tT.kind ~= "") and (";"..tT.kind) or "")
 						local tChild = SkuOptions:InjectMenuItems(self, {tLabel}, SkuGenericMenuItem)
+						tT.floorZ = self.floorZ
 						tChild.engineTarget = tT
 						tChild.OnEnter = function(self)
 							SkuSettings:Sub("SkuNav").metapathFollowingUnitDbWaypoint = nil
@@ -956,6 +1001,7 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 						end
 					end
 				end
+				if tFloors then SkuNav_WrapEntryWithFloors(tEngineEntry, tFloors) end
 			end
 
 			if #tSortedWaypointList == 0 then
@@ -1003,6 +1049,7 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 										if tDirString then tDir = ";"..tDirString end
 									end
 									local tChild = SkuOptions:InjectMenuItems(self, {tT.dist..L[";Meter"]..tDir.."#"..tT.name..";"..tT.kind..";Engine"}, SkuGenericMenuItem)
+									tT.floorZ = self.floorZ
 									tChild.engineTarget = tT
 									tChild.OnEnter = function(self)
 										SkuSettings:Sub("SkuNav").metapathFollowingUnitDbWaypoint = nil
@@ -1042,6 +1089,7 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 							end
 
 						end
+						if tFloors then SkuNav_WrapEntryWithFloors(tNewMenuEntry, tFloors) end
 						tCount = tCount + 1
 					end
 				end

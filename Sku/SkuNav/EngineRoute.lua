@@ -190,11 +190,52 @@ function Engine:PlayerHeight(x, y, aGroup)
 			return best, "last"
 		end
 	end
+	if #layers > 1 then return nil, "ambiguous", layers end
 	return nil
 end
 
+-- Do two engine routes start the same way? The positions along the first TRUNK_LEN yards of both are compared point by point
+-- (nearest point of the other route within TRUNK_TOL yd).
+local TRUNK_LEN, TRUNK_TOL = 40, 3
+local function tRoutesAgree(N, aR1, aR2)
+	local function tPoints(r)
+		local out, acc, lx, ly = {}, 0, nil, nil
+		for _, id in ipairs(r.path) do
+			local x, y = N.Position(id)
+			if x and y then
+				if lx then acc = acc + math.sqrt((x - lx) ^ 2 + (y - ly) ^ 2) end
+				out[#out + 1] = {x, y, acc}
+				lx, ly = x, y
+				if acc >= TRUNK_LEN then break end
+			end
+		end
+		return out
+	end
+	local p1, p2 = tPoints(aR1), tPoints(aR2)
+	for _, a in ipairs(p1) do
+		local ok = false
+		for _, b in ipairs(p2) do
+			if (a[1] - b[1]) ^ 2 + (a[2] - b[2]) ^ 2 <= TRUNK_TOL ^ 2 then ok = true break end
+		end
+		if not ok then return false end
+	end
+	return true
+end
+
+-- The floors the player could stand on right now, lowest first, when the height is unclear (several floors at the position and none
+-- decided by the last known height); otherwise nil. The target lists use it to offer the floor question after the target pick.
+function Engine:FloorChoices()
+	if not self:Available() then return nil end
+	local px, py = UnitPosition("player")
+	if type(px) ~= "number" or type(py) ~= "number" then return nil end
+	local tGroup = tPlayerGroupAt(px, py)
+	if not tGroup then return nil end
+	local _, _, tLayers = self:PlayerHeight(px, py, tGroup)
+	return tLayers
+end
+
 -- Engine route from the player's position to a target (x, y). Returns a list of world points {{x, y}, ...} or nil, reason.
-function Engine:Route(aTx, aTy)
+function Engine:Route(aTx, aTy, aFloorZ)
 	if not self:Available() then return nil, "unavailable" end
 	local N = tNet()
 	local px, py = UnitPosition("player")
@@ -203,36 +244,72 @@ function Engine:Route(aTx, aTy)
 	if not tGroup then return nil, "wrong_zone" end
 	if tGroupAt(aTx, aTy) ~= tGroup then return nil, "wrong_zone" end
 	tLoadGroup(tGroup)
-	local pz, how = self:PlayerHeight(px, py, tGroup)
-	if not pz then return nil, "height_unknown" end
-	local start, why = N.Bind(px, py, pz)
-	if not start then return nil, why or "no_start" end
-	-- target height: not known, so every floor of the map at the target is tried, the shortest route wins
-	local best
-	-- a target of the catalog (landing, boarding point on the ship, fishing spot, ...) has a node of its own at its coordinates
-	-- (the dock model of the engine): the route ends exactly on it, no cell is needed there
-	for _, t in ipairs(_G.SkuEngineTargets[tGroup.key] or {}) do
-		if math.abs(t[1] - aTx) < 0.5 and math.abs(t[2] - aTy) < 0.5 then
-			for _, z in ipairs(tGroup.zones) do
-				local zone = N.zones and N.zones[z]
-				local i = zone and N.TargetNodeAt and N.TargetNodeAt(zone, t[1], t[2], nil, 3)
-				if i then
-					local goal = N.NodeTargetBinding(zone, i, t[1], t[2], "target_node")
-					local r = N.Route(start, goal)
-					if r and (not best or r.length < best.length) then best = r end
-					break
-				end
-			end
-			break
-		end
+	local pz, how, tLayers
+	if aFloorZ then
+		-- the player named the floor (floor question after the target pick): that height counts, and it is remembered as the last known one
+		pz, how = aFloorZ, "chosen"
+		tLastZ = aFloorZ
+	else
+		pz, how, tLayers = self:PlayerHeight(px, py, tGroup)
 	end
-	for _, band in ipairs(not best and N.HeightBands(aTx, aTy) or {}) do
-		local tz = (band.zMin + band.zMax) / 2
-		local goal = N.Bind(aTx, aTy, tz)
-		if goal then
-			local r = N.Route(start, goal)
-			if r and (not best or r.length < best.length) then best = r end
+	if not pz and not tLayers then return nil, "height_unknown" end
+	-- the best route from a bound start to the target (every floor of the map at the target is tried, the shortest wins)
+	local function tBestFrom(start)
+		local best
+		-- a target of the catalog (landing, boarding point on the ship, fishing spot, ...) has a node of its own at its coordinates
+		-- (the dock model of the engine): the route ends exactly on it, no cell is needed there
+		for _, t in ipairs(_G.SkuEngineTargets[tGroup.key] or {}) do
+			if math.abs(t[1] - aTx) < 0.5 and math.abs(t[2] - aTy) < 0.5 then
+				for _, z in ipairs(tGroup.zones) do
+					local zone = N.zones and N.zones[z]
+					local i = zone and N.TargetNodeAt and N.TargetNodeAt(zone, t[1], t[2], nil, 3)
+					if i then
+						local goal = N.NodeTargetBinding(zone, i, t[1], t[2], "target_node")
+						local r = N.Route(start, goal)
+						if r and (not best or r.length < best.length) then best = r end
+						break
+					end
+				end
+				break
+			end
 		end
+		for _, band in ipairs(not best and N.HeightBands(aTx, aTy) or {}) do
+			local tz = (band.zMin + band.zMax) / 2
+			local goal = N.Bind(aTx, aTy, tz)
+			if goal then
+				local r = N.Route(start, goal)
+				if r and (not best or r.length < best.length) then best = r end
+			end
+		end
+		return best
+	end
+	local best
+	if pz then
+		local start, why = N.Bind(px, py, pz)
+		if not start then return nil, why or "no_start" end
+		best = tBestFrom(start)
+	else
+		-- the floor of the player is not clear. Like the WowVision resolver: a question only where there is a choice. Every floor
+		-- the player could stand on is tried as the start; if the target can be reached from ONE of them, the route goes from
+		-- that one (no choice); from several: the floor stays unclear (a wrong floor could send the player the wrong way).
+		local tAll = {}
+		for _, z in ipairs(tLayers) do
+			local start = N.Bind(px, py, z)
+			local r = start and tBestFrom(start)
+			if r then tAll[#tAll + 1] = {r = r, z = z} end
+		end
+		if #tAll == 0 then return nil, "no_route" end
+		if #tAll > 1 then
+			-- several floors reach the target: it does not matter which one the player stands on when the routes from all of them
+			-- start the same way (the first TRUNK_LEN yards of the path agree within TRUNK_TOL yd); otherwise the floor stays unclear
+			local tFirst = tAll[1]
+			for i = 2, #tAll do
+				if not tRoutesAgree(N, tFirst.r, tAll[i].r) then return nil, "height_unknown" end
+			end
+			table.sort(tAll, function(a, b) return a.r.length < b.r.length end)
+		end
+		best, pz = tAll[1].r, tAll[1].z
+		how = #tAll == 1 and "only floor" or "same start"
 	end
 	if not best then return nil, "no_route" end
 	local pts = {}
@@ -271,6 +348,29 @@ local function tHookNamed()
 		if not aIsTemp then tNamedDirty(self, aName) end
 	end)
 end
+-- Placeholder NPCs of the capital cities (class trainer / vendor "pedestal" markers with 1 hit point, [DND]): they cannot be spoken
+-- to, so they are never offered as an engine target. Skus own lists are left as they are.
+local GHOST_NPCS = {26007, 26075, 26258, 26307, 26309, 26324, 26325, 26326, 26327, 26328, 26329, 26330, 26331, 26332, 26724, 26738, 26739,
+	26740, 26741, 26742, 26743, 26744, 26745, 26747, 26748, 26749, 26751, 26752, 26753, 26754, 26755, 26756, 26757, 26758, 26759,
+	26760, 26765}
+local tGhostNames
+local function tIsGhostName(aWaypointName)
+	if not tGhostNames then
+		tGhostNames = {}
+		local tData = SkuDB and SkuDB.NpcData and SkuDB.NpcData.Data
+		local tNames = SkuDB and SkuDB.NpcData and SkuDB.NpcData.Names and SkuDB.NpcData.Names[Sku.Loc]
+		if not tData then tGhostNames = nil return false end
+		for _, id in ipairs(GHOST_NPCS) do
+			local tRow = tData[id]
+			if tRow and tRow[1] then tGhostNames[string.lower(tRow[1])] = true end
+			local tLoc = tNames and tNames[id]
+			if type(tLoc) == "table" and tLoc[1] then tGhostNames[string.lower(tLoc[1])] = true end
+		end
+	end
+	local tFirst = string.match(aWaypointName, "^([^;]*);")
+	return tFirst ~= nil and tGhostNames[string.lower(tFirst)] == true
+end
+
 function Engine:SkuNamedPositions()
 	tHookNamed()
 	if namedCache and namedCacheTime and GetTime() - namedCacheTime < 600 then return namedCache end
@@ -281,7 +381,7 @@ function Engine:SkuNamedPositions()
 	for _, v in tList, tState, tInit do
 		local tLow = string.lower(v)
 		if string.sub(v, 1, tAutoLen) ~= L["auto"].." " and string.sub(v, -7) ~= ";Engine"
-			and not string.find(tLow, "^schnellwegpunkt") and not string.find(tLow, "^quick waypoint") then
+			and not string.find(tLow, "^schnellwegpunkt") and not string.find(tLow, "^quick waypoint") and not tIsGhostName(v) then
 			local tD = SkuNav:GetWaypointData2(v)
 			if tD and tD.worldX and tInZone(tD.worldX, tD.worldY) then
 				rPos[#rPos + 1] = {tD.worldX, tD.worldY, v}
@@ -412,7 +512,7 @@ end
 -- Called by SkuNav.RouteFollowOnAction when the picked list entry is an engine target. Fills the data that the unit route
 -- ("Einheiten Route") follows (world points) and returns true; otherwise says why not and returns false.
 function Engine:PrepareFollow(aTarget)
-	local pts, why = self:Route(aTarget.x, aTarget.y)
+	local pts, why = self:Route(aTarget.x, aTarget.y, aTarget.floorZ)
 	if not pts then
 		SkuOptions.Voice:OutputStringBTtts(L["Error"], false, true, 0.3, true)
 		-- plain texts, no new Sku.L keys (the locale library raises an error for a missing key)

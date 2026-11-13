@@ -3407,6 +3407,11 @@ function SkuChat:NewWhisperTab(aType, ...)
 	if SkuSettings:Sub("SkuChat").chatSettings.openWhispersInNewTab == true then
 		local event, text, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, languageID, lineID, guid, bnSenderID, isMobile, isSubtitle, hideSenderInLetterbox, supressRaidIcons = ...
 
+		-- WoW Forever: a whisper whose text or names are secret cannot be turned into a tab name; leave it to the default chat.
+		if Sku.IsSecret and (Sku.IsSecret(text) or Sku.IsSecret(playerName) or Sku.IsSecret(playerName2)) then
+			return
+		end
+
 		--print("NewWhisperTab", aType, event, text, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, languageID, lineID, guid, bnSenderID, isMobile, isSubtitle, hideSenderInLetterbox, supressRaidIcons)
 
 		playerName = SkuChat:GetFullPlayerName(playerName)

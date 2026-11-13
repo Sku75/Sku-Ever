@@ -1933,7 +1933,8 @@ function SkuNav:GetAllMetaTargetsFromWp5(aStartWpName, aMaxDistance, aMaxWPs, aR
 		end
 	end
 
-	if aReturnPathForWp then --and rMetapathData[aReturnPathForWp] then
+	-- No entry for the wanted waypoint = it was not reached within the max distance: no path, callers answer "no route".
+	if aReturnPathForWp and rMetapathData[aReturnPathForWp] then
 		local tmprMetapathData = {}
 		tmprMetapathData[aReturnPathForWp] = {
 			distance = rMetapathData[aReturnPathForWp].distance,

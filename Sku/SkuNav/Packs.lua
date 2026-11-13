@@ -347,6 +347,8 @@ end
 -- SkuDB does not know, built from the Questie Forever database by navpack/build_dbpack.py:
 --   format 1, areas {{id, uiMapId, name}}, quests / npcs / objects / items {[id] = row in Sku's own layout},
 --   npcSpawns / objectSpawns {[id] = {[areaId] = {{x, y}, ...}}} extra spawns (new areas) for ids Sku already has,
+--   npcHide {id, ...} removes the spawns of placeholder creatures Sku's own data has (no waypoint for them),
+--   questPatch {[questId] = {[field] = value}} replaces giver / turn-in / objectives (and an OLD/BETA name) of a quest Sku already has,
 --   names {<locale> = {quests = {[id] = {name, nil, {text}}}, npcs = {[id] = {name, sub}},
 --                      objects = {[id] = name}, items = {[id] = name}}}
 -- Merged additively at the end of each SkuDB family build (SkuDB/ChunkLoader.lua): an id Sku already has is
@@ -437,6 +439,16 @@ tDbMerge.quests = function(aPack)
 		end
 	end
 	local tAdded = tMergeAbsent(SkuDB.questDataTBC, aPack.quests)
+	-- questPatch {[questId] = {[field] = value}}: Sku's own row of this quest has no (usable) giver / turn-in / objectives
+	-- (OLD / BETA rows); the pack replaces exactly these fields. Only for rows Sku already has, and only the listed fields.
+	for tId, tFields in pairs(aPack.questPatch or {}) do
+		local tRow = SkuDB.questDataTBC[tId]
+		if type(tRow) == "table" and not (aPack.quests and aPack.quests[tId]) then
+			for tField, tValue in pairs(tFields) do
+				tRow[tField] = tValue
+			end
+		end
+	end
 	for i = 1, #Sku.Locs do
 		local tLoc = Sku.Locs[i]
 		if Sku:LocaleIsWanted(tLoc) and type(SkuDB.questLookup[tLoc]) == "table" then
@@ -473,6 +485,13 @@ tDbMerge.creatures = function(aPack)
 	for tId, tExtra in pairs(aPack.npcSpawns or {}) do
 		if tData[tId] then
 			tAddSpawnZones(tData[tId], tSpawnIdx, tExtra, 2, tId)
+		end
+	end
+	-- npcHide {id, ...}: placeholder creatures of Sku's own data (invisible class-trainer / vendor pedestal markers of the capitals):
+	-- their spawns are removed, so they do not show up as waypoints
+	for _, tId in ipairs(aPack.npcHide or {}) do
+		if tData[tId] then
+			tData[tId][tSpawnIdx] = nil
 		end
 	end
 	for i = 1, #Sku.Locs do
