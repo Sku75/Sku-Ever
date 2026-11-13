@@ -1,5 +1,5 @@
 ﻿## Interface: 20506, 11508, 11509, 16001
-## Title: Sku v44.0 Forever 2.5
+## Title: Sku v44.0 Forever 2.6
 ## SavedVariables: SkuOptionsDB, SkuTranslatedData, SkuErrorLog, SkuDebugLog
 ## Version: 44.0
 
@@ -67,7 +67,6 @@ SkuCore\actionPageForever.lua
 SkuCore\buffAnnounce.lua
 SkuCore\auraEnd.lua
 SkuCore\cooldownManagerForever.lua
-SkuCore\combatProbe.lua
 SkuCore\pendingPrompts.lua
 SkuCore\JunkAndRepair.lua
 SkuCore\UIErrors.lua

@@ -1,13 +1,17 @@
 ---------------------------------------------------------------------------------------------------------------------------------------
--- Engine route (Forever, prototype 12.11.2026): the WowNav engine (Broesel33, NavNetwork.lua) as the way out when Sku has NO route.
+-- Engine route (Forever, 12./13.11.2026): the WowNav engine (NavNetwork.lua) as the way out when Sku has NO route.
 --
 -- Rules:
 --   * Sku's own routes keep absolute priority and stay unchanged. This file never touches a Sku waypoint, link or route.
 --   * The engine is only offered for targets that Sku cannot reach (the list entry "Engine-Ziele").
 --   * Forever gives no player height. The height comes from a table of Sku waypoints with their floor (Engine_Heights_*.lua);
 --     without a clear height there is NO route (better none than the wrong floor).
--- Data (addon SkuPacks): Engine_NavNetwork.lua, Engine_Index.lua, Engine_Data_<zone>.lua, Engine_Heights_<zone>.lua,
--- Engine_Targets_<zone>.lua. Without them Sku.Engine:Available() is false and nothing here has any effect.
+-- Data: addon SkuPacks (Engine_NavNetwork.lua, Engine_Index.lua and the zone files of small groups) and the load-on-demand addon
+-- of a big group (loaded the first time the player is inside that group). Without the data Sku.Engine:Available() is false and
+-- nothing here has any effect.
+--   Engine_Data_<zone>.lua     the zone's net (WVN7[zoneId])
+--   SkuEngineHeights[key]      {x, y, z1[, z2...]} height of Sku waypoints, for the whole group
+--   SkuEngineTargets[key]      {x, y, nameDe, nameEn, kindDe[, kindEn]} targets, for the whole group
 ---------------------------------------------------------------------------------------------------------------------------------------
 local MODULE_NAME = "SkuNav"
 local L = Sku.L
@@ -18,9 +22,17 @@ SkuNav.Engine = Engine
 local HEIGHT_RADIUS = 12      -- yd: Sku waypoints this close to the player tell the floor
 local HEIGHT_CELL = 20
 local TARGET_SKU_RADIUS = 30  -- yd: a Sku waypoint this close to a target that Sku can reach = Sku has a route there
-local ZONE_ID = 84            -- prototype: Stormwind City
 
-local tReady, tIndexLoaded, tGrid
+-- Groups of engine zones that hang together by seams. key = id under which the group's heights and targets are stored.
+-- addon = load-on-demand addon with the group's data (the zone nets are big: loaded only when the player is in the group).
+local GROUPS = {
+	{key = 84, zones = {84, 37, 52}, addon = "SkuEngineEK"},   -- Stormwind City, Elwynn Forest, Westfall
+	{key = 87, zones = {87}},                                    -- Ironforge
+}
+
+local tIndexLoaded
+local tGrids = {}
+local tLoadTried = {}
 local tLastZ
 
 local function tNet()
@@ -31,22 +43,79 @@ local function tLog(...)
 	if dprint then dprint("engineRoute", ...) end
 end
 
--- engine and data present on this client?
+-- engine and index present on this client?
 function Engine:Available()
 	if not Sku.isForever then return false end
 	local N = tNet()
 	if not (N and N.LoadIndex and N.Bind and N.Route) then return false end
-	if not (type(_G.WVN7Index) == "table" and type(_G.SkuEngineHeights) == "table" and type(_G.SkuEngineTargets) == "table") then return false end
+	if type(_G.WVN7Index) ~= "table" then return false end
 	if not tIndexLoaded then
 		tIndexLoaded = N.LoadIndex(_G.WVN7Index) and true or false
 	end
 	return tIndexLoaded
 end
 
-local function tBuildGrid()
-	if tGrid then return tGrid end
-	tGrid = {}
-	for _, p in ipairs(_G.SkuEngineHeights[ZONE_ID] or {}) do
+local function tHasData(aGroup)
+	return (_G.SkuEngineTargets and _G.SkuEngineTargets[aGroup.key] and _G.SkuEngineHeights and _G.SkuEngineHeights[aGroup.key]) and true or false
+end
+
+-- data of the group on this client? A load-on-demand addon is loaded the first time it is needed (once; not in combat).
+local function tDataReady(aGroup)
+	if tHasData(aGroup) then return true end
+	if aGroup.addon and not tLoadTried[aGroup.addon] then
+		if InCombatLockdown and InCombatLockdown() then return false end
+		tLoadTried[aGroup.addon] = true
+		local tLoad = (C_AddOns and C_AddOns.LoadAddOn) or LoadAddOn
+		if tLoad then tLoad(aGroup.addon) end
+		tLog("loaded addon", aGroup.addon, tHasData(aGroup))
+		return tHasData(aGroup)
+	end
+	return false
+end
+
+-- all zones of the group loaded into the engine
+local function tLoadGroup(aGroup)
+	local N = tNet()
+	for _, z in ipairs(aGroup.zones) do
+		if not (N.zones and N.zones[z]) then N.LoadZone(z) end
+	end
+end
+
+-- The group (with data) the world position lies in, or nil.
+local function tGroupAt(x, y)
+	local N = tNet()
+	for _, id in ipairs(N.ZonesForPoint(x, y) or {}) do
+		for _, g in ipairs(GROUPS) do
+			for _, z in ipairs(g.zones) do
+				if id == z then
+					if tDataReady(g) then return g end
+					return nil
+				end
+			end
+		end
+	end
+	return nil
+end
+
+local function tInZone(x, y)
+	return tGroupAt(x, y) ~= nil
+end
+
+-- The group of the PLAYER's position: the zone boxes of the index are rectangles (they reach into zones that have no data), so
+-- the map must really have a floor at that point; otherwise the engine is not offered there.
+local function tPlayerGroupAt(x, y)
+	local tGroup = tGroupAt(x, y)
+	if not tGroup then return nil end
+	tLoadGroup(tGroup)
+	if #(tNet().HeightBands(x, y) or {}) == 0 then return nil end
+	return tGroup
+end
+
+local function tBuildGrid(aGroup)
+	if tGrids[aGroup.key] then return tGrids[aGroup.key] end
+	local tGrid = {}
+	tGrids[aGroup.key] = tGrid
+	for _, p in ipairs(_G.SkuEngineHeights[aGroup.key] or {}) do
 		local k = math.floor(p[1] / HEIGHT_CELL) * 65536 + math.floor(p[2] / HEIGHT_CELL)
 		tGrid[k] = tGrid[k] or {}
 		tGrid[k][#tGrid[k] + 1] = p
@@ -54,36 +123,30 @@ local function tBuildGrid()
 	return tGrid
 end
 
--- Is this world position in the zone of the prototype?
-local function tInZone(x, y)
-	local N = tNet()
-	for _, id in ipairs(N.ZonesForPoint(x, y) or {}) do
-		if id == ZONE_ID then return true end
-	end
-	return false
-end
-
--- Is this world point in the zone the engine data covers?
+-- Is this world point in a zone the engine data covers?
 function Engine:PointInZone(x, y)
 	return self:Available() and type(x) == "number" and type(y) == "number" and tInZone(x, y)
 end
 
--- Is the player in the zone the engine data covers?
+-- Is the player in a zone the engine data covers?
 function Engine:PlayerInZone()
 	if not self:Available() then return false end
 	local px, py = UnitPosition("player")
-	return type(px) == "number" and type(py) == "number" and tInZone(px, py)
+	return type(px) == "number" and type(py) == "number" and tPlayerGroupAt(px, py) ~= nil
 end
 
 -- Height of the player's floor. Forever gives no height, so: the floors the map has at (x, y) (engine bands) are matched with the
 -- floors of the Sku waypoints around (Engine_Heights): a band that no nearby Sku waypoint can stand on is out. Exactly one band
 -- left = the floor. Several left: the one nearest to the last known height (within 6 yd). Nothing clear: nil (no route).
-function Engine:PlayerHeight(x, y)
+function Engine:PlayerHeight(x, y, aGroup)
 	local N = tNet()
+	aGroup = aGroup or tGroupAt(x, y)
+	if not aGroup then return nil end
+	tLoadGroup(aGroup)
 	local bands = N.HeightBands(x, y) or {}
 	if #bands == 0 then return nil end
 	-- floors that count as one layer (bands at most 2 yd apart) are merged by the engine's own rule inside Bind; here: distinct bands
-	local grid = tBuildGrid()
+	local grid = tBuildGrid(aGroup)
 	local cx, cy = math.floor(x / HEIGHT_CELL), math.floor(y / HEIGHT_CELL)
 	local zs = {}
 	for _, radius in ipairs({HEIGHT_RADIUS, HEIGHT_RADIUS * 2}) do
@@ -136,9 +199,11 @@ function Engine:Route(aTx, aTy)
 	local N = tNet()
 	local px, py = UnitPosition("player")
 	if type(px) ~= "number" or type(py) ~= "number" then return nil, "no_position" end
-	if not tInZone(px, py) then return nil, "wrong_zone" end
-	N.LoadZone(ZONE_ID)
-	local pz, how = self:PlayerHeight(px, py)
+	local tGroup = tPlayerGroupAt(px, py)
+	if not tGroup then return nil, "wrong_zone" end
+	if tGroupAt(aTx, aTy) ~= tGroup then return nil, "wrong_zone" end
+	tLoadGroup(tGroup)
+	local pz, how = self:PlayerHeight(px, py, tGroup)
 	if not pz then return nil, "height_unknown" end
 	local start, why = N.Bind(px, py, pz)
 	if not start then return nil, why or "no_start" end
@@ -146,14 +211,17 @@ function Engine:Route(aTx, aTy)
 	local best
 	-- a target of the catalog (landing, boarding point on the ship, fishing spot, ...) has a node of its own at its coordinates
 	-- (the dock model of the engine): the route ends exactly on it, no cell is needed there
-	local zone = N.zones and N.zones[ZONE_ID] or N.LoadZone(ZONE_ID)
-	for _, t in ipairs(_G.SkuEngineTargets and _G.SkuEngineTargets[ZONE_ID] or {}) do
-		if zone and N.TargetNodeAt and math.abs(t[1] - aTx) < 0.5 and math.abs(t[2] - aTy) < 0.5 then
-			local i = N.TargetNodeAt(zone, t[1], t[2], nil, 3)
-			if i then
-				local goal = N.NodeTargetBinding(zone, i, t[1], t[2], "target_node")
-				local r = N.Route(start, goal)
-				if r then best = r end
+	for _, t in ipairs(_G.SkuEngineTargets[tGroup.key] or {}) do
+		if math.abs(t[1] - aTx) < 0.5 and math.abs(t[2] - aTy) < 0.5 then
+			for _, z in ipairs(tGroup.zones) do
+				local zone = N.zones and N.zones[z]
+				local i = zone and N.TargetNodeAt and N.TargetNodeAt(zone, t[1], t[2], nil, 3)
+				if i then
+					local goal = N.NodeTargetBinding(zone, i, t[1], t[2], "target_node")
+					local r = N.Route(start, goal)
+					if r and (not best or r.length < best.length) then best = r end
+					break
+				end
 			end
 			break
 		end
@@ -181,11 +249,31 @@ function Engine:Route(aTx, aTy)
 	return pts, nil, best.length
 end
 
--- Positions of ALL named Sku waypoints (targets) of this zone, whatever area or route they belong to. A WV target counts as
+-- Positions of ALL named Sku waypoints (targets) of the engine zones, whatever area or route they belong to. A WV target counts as
 -- "Sku has it" when one of these lies within TARGET_SKU_RADIUS: the engine only fills in where Sku offers nothing.
 local namedCache, namedCacheTime
+local namedHooked = false
+-- the cached list is dropped as soon as a (non-temporary, non-quick) waypoint is created or deleted, so it is never out of date
+local function tNamedDirty(self, aName, ...)
+	if type(aName) == "string" then
+		local tLow = string.lower(aName)
+		if string.find(tLow, "^schnellwegpunkt") or string.find(tLow, "^quick waypoint") then return end
+	end
+	namedCache = nil
+end
+local function tHookNamed()
+	if namedHooked or not hooksecurefunc then return end
+	namedHooked = true
+	hooksecurefunc(SkuNav, "CreateWaypoint", function(self, aName, aX, aY, aSize, aForce, aIsTemp)
+		if not aIsTemp then tNamedDirty(self, aName) end
+	end)
+	hooksecurefunc(SkuNav, "DeleteWaypoint", function(self, aName, aIsTemp)
+		if not aIsTemp then tNamedDirty(self, aName) end
+	end)
+end
 function Engine:SkuNamedPositions()
-	if namedCache and namedCacheTime and GetTime() - namedCacheTime < 5 then return namedCache end
+	tHookNamed()
+	if namedCache and namedCacheTime and GetTime() - namedCacheTime < 600 then return namedCache end
 	local rPos = {}
 	local tList, tState, tInit = SkuNav:ListWaypoints2(false)
 	if not tList then return rPos end
@@ -200,17 +288,82 @@ function Engine:SkuNamedPositions()
 			end
 		end
 	end
-	namedCache, namedCacheTime = rPos, GetTime()
+	-- an empty result means Sku's waypoint cache is not ready yet: do not keep it
+	if #rPos > 0 then namedCache, namedCacheTime = rPos, GetTime() end
 	return rPos
 end
 
--- Targets of this zone that Sku cannot reach. aReachable = set of Sku waypoint names that Sku can reach from the player
+-- spatial grid of {x, y} positions (cell = TARGET_SKU_RADIUS) so that "is a Sku waypoint within the radius?" is not a scan of all
+local function tPosGrid(aLists)
+	local rGrid = {}
+	for _, tList in ipairs(aLists) do
+		for i = 1, #tList do
+			local w = tList[i]
+			local k = math.floor(w[1] / TARGET_SKU_RADIUS) * 65536 + math.floor(w[2] / TARGET_SKU_RADIUS)
+			local c = rGrid[k]
+			if not c then c = {} rGrid[k] = c end
+			c[#c + 1] = w
+		end
+	end
+	return rGrid
+end
+
+local function tNearGrid(aGrid, x, y)
+	local cx, cy = math.floor(x / TARGET_SKU_RADIUS), math.floor(y / TARGET_SKU_RADIUS)
+	for dx = -1, 1 do
+		for dy = -1, 1 do
+			local c = aGrid[(cx + dx) * 65536 + (cy + dy)]
+			if c then
+				for i = 1, #c do
+					local w = c[i]
+					if (w[1] - x) ^ 2 + (w[2] - y) ^ 2 <= TARGET_SKU_RADIUS ^ 2 then return true end
+				end
+			end
+		end
+	end
+	return false
+end
+
+-- One entry per name and kind, the one nearest to the player (as Sku's own unit lists do: the way goes to the nearest one).
+-- Same limit as Sku's own route lists (routesMaxDistance): what is farther away than that is not offered. The straight line is
+-- never longer than the way, so this is the generous side of that limit.
+local function tMaxDistance()
+	local tMax = SkuSettings and SkuSettings:Sub("SkuNav").routesMaxDistance
+	return type(tMax) == "number" and tMax or nil
+end
+
+local function tTargetsWithoutSku(aGroup, aGrid, px, py, aMaxDist)
+	local rBest, rOrder = {}, {}
+	for _, t in ipairs(_G.SkuEngineTargets[aGroup.key] or {}) do
+		if not tNearGrid(aGrid, t[1], t[2]) then
+			local tName = (Sku.Loc == "deDE") and t[3] or t[4]
+			local tKind = (Sku.Loc == "deDE") and t[5] or (t[6] or t[5])
+			local tKey = tName.."\1"..tKind
+			local d = math.sqrt((t[1] - px) ^ 2 + (t[2] - py) ^ 2)
+			local b = rBest[tKey]
+			if aMaxDist and d > aMaxDist then
+				-- too far
+			elseif not b then
+				b = {x = t[1], y = t[2], name = tName, kind = tKind, dist = d}
+				rBest[tKey] = b
+				rOrder[#rOrder + 1] = b
+			elseif d < b.dist then
+				b.x, b.y, b.dist = t[1], t[2], d
+			end
+		end
+	end
+	return rOrder
+end
+
+-- Targets of this group that Sku cannot reach. aReachable = set of Sku waypoint names that Sku can reach from the player
 -- (from the route list's own search); a target counts as reachable by Sku when such a waypoint lies near it.
 function Engine:ListTargets(aReachable)
 	local rList = {}
 	if not self:Available() then return rList end
 	local px, py = UnitPosition("player")
-	if type(px) ~= "number" or not tInZone(px, py) then return rList end
+	if type(px) ~= "number" then return rList end
+	local tGroup = tPlayerGroupAt(px, py)
+	if not tGroup then return rList end
 	local tSkuNear = {}
 	if aReachable then
 		for tName in pairs(aReachable) do
@@ -220,29 +373,36 @@ function Engine:ListTargets(aReachable)
 			end
 		end
 	end
-	for _, w in ipairs(self:SkuNamedPositions()) do tSkuNear[#tSkuNear + 1] = w end
-	for _, t in ipairs(_G.SkuEngineTargets[ZONE_ID] or {}) do
-		local tSkuHasRoute = false
-		for i = 1, #tSkuNear do
-			local w = tSkuNear[i]
-			if math.abs(w[1] - t[1]) <= TARGET_SKU_RADIUS and math.abs(w[2] - t[2]) <= TARGET_SKU_RADIUS
-				and (w[1] - t[1]) ^ 2 + (w[2] - t[2]) ^ 2 <= TARGET_SKU_RADIUS ^ 2 then
-				tSkuHasRoute = true
-				break
-			end
-		end
-		if not tSkuHasRoute then
-			local name = (Sku.Loc == "deDE") and t[3] or t[4]
-			rList[#rList + 1] = {x = t[1], y = t[2], name = name, kind = t[5], dist = math.floor(math.sqrt((t[1] - px) ^ 2 + (t[2] - py) ^ 2))}
-		end
+	local tNamed = self:SkuNamedPositions()
+	local tMaxDist = tMaxDistance()
+	for _, t in ipairs(tTargetsWithoutSku(tGroup, tPosGrid({tSkuNear, tNamed}), px, py, tMaxDist)) do
+		t.dist = math.floor(t.dist)
+		rList[#rList + 1] = t
 	end
 	-- Sku's own targets that Sku cannot reach from this entry point (e.g. the harbor is an island of Sku's net): the engine
 	-- walks there. Only when the caller gave the reachable set; a target Sku reaches is never added.
+	-- Sku names every spawn of a unit by its own waypoint ("Name;Role;Area;3;75.6;9.6"): of the spawns of one name only the nearest
+	-- one is offered (as with the catalog targets above), otherwise the list holds thousands of entries.
 	if aReachable then
-		for _, w in ipairs(self:SkuNamedPositions()) do
-			if not aReachable[w[3]] then
-				rList[#rList + 1] = {x = w[1], y = w[2], name = w[3], kind = "", dist = math.floor(math.sqrt((w[1] - px) ^ 2 + (w[2] - py) ^ 2))}
+		local tBest, tOrder = {}, {}
+		for _, w in ipairs(tNamed) do
+			local d = (w[1] - px) ^ 2 + (w[2] - py) ^ 2
+			if not aReachable[w[3]] and not (tMaxDist and d > tMaxDist ^ 2) then
+				local tKey = string.gsub(w[3], ";%d+;[%d%.]+;[%d%.]+$", "")
+				local b = tBest[tKey]
+				if not b then
+					b = {x = w[1], y = w[2], name = w[3], kind = "", d2 = d}
+					tBest[tKey] = b
+					tOrder[#tOrder + 1] = b
+				elseif d < b.d2 then
+					b.x, b.y, b.name, b.d2 = w[1], w[2], w[3], d
+				end
 			end
+		end
+		for _, b in ipairs(tOrder) do
+			b.dist = math.floor(math.sqrt(b.d2))
+			b.d2 = nil
+			rList[#rList + 1] = b
 		end
 	end
 	table.sort(rList, function(a, b) return a.dist < b.dist end)
@@ -274,7 +434,7 @@ function Engine:PrepareFollow(aTarget)
 	return true
 end
 
--- Shift-F9 list (waypoints of the current map): targets of the zone that have NO Sku waypoint near (aSkuPositions = list of {x, y} of
+-- Shift-F9 list (waypoints of the current map): targets of the group that have NO Sku waypoint near (aSkuPositions = list of {x, y} of
 -- every waypoint Sku offers on this map). Returns {key = list entry name, x, y, dist}. The entry is made a real (temporary)
 -- waypoint only when it is picked (EnsureTempWaypoint), so Sku's data stays as it is.
 Engine.pendingWaypoints = {}
@@ -283,24 +443,14 @@ function Engine:ListWaypointTargets(aSkuPositions)
 	Engine.pendingWaypoints = {}
 	if not self:PlayerInZone() then return rList end
 	local px, py = UnitPosition("player")
+	local tGroup = tPlayerGroupAt(px, py)
+	if not tGroup then return rList end
 	aSkuPositions = aSkuPositions or {}
-	for _, w in ipairs(self:SkuNamedPositions()) do aSkuPositions[#aSkuPositions + 1] = w end
-	for _, t in ipairs(_G.SkuEngineTargets[ZONE_ID] or {}) do
-		local tHasSkuWp = false
-		for i = 1, #aSkuPositions do
-			local w = aSkuPositions[i]
-			if math.abs(w[1] - t[1]) <= TARGET_SKU_RADIUS and math.abs(w[2] - t[2]) <= TARGET_SKU_RADIUS
-				and (w[1] - t[1]) ^ 2 + (w[2] - t[2]) ^ 2 <= TARGET_SKU_RADIUS ^ 2 then
-				tHasSkuWp = true
-				break
-			end
-		end
-		if not tHasSkuWp then
-			local name = ((Sku.Loc == "deDE") and t[3] or t[4])..";"..t[5]..";Engine"
-			local entry = {key = name, x = t[1], y = t[2], dist = math.sqrt((t[1] - px) ^ 2 + (t[2] - py) ^ 2)}
-			rList[#rList + 1] = entry
-			Engine.pendingWaypoints[name] = entry
-		end
+	for _, t in ipairs(tTargetsWithoutSku(tGroup, tPosGrid({aSkuPositions, self:SkuNamedPositions()}), px, py)) do
+		local name = t.name..";"..t.kind..";Engine"
+		local entry = {key = name, x = t.x, y = t.y, dist = math.floor(t.dist)}
+		rList[#rList + 1] = entry
+		Engine.pendingWaypoints[name] = entry
 	end
 	return rList
 end
@@ -317,4 +467,36 @@ function Engine:EnsureTempWaypoint(aName)
 	SkuSettings:Sub("SkuNav").WaypointsTemporary = SkuSettings:Sub("SkuNav").WaypointsTemporary or {}
 	SkuSettings:Sub("SkuNav").WaypointsTemporary[#SkuSettings:Sub("SkuNav").WaypointsTemporary + 1] = tName
 	return true
+end
+
+-- Warm-up: after logging in or changing the zone, inside a group with engine data, load the data and decode the zones one after
+-- the other in the background, so that the first list does not hang (loading the big addon and decoding the zone nets takes
+-- a second or more). Elsewhere nothing is loaded. Not in combat.
+function Engine:Preload()
+	if not self:Available() then return end
+	if InCombatLockdown and InCombatLockdown() then return end
+	local px, py = UnitPosition("player")
+	if type(px) ~= "number" or type(py) ~= "number" then return end
+	local tGroup = tGroupAt(px, py)   -- loads the data addon the first time
+	if not tGroup then return end
+	local N = tNet()
+	for i, z in ipairs(tGroup.zones) do
+		C_Timer.After((i - 1) * 0.5, function()
+			if not (N.zones and N.zones[z]) then N.LoadZone(z) end
+		end)
+	end
+	C_Timer.After(#tGroup.zones * 0.5, function() tBuildGrid(tGroup) end)
+	-- the names of Sku's waypoints take ~0.4 s to collect: do it now, not when the first list is opened (kept 10 minutes)
+	C_Timer.After(#tGroup.zones * 0.5 + 6, function()
+		if not (InCombatLockdown and InCombatLockdown()) then namedCache = nil; Engine:SkuNamedPositions() end
+	end)
+end
+
+if Sku.isForever and CreateFrame and C_Timer then
+	local tPreloadFrame = CreateFrame("Frame")
+	tPreloadFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+	tPreloadFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+	tPreloadFrame:SetScript("OnEvent", function()
+		C_Timer.After(8, function() Engine:Preload() end)
+	end)
 end

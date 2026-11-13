@@ -40,6 +40,19 @@ local function tText(aParentChilds, aLabel, aFrame)
 	})
 end
 
+-- The text of a spell that the client has not loaded yet is empty (an untaken talent: its data is only requested when the
+-- tooltip is shown). Ask for the data here, and rebuild the menu once when it has arrived, so that the description can be
+-- read at once and does not wait for a second build (a click on the entry).
+local tSpellLoadAsked = {}
+local tSpellLoadPending = false
+local function tAskSpellData(aSpellID)
+	if not tSpellLoadAsked[aSpellID] and C_Spell.RequestLoadSpellData then
+		tSpellLoadAsked[aSpellID] = true
+		tSpellLoadPending = true
+		C_Spell.RequestLoadSpellData(aSpellID)
+	end
+end
+
 -- Name, description and availability of a talent entry (a spell talent or a subtree).
 local function tEntryInfo(aConfigID, aEntryID)
 	local tEntry = C_Traits.GetEntryInfo(aConfigID, aEntryID)
@@ -51,6 +64,7 @@ local function tEntryInfo(aConfigID, aEntryID)
 		if tSpellID then
 			tName = C_Spell.GetSpellName(tSpellID)
 			tDesc = C_Spell.GetSpellDescription(tSpellID)
+			if tDesc == nil or tDesc == "" then tAskSpellData(tSpellID) end
 		end
 		if tDef and not tName then tName = tDef.overrideName end
 	elseif tEntry.subTreeID then
@@ -277,6 +291,20 @@ EventRegistry:RegisterCallback("TalentFrameBase.ButtonsUpdated", function()
 	tRefreshPending = true
 	C_Timer.After(0, function()
 		tRefreshPending = false
+		SkuCore:RefreshWindowMenuQuietly()
+	end)
+end)
+
+-- The data of the spells asked for above has arrived: one quiet rebuild, the descriptions are filled in then.
+local tSpellDataFrame = CreateFrame("Frame")
+tSpellDataFrame:RegisterEvent("SPELL_DATA_LOAD_RESULT")
+tSpellDataFrame:SetScript("OnEvent", function()
+	if not tSpellLoadPending or tRefreshPending then return end
+	if not ((PlayerSpellsFrame and PlayerSpellsFrame:IsVisible()) or (LegacySystemFrame and LegacySystemFrame:IsVisible())) then return end
+	tRefreshPending = true
+	C_Timer.After(0.3, function()   -- the results come one by one: wait for the rest
+		tRefreshPending = false
+		tSpellLoadPending = false
 		SkuCore:RefreshWindowMenuQuietly()
 	end)
 end)

@@ -66,9 +66,7 @@ local function tPetHealthAutoTick()
 	local tDead = UnitIsDead("pet")
 	if not Sku.IsSecret(tDead) and tDead then return end
 	if tPetHealthAutoEnabled() then
-		dprint("combatProbe", "PETANSAGE vorher")
 		SkuCore:SpeakPetHealth()
-		dprint("combatProbe", "PETANSAGE nachher")
 	end
 end
 

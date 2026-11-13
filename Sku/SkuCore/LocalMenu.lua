@@ -455,6 +455,11 @@ local function tForeverBagTooltipText(bag, slot)
 	return SkuUtil:Unescape(table.concat(tLines, "\r\n"))
 end
 
+-- For the auction house sell list (auctionHouseForever.lua): the tooltip text of the item in a bag slot. -> text, pending
+function SkuCore:ForeverBagTooltipText(aBag, aSlot)
+	return tForeverBagTooltipText(aBag, aSlot)
+end
+
 local function getItemTooltipTextFromBagItem(bag, slot, itemId, button)
 	if Sku.isForever and not button and not itemId then
 		return tForeverBagTooltipText(bag, slot)
@@ -1793,6 +1798,8 @@ function SkuCore:Build_BagsFrame(aParentChilds)
 		[3] = _G["CharacterBag1Slot"],
 		[4] = _G["CharacterBag2Slot"],
 		[5] = _G["CharacterBag3Slot"],
+		-- Forever has a reagent bag slot (the bag bar's CharacterReagentBag0Slot); nil on clients without one
+		[6] = _G["CharacterReagentBag0Slot"],
 	}
 
 	for x = 1, #tBarBagSlots do
@@ -1813,7 +1820,7 @@ function SkuCore:Build_BagsFrame(aParentChilds)
 					click = true,
 					isBag = true,
 				}   
-				if x == 1 or x == 6 then
+				if x == 1 then
 					aParentChilds[tFriendlyName].childs = {}
 					aParentChilds[tFriendlyName].type = "Text"
 					aParentChilds[tFriendlyName].func = nil

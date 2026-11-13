@@ -424,6 +424,23 @@ function SkuNav:getAnnotatedWaypointLabel(originalLabel, id)
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
+-- [Engine route, Forever 13.11.2026] "Nearby routes" of a waypoint: where Sku has no route from its entry points to the target (or
+-- the target is an engine target that is no Sku waypoint at all), the entry "<distance> Meter#<target>;Engine" stands in the list.
+-- Picking it lets the engine compute the way from where the player stands (SkuNav.RouteFollowOnAction does the following).
+local function SkuNav_AddEngineRouteLeaf(aParent, aName, aX, aY)
+	local tPlayX, tPlayY = UnitPosition("player")
+	local tDist = math.floor(math.sqrt((aX - tPlayX) ^ 2 + (aY - tPlayY) ^ 2))
+	local tLabel = tDist..L[";Meter"].."#"..aName
+	if string.sub(aName, -7) ~= ";Engine" then tLabel = tLabel..";Engine" end
+	local tLeaf = SkuOptions:InjectMenuItems(aParent, {tLabel}, SkuGenericMenuItem)
+	tLeaf.OnEnter = function(self)
+		SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_CloseRoute = nil
+		SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget = {x = aX, y = aY, name = aName}
+	end
+	return tLeaf
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------
 local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypointList)
 	--dprint("SkuNav_MenuBuilder_WaypointSelectionMenu")
 	for i, waypointName in pairs(aSortedWaypointList) do
@@ -432,11 +449,13 @@ local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypoint
 		tNewMenuEntry.BuildChildren = function(self)
 			SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_NPC = nil
 			SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_CloseRoute = nil
+			SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget = nil
 
 			--select wp
 			local tNewMenuEntrySub = SkuOptions:InjectMenuItems(self, {L["Auswählen"]}, SkuGenericMenuItem)
 			tNewMenuEntrySub.OnEnter = function(self)
 				SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_NPC = waypointName
+				SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget = nil
 			end
 
 			--close rts
@@ -453,9 +472,37 @@ local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypoint
 				end
 				local wpTable = {SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_NPC}
 				local tMaxAllowedDistanceToTargetWp = 500
+				-- an engine target (F9 entry ";Engine") is no Sku waypoint yet: Sku has no routes to it, only the engine way is offered
+				local tEnginePending = SkuNav.Engine and SkuNav.Engine.pendingWaypoints and SkuNav.Engine.pendingWaypoints[wpTable[1]]
+				if tEnginePending then
+					if SkuNav.Engine:PlayerInZone() then
+						SkuNav_AddEngineRouteLeaf(self, wpTable[1], tEnginePending.x, tEnginePending.y)
+					else
+						SkuNav:InjectWpListEmptyHint(self)
+					end
+					return
+				end
 				local tSortedWaypointList = BuildSortedUniqueRouteWps(tRoutesInRange)
+				-- Sku's way to the target from its nearest entry point? Otherwise the engine entry follows (same test as the engine entry
+				-- point of the route list: only where Sku has no route).
+				local tTargetData = SkuNav:GetWaypointData2(wpTable[1])
+				local tEngineLeafWanted = false
+				if tTargetData and tTargetData.worldX and SkuNav.Engine and SkuNav.Engine:PlayerInZone() and SkuNav.Engine:PointInZone(tTargetData.worldX, tTargetData.worldY) then
+					tEngineLeafWanted = true
+					local tFirstEntry = tSortedWaypointList[1]
+					if tFirstEntry and string.find(tFirstEntry, "#") then
+						local tReach = SkuNav:GetAllMetaTargetsFromWp5(ssub(tFirstEntry, string.find(tFirstEntry, "#") + 1), SkuSettings:Sub("SkuNav").routesMaxDistance, SkuNav.MaxMetaWPs, nil, true)
+						for _, tNear in ipairs(SkuNav:GetNearestWpsWithLinksToWp(wpTable[1], 10, tMaxAllowedDistanceToTargetWp) or {}) do
+							if tReach[tNear.wpName] then tEngineLeafWanted = false break end
+						end
+					end
+				end
 				if #tSortedWaypointList == 0 then
-					SkuNav:InjectWpListEmptyHint(self)
+					if tEngineLeafWanted then
+						SkuNav_AddEngineRouteLeaf(self, wpTable[1], tTargetData.worldX, tTargetData.worldY)
+					else
+						SkuNav:InjectWpListEmptyHint(self)
+					end
 				else
 					local tCount = 0
 					for k, v in SkuSpairs(tSortedWaypointList) do
@@ -521,6 +568,7 @@ local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypoint
 												tNewMenuEntry.OnEnter = function(self, aValue, aName)
 													SkuSettings:Sub("SkuNav").metapathFollowingTarget = tResults[tV].metarouteIndex
 													SkuSettings:Sub("SkuNav").metapathFollowingEndTarget = tResults[tV].targetWpName
+													SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget = nil
 													SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_CloseRoute = true
 												end
 											end
@@ -530,6 +578,9 @@ local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypoint
 							end
 							tCount = tCount + 1
 						end
+					end
+					if tEngineLeafWanted then
+						SkuNav_AddEngineRouteLeaf(self, wpTable[1], tTargetData.worldX, tTargetData.worldY)
 					end
 				end
 
@@ -553,6 +604,14 @@ function SkuNav.WaypointSelectOnAction(self, aValue, aName)
 			if SkuSettings:Sub("SkuNav").routeRecording == true then
 				SkuOptions.Voice:OutputStringBTtts(L["Error"], false, true, 0.3, true)
 				SkuOptions.Voice:OutputStringBTtts(L["Recording in progress"], false, true, 0.3, true)
+				return
+			end
+
+			-- [Engine route] the engine entry of "Nearby routes" was picked: the engine computes the way
+			local tEngineTarget = SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget
+			if tEngineTarget then
+				SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget = nil
+				SkuNav.RouteFollowOnAction(self, {engineTarget = tEngineTarget}, tEngineTarget.name)
 				return
 			end
 
@@ -635,7 +694,6 @@ function SkuNav.WaypointsCurrentMapBuildChildren(self)
 				local tSubAreaIds = SkuNav:GetSubAreaIds(tCurrentAreaId)
 				tSubAreaIds[tCurrentAreaId] = tCurrentAreaId
 
-				local tPerfWp0 = debugprofilestop()
 				local tWaypointList = {}
 				local tSkuWpPositions = {}
 				-- unsorted and fetched once: the result is sorted by distance below anyway (before: two sorted calls, 11.11.2026)
@@ -701,14 +759,12 @@ function SkuNav.WaypointsCurrentMapBuildChildren(self)
 				for k,v in SkuSpairs(tWaypointList, function(t,a,b) return t[b].distance > t[a].distance end) do --nach wert
 					table.insert(tSortedWaypointList, v.distance..L[";Meter"]..v.direction.."#"..k)
 				end
-				local tPerfWp1 = debugprofilestop()
 				if #tSortedWaypointList == 0 then
 					SkuNav:InjectWpListEmptyHint(self)
 				else
 					--local tNewMenuEntry = SkuOptions:InjectMenuItems(self, tSortedWaypointList, SkuGenericMenuItem)
 					SkuNav_MenuBuilder_WaypointSelectionMenu(self, tSortedWaypointList)
 				end
-				dprint("perf waypoint list", "entries", #tSortedWaypointList, "collect+sort ms", math.floor(tPerfWp1 - tPerfWp0), "build ms", math.floor(debugprofilestop() - tPerfWp1))
 end
 
 -- Starts following the selected route / unit route (the isSelect target for the
@@ -846,12 +902,10 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 			--SkuSettings:Sub("SkuNav").metapathFollowingStart = nil
 			SkuSettings:Sub("SkuNav").metapathFollowingStartTMP = nil
 			SkuMetapathFollowingMetapathsTMP = nil
-			local tPerfStart = debugprofilestop()
 			local tPlayX, tPlayY = UnitPosition("player")
 			local tRoutesInRange = SkuNav:GetAllLinkedWPsInRangeToCoords(tPlayX, tPlayY, SkuNav.MaxMetaEntryRange)--SkuSettings:Sub("SkuNav").nearbyWpRange)
 
 			local tSortedWaypointList = BuildSortedUniqueRouteWps(tRoutesInRange)
-			dprint("perf routes entry points", "found", #tSortedWaypointList, "ms", math.floor(debugprofilestop() - tPerfStart))
 
 			-- [Engine route, Forever prototype 12.11.2026] where Sku has no waypoint near the player (farther than the nearby-waypoint
 			-- range), the engine is an entry point of its own: "Engine" at distance 0, the first entry. Under it stand the targets Sku
@@ -919,10 +973,8 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 						tNewMenuEntry.dynamic = true
 						tNewMenuEntry.sorting = true
 						tNewMenuEntry.BuildChildren = function(self)
-							local tPerf0 = debugprofilestop()
 							SkuSettings:Sub("SkuNav").metapathFollowingStartTMP = v
 							local tMetapaths = SkuNav:GetAllMetaTargetsFromWp5(ssub(v, string.find(v, "#") + 1), SkuSettings:Sub("SkuNav").routesMaxDistance, SkuNav.MaxMetaWPs)--
-							local tPerf1 = debugprofilestop()
 							SkuMetapathFollowingMetapathsTMP = tMetapaths
 							local tData = {}
 							for i, v in pairs(tMetapaths) do--
@@ -933,14 +985,12 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 							for k,v in SkuSpairs(tData, function(t,a,b) return t[b] > t[a] end) do
 								table.insert(tSortedList, k)
 							end
-							local tPerf2 = debugprofilestop()
 							-- [Engine route, Forever prototype 12.11.2026] targets that Sku has NO route to stand in this same list, sorted in
 							-- by distance and marked "Engine". Sku's own entries are unchanged; a target that Sku reaches is never added.
 							local tEngineTargets = {}
 							if SkuNav.Engine and SkuNav.Engine:Available() then
 								tEngineTargets = SkuNav.Engine:ListTargets(tMetapaths)
 								dprint("engineRoute list", "engine targets", #tEngineTargets)
-								for _, tT in ipairs(tEngineTargets) do dprint("engineRoute target", tT.dist, tT.name) end
 							end
 							local tEngineNext = 1
 							local function tAddEngineTargets(aUpToDist)
@@ -990,7 +1040,6 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 								end
 								tAddEngineTargets(nil)
 							end
-dprint("perf routes list", "targets", #tSortedList, "search ms", math.floor(tPerf1 - tPerf0), "sort ms", math.floor(tPerf2 - tPerf1), "build ms", math.floor(debugprofilestop() - tPerf2))
 
 						end
 						tCount = tCount + 1

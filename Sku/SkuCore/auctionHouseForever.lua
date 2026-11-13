@@ -623,6 +623,13 @@ function AHF:BuyItemAuction(aAuctionID, aBuyoutAmount, aName, aLeaf)
 end
 
 function AHF:OnItemPurchaseCompleted(aAuctionID)
+	dprint("ahf", "purchase completed", aAuctionID, gItemPurchase.auctionID, gItemPurchase.lateAuctionID)
+	if aAuctionID == gItemPurchase.lateAuctionID and aAuctionID ~= gItemPurchase.auctionID then
+		-- completed after an error was announced for it
+		tSay((gItemPurchase.lateName and (gItemPurchase.lateName..": ") or "")..L["Purchase complete"])
+		gItemPurchase.lateAuctionID, gItemPurchase.lateName = nil, nil
+		return
+	end
 	if aAuctionID ~= gItemPurchase.auctionID then return end
 	gItemPurchase.auctionID = nil
 	tSay((gItemPurchase.name and (gItemPurchase.name..": ") or "")..L["Purchase complete"])
@@ -1658,6 +1665,24 @@ local function tBuildSellList(aSelf)
 					tE.dynamic = true
 					tE.skuIdentity = "sellitem:"..tGuid
 					tMarkEntering(tE)
+					-- Tooltip of the bag item (Shift+Down etc.), read when asked for; the slot must still hold this item
+					tE.itemId = tInfo.hyperlink
+					tE.textFirstLine = tName
+					tE.textFull = function()
+						if C_Item.GetItemGUID(tLoc) ~= tGuid then return { L["The item has moved or is gone, open the list again"] } end
+						local tText, tPending = SkuCore:ForeverBagTooltipText(tBag, tSlot)
+						if tPending then C_Item.RequestLoadItemDataByID(tInfo.itemID) end
+						if tText and tText ~= "" then
+							-- the same sections as in the normal bag list (LocalMenu.lua): the item's tooltip, then vendor price and
+							-- auction price data (AuctionHouseGetAuctionPriceHistoryData), then the comparison with what is equipped
+							local tFull = SkuCore.AuctionHouse and SkuCore.AuctionHouse:AuctionHouseGetAuctionPriceHistoryData(tInfo.itemID)
+							if type(tFull) ~= "table" then tFull = { tFull or "" } end
+							table.insert(tFull, 1, tText)
+							SkuCore:InsertComparisnSections(tInfo.itemID, tFull, {})
+							return tFull
+						end
+						return { L["No tooltip available"] }
+					end
 					tE.BuildChildren = function(self)
 						if not self.ahfEntering then tPlaceholderChild(self) return end
 						local tState = AHF:SelectSellItem(tBag, tSlot, tGuid)
@@ -2153,6 +2178,15 @@ function AHF:OnShowError(aError)
 	local tText = AuctionHouseUtil.GetErrorText(aError)
 	dprint("ahf", "SHOW_ERROR", aError, tText)
 	if gItemPurchase.auctionID then
+		-- The server can answer a buyout with an error and still complete it (seen on Forever, 12.11.2026: "internal auction
+		-- error", item bought anyway). The auction stays known for a while: a completion that follows is announced.
+		if gItemPurchase.isBuyout then
+			gItemPurchase.lateAuctionID, gItemPurchase.lateName = gItemPurchase.auctionID, gItemPurchase.name
+			local tLate = gItemPurchase.lateAuctionID
+			C_Timer.After(30, function()
+				if gItemPurchase.lateAuctionID == tLate then gItemPurchase.lateAuctionID, gItemPurchase.lateName = nil, nil end
+			end)
+		end
 		gItemPurchase.auctionID = nil
 		if tText == "" then tText = gItemPurchase.isBuyout and L["Purchase failed"] or L["Bid failed"] end
 		tSay((gItemPurchase.name and (gItemPurchase.name..": ") or "")..tText)

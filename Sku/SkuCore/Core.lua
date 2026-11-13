@@ -2099,12 +2099,6 @@ function SkuCore:OnEnable()
 				-- map was shown and hidden from here, mid-movement. Only distances are taken from it.
 				local tNewY, tNewX = UnitPosition("player")
 				if tNewX and tNewY then
-					-- Measurement (WoW Forever only, temporary): position trace once per second, to see where a route really leads.
-					if Sku.isForever and (not SkuCoreMovement.traceAt or GetTime() - SkuCoreMovement.traceAt >= 1) then
-						SkuCoreMovement.traceAt = GetTime()
-						dprint("posTrace", string.format("%.1f", tNewY), string.format("%.1f", tNewX))
-					end
-
 					-- Walk-to-interact arming: the native "Interact With Target" key (G,
 					-- INTERACTTARGET) auto-walks the character via the engine's own movement
 					-- controller -- no movement key is held, so none of the intent flags
