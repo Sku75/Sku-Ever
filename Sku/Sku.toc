@@ -1,9 +1,10 @@
 ﻿## Interface: 20506, 11508, 11509, 16001
-## Title: Sku-Ever 0.28
+## Title: Sku-Ever 0.29
 ## SavedVariables: SkuOptionsDB, SkuTranslatedData, SkuErrorLog, SkuDebugLog
-## Version: 0.28
+## Version: 0.29
 
 SkuPerfFileStamp.lua
+SkuEverStartProfile.lua
 
 SkuAudioData\assets\SkuAudioFileIndex.lua
 SkuAudioData\assets\SkuAudioDataLenIndex.lua

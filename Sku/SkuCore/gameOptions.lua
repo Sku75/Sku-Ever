@@ -1053,3 +1053,871 @@ function GameOptions:GameMenuBuilder(aParentEntry)
          onAction = function() tNavTo(tEinst) end })
    end
 end
+
+-- =====================================================================
+-- Native windows: the ORIGINAL Escape game menu and the ORIGINAL settings
+-- panel (SettingsPanel), driven from the keyboard like a desktop window.
+-- ---------------------------------------------------------------------
+-- Escape no longer jumps into Sku's "Spielmenü" entry: Blizzard's own game
+-- menu stays on screen and is read as a window; "Optionen" opens Blizzard's
+-- own settings panel, read as a window with stops (Tab / Shift+Tab):
+--   Reiter (only when the panel shows tabs), Suchen (the real search box),
+--   Kategorien, the settings of the chosen category, Standard.
+-- Arrow up/down walk a stop, Enter uses the entry, left/right move a slider,
+-- Space reads the tooltip, letters jump to the next entry with that letter.
+-- Escape is left to the game (closes the panel / the menu), except while a
+-- dropdown list is open, where it closes the list.
+--
+-- Values are written through the same helpers as the Sku menu above
+-- (ApplySetting, OptionList, SliderInfo, ...), so both ways behave alike.
+-- The Sku menu entry "Spieloptionen" (GameOptionsMenuBuilder) is unchanged.
+-- Keys arrive through priority override bindings on a named button, i.e. as
+-- hardware events, so clicking the game-menu buttons (Logout, Quit) works.
+-- Out of combat only: override bindings cannot change in combat lockdown.
+-- =====================================================================
+local _N = {
+   menu       = deEn("Spielmenü", "Game menu", "Menu du jeu"),
+   tabs       = deEn("Reiter", "Tabs", "Onglets"),
+   search     = deEn("Suchen", "Search", "Rechercher"),
+   editbox    = deEn("Eingabefeld", "edit box", "champ de saisie"),
+   categories = deEn("Kategorien", "Categories", "Catégories"),
+   options    = deEn("Optionen", "Options", "Options"),
+   defaults   = deEn("Standard", "Defaults", "Par défaut"),
+   separator  = deEn("Trennlinie", "separator", "séparateur"),
+   checkbox   = deEn("Kontrollkästchen", "checkbox", "case à cocher"),
+   checked    = deEn("aktiviert", "checked", "coché"),
+   unchecked  = deEn("nicht aktiviert", "not checked", "non coché"),
+   slider     = deEn("Schieberegler", "slider", "curseur"),
+   dropdown   = deEn("Auswahl", "dropdown", "liste déroulante"),
+   button     = deEn("Schaltfläche", "button", "bouton"),
+   tab        = deEn("Reiter", "tab", "onglet"),
+   of         = deEn("von", "of", "sur"),
+   list       = deEn("Liste", "list", "liste"),
+   noTip      = deEn("Kein Tooltip", "No tooltip", "Pas d'info-bulle"),
+   empty      = deEn("leer", "empty", "vide"),
+   cancelled  = deEn("abgebrochen", "cancelled", "annulé"),
+   selected   = deEn("ausgewählt", "selected", "sélectionné"),
+   entries    = deEn("Einträge", "entries", "entrées"),
+   raid       = deEn("Schlachtzug", "Raid", "Raid"),
+   keybinds   = deEn("Tastenbelegungen, im Sku-Menü öffnen", "Key bindings, open in the Sku menu",
+                     "Raccourcis clavier, ouvrir dans le menu Sku"),
+}
+
+local NW = { kind = nil, stops = {}, stop = 1, pos = {}, sub = nil, hooked = false, menuHooked = false }
+GameOptions.Native = NW
+
+local NW_KEYS = { "TAB", "SHIFT-TAB", "UP", "DOWN", "LEFT", "RIGHT", "ENTER", "NUMPADENTER",
+                  "SPACE", "HOME", "END" }
+for c = string.byte("A"), string.byte("Z") do NW_KEYS[#NW_KEYS + 1] = string.char(c) end
+
+local function nwFrames()
+   local owner = _G["SkuNativeWinKeyOwner"] or CreateFrame("Frame", "SkuNativeWinKeyOwner", UIParent)
+   local b = _G["SkuNativeWinKey"]
+   if not b then
+      b = CreateFrame("Button", "SkuNativeWinKey", UIParent)
+      b:RegisterForClicks("AnyDown")
+      b:SetScript("OnClick", function(_, aKey) NW:OnKey(aKey) end)
+   end
+   return owner, b
+end
+
+local function nwShown(f) return f ~= nil and tCall(f, "IsShown") == true end
+
+local function nwAfter(aDelay, aFn)
+   if C_Timer and C_Timer.After then C_Timer.After(aDelay, aFn) else aFn() end
+end
+
+-- ---------------------------------------------------------------------
+-- ScrollBox reading (category list and settings list of the live panel).
+-- ---------------------------------------------------------------------
+local function ProviderElements(aScrollBox)
+   local out = {}
+   local dp = tCall(aScrollBox, "GetDataProvider")
+   if not dp then return out end
+   local coll = tCall(dp, "GetCollection")
+   if type(coll) ~= "table" then coll = dp.collection end
+   if type(coll) == "table" then
+      for _, e in ipairs(coll) do out[#out + 1] = e end
+   else
+      pcall(function() for _, e in dp:Enumerate() do out[#out + 1] = e end end)
+   end
+   for i, e in ipairs(out) do
+      -- tree nodes carry their initializer as data
+      if type(e) == "table" and e.GetTemplate == nil and type(e.GetData) == "function" then
+         local d = tCall(e, "GetData")
+         if d ~= nil then out[i] = d end
+      end
+   end
+   return out
+end
+
+local function ElementTemplate(e)
+   local t = tCall(e, "GetTemplate")
+   if not t and type(e) == "table" then t = e.template or e.frameTemplate end
+   return tostring(t or "")
+end
+
+local function ElementData(e)
+   local d = tCall(e, "GetData")
+   if type(d) ~= "table" and type(e) == "table" then d = e.data or e end
+   return type(d) == "table" and d or {}
+end
+
+local function TipOf(data)
+   if type(data) ~= "table" then return nil end
+   for _, k in ipairs({ "tooltip", "cbTooltip", "sliderTooltip", "dropdownTooltip", "dropDownTooltip" }) do
+      local t = tResolve(data[k])
+      if type(t) == "string" and t ~= "" then return StripColor(t) end
+   end
+   return nil
+end
+
+-- ---------------------------------------------------------------------
+-- Entries. An entry: { say = fn -> text, enter = fn, left = fn, right = fn,
+-- tip = fn -> text, letter = fn -> text used for letter jumps }.
+-- ---------------------------------------------------------------------
+local function DisabledPart(init)
+   if init and not IsInitEnabled(init) then return ", " .. _L.disabled end
+   return ""
+end
+
+local function Guard(init)
+   if init and not IsInitEnabled(init) then tSay(_L.disabled) return false end
+   return true
+end
+
+local function TipFn(aTip)
+   if not aTip then return nil end
+   return function() return aTip end
+end
+
+local function EntryHeader(aName)
+   return { say = function() return aName .. ", " .. _N.separator end, letter = function() return aName end }
+end
+
+local function EntryLabel(aText, aTip)
+   return { say = function() return aText end, letter = function() return aText end, tip = TipFn(aTip) }
+end
+
+local function EntryToggle(aName, setting, init, aTip)
+   local function state() return tCall(setting, "GetValue") == true and _N.checked or _N.unchecked end
+   return {
+      letter = function() return aName end,
+      say = function() return aName .. ", " .. _N.checkbox .. ", " .. state() .. DisabledPart(init) end,
+      tip = TipFn(aTip),
+      enter = function()
+         if not Guard(init) then return end
+         if ApplySetting(setting, tCall(setting, "GetValue") ~= true) then
+            local t = state()
+            if HasCommitFlag(setting, "ClientRestart") then t = t .. "; " .. _L.restart end
+            tSay(t)
+         end
+      end,
+   }
+end
+
+local function EntryNumber(aName, setting, aOptions, init, aTip, aExtra)
+   local si = SliderInfo(aOptions)
+   if not si then return EntryLabel(aName .. _L.unsupported, aTip) end
+   local function cur()
+      local v = tCall(setting, "GetValue")
+      return type(v) == "number" and si.fmt(v) or tostring(v)
+   end
+   local function apply(v)
+      v = SnapValue(si, v)
+      if ApplySetting(setting, v) then
+         local now = tCall(setting, "GetValue")
+         local t = si.fmt(type(now) == "number" and now or v)
+         local x = aExtra and aExtra()
+         if x then t = t .. " " .. x end
+         if HasCommitFlag(setting, "ClientRestart") then t = t .. "; " .. _L.restart end
+         tSay(t)
+      end
+   end
+   local function step(aDir)
+      if not Guard(init) then return end
+      local v = tCall(setting, "GetValue")
+      if type(v) ~= "number" then v = si.min end
+      apply(v + aDir * si.inc)
+   end
+   return {
+      letter = function() return aName end,
+      say = function() return aName .. ", " .. _N.slider .. ", " .. cur() .. DisabledPart(init) end,
+      tip = TipFn(aTip),
+      left = function() step(-1) end,
+      right = function() step(1) end,
+      enter = function()
+         if not Guard(init) then return end
+         PlaySound(88)
+         local Lg = Sku and Sku.L or {}
+         tSay(Lg["Enter text and press ENTER key"] or _L.enterValue)
+         SkuOptions:EditBoxShow(cur(), function()
+            PlaySound(89)
+            local n = si.parse(SkuOptionsEditBoxEditBox and SkuOptionsEditBoxEditBox:GetText() or "")
+            if not n then tSay(_L.invalid) return end
+            apply(n)
+         end)
+      end,
+   }
+end
+
+local function EntryDropdown(aName, setting, aOptions, init, aTip, aExtra)
+   local function curLabel()
+      local v = tCall(setting, "GetValue")
+      for _, o in ipairs(OptionList(aOptions)) do
+         if o.value == v then return OptionMenuLabel(o) end
+      end
+      return tostring(v)
+   end
+   return {
+      letter = function() return aName end,
+      say = function() return aName .. ", " .. _N.dropdown .. ", " .. curLabel() .. DisabledPart(init) end,
+      tip = TipFn(aTip),
+      enter = function()
+         if not Guard(init) then return end
+         local opts = OptionList(aOptions)
+         if #opts == 0 then tSay(_N.empty) return end
+         local v, start = tCall(setting, "GetValue"), 1
+         for i, o in ipairs(opts) do if o.value == v then start = i end end
+         NW:OpenSub(aName, opts, start, function(o)
+            if o.disabled then
+               local why = (type(o.disabled) == "string") and ("; " .. StripColor(o.disabled)) or ""
+               tSay(tostring(o.label) .. " " .. _L.unavailable .. why)
+               return false
+            end
+            if ApplySetting(setting, o.value) then
+               local t = tostring(o.label)
+               local x = aExtra and aExtra()
+               if x then t = t .. " " .. x end
+               if HasCommitFlag(setting, "ClientRestart") then t = t .. "; " .. _L.restart end
+               tSay(t)
+            end
+            return true
+         end)
+      end,
+   }
+end
+
+local function EntryButton(aName, aButtonText, aClick, init, aTip)
+   local name = StripColor(tResolve(aName) or "")
+   local btn = StripColor(tResolve(aButtonText) or "")
+   local label = (name ~= "" and (name .. " ") or "") .. btn
+   if label == "" then return nil end
+   return {
+      letter = function() return label end,
+      say = function() return label .. ", " .. _N.button .. DisabledPart(init) end,
+      tip = TipFn(aTip),
+      enter = function()
+         if not Guard(init) then return end
+         if type(aClick) == "function" then
+            PlaySound(88)
+            pcall(aClick)
+         end
+      end,
+   }
+end
+
+-- Graphics quality section: the base group, then the raid switch and the
+-- raid group (prefixed "Schlachtzug"), all as plain rows of the list.
+local function QualityEntries(out, aSettings, aRaid)
+   if type(aSettings) ~= "table" then return end
+   for _, key in ipairs(QUALITY_ORDER) do
+      local setting
+      for cvar, s in pairs(aSettings) do
+         if QualityKey(cvar) == key then setting = s break end
+      end
+      if setting then
+         local name = StripColor(tCall(setting, "GetName") or key)
+         if aRaid then name = _N.raid .. " " .. name end
+         if QUALITY_SLIDERS[key] then
+            out[#out + 1] = EntryNumber(name, setting, QualitySliderOptions())
+         elseif QUALITY_OPTIONS[key] then
+            local names = QUALITY_OPTIONS[key]
+            local function opts()
+               local list = {}
+               local variable = tCall(setting, "GetVariable")
+               local default = tCall(setting, "GetDefaultValue")
+               for i, g in ipairs(names) do
+                  local v = i - 1
+                  local disabled = nil
+                  if _G.IsGraphicsSettingValueSupported and variable then
+                     local ok, err = pcall(IsGraphicsSettingValueSupported, variable, v, aRaid)
+                     if ok and type(err) == "number" and err > 0 then disabled = true end
+                  end
+                  list[#list + 1] = { value = v, label = _G[g] or g, disabled = disabled, recommend = (v == default) or nil }
+               end
+               return list
+            end
+            out[#out + 1] = EntryDropdown(name, setting, opts)
+         end
+      end
+   end
+end
+
+local function ColorblindOptions()
+   return {
+      { value = 0, label = _G.COLORBLIND_OPTION_NONE or "None" },
+      { value = 1, label = _G.COLORBLIND_OPTION_PROTANOPIA or "Protanopia" },
+      { value = 2, label = _G.COLORBLIND_OPTION_DEUTERANOPIA or "Deuteranopia" },
+      { value = 3, label = _G.COLORBLIND_OPTION_TRITANOPIA or "Tritanopia" },
+   }
+end
+
+-- One row of the settings list -> zero, one or two entries (a row with two
+-- controls gives two entries, walked with up/down like any other).
+local function RowEntries(out, init, aState)
+   if not IsInitShown(init) then return end
+   local data, template, setting = InitInfo(init)
+   template = tostring(template or "")
+   if type(data) ~= "table" then data = {} end
+   local name = StripColor(tResolve(data.name) or tCall(setting, "GetName") or "")
+   local tip = TipOf(data)
+
+   if DiscordRowKind(init) == "login" then
+      local tLogin = StripColor(tostring(tResolve(data.name) or ""):gsub("|A.-|a", ""):gsub("^%s+", ""):gsub("%s+$", ""))
+      out[#out + 1] = { say = function() return tLogin .. ", " .. _N.button end,
+                        letter = function() return tLogin end,
+                        enter = function() tSay(_L.discordLogin) end }
+      return
+   end
+
+   if template:find("SectionHeader") or template:find("SearchCategory") then
+      if name ~= "" then out[#out + 1] = EntryHeader(name) end
+
+   elseif template == "SettingsCheckboxSliderControlTemplate" or data.sliderSetting then
+      local cb = data.cbSetting or setting
+      local cbLabel = StripColor(tResolve(data.cbLabel) or name)
+      if cb then out[#out + 1] = EntryToggle(cbLabel, cb, init, tip) end
+      if data.sliderSetting then
+         local slLabel = StripColor(tResolve(data.sliderLabel) or name)
+         if slLabel == cbLabel or slLabel == "" then slLabel = cbLabel .. " " .. _L.value end
+         out[#out + 1] = EntryNumber(slLabel, data.sliderSetting, data.sliderOptions, init, tip, CheckboxOffSuffix(cb))
+      end
+
+   elseif template == "SettingsCheckboxDropdownControlTemplate" or data.dropdownSetting or data.dropDownSetting then
+      local cb = data.cbSetting or setting
+      local cbLabel = StripColor(tResolve(data.cbLabel) or name)
+      if cb then out[#out + 1] = EntryToggle(cbLabel, cb, init, tip) end
+      local dd = data.dropdownSetting or data.dropDownSetting
+      if dd then
+         local ddLabel = StripColor(tResolve(data.dropDownLabel) or tResolve(data.dropdownLabel) or name)
+         if ddLabel == cbLabel or ddLabel == "" then ddLabel = cbLabel .. " " .. _L.value end
+         out[#out + 1] = EntryDropdown(ddLabel, dd, data.dropdownOptions or data.dropDownOptions, init, tip, CheckboxOffSuffix(cb))
+      end
+
+   elseif template == "SettingsCheckboxWithButtonControlTemplate" or (setting and data.OnButtonClick) then
+      if setting then out[#out + 1] = EntryToggle(name, setting, init, tip) end
+      local click = data.OnButtonClick or data.buttonClick
+      local e = EntryButton(name, data.buttonText, function()
+         if data.clickRequiresSet and tCall(setting, "GetValue") ~= true then
+            tSay(_L.disabled)
+            return
+         end
+         if type(click) == "function" then click() end
+      end, init, tip)
+      if e then out[#out + 1] = e end
+
+   elseif template == "SettingButtonControlTemplate" or data.buttonClick then
+      local e = EntryButton(data.name, data.buttonText, data.buttonClick, init, tip)
+      if e then out[#out + 1] = e end
+
+   elseif template == "SettingsAdvancedQualitySectionTemplate" or (data.settings and data.raidSettings) then
+      QualityEntries(out, data.settings, false)
+      local ok, en = pcall(Settings.GetSetting, "RAIDsettingsEnabled")
+      if ok and en then
+         out[#out + 1] = EntryToggle(StripColor(tCall(en, "GetName") or _G.RAID_SETTINGS_ENABLED or "Raid settings"), en)
+      end
+      QualityEntries(out, data.raidSettings, true)
+
+   elseif template == "ColorblindSelectorTemplate" then
+      local s = data.settings
+      if type(s) == "table" and s.colorblindSimulator then
+         local sim = s.colorblindSimulator
+         out[#out + 1] = EntryDropdown(StripColor(tCall(sim, "GetName") or _G.COLORBLIND_FILTER or "Colorblind filter"),
+            sim, ColorblindOptions)
+      end
+      if type(s) == "table" and s.colorblindFactor then
+         local Lb = _G.MinimalSliderWithSteppersMixin and MinimalSliderWithSteppersMixin.Label
+         local key = (type(Lb) == "table" and Lb.Right) or 2
+         out[#out + 1] = EntryNumber(StripColor(tCall(s.colorblindFactor, "GetName") or _G.ADJUST_COLORBLIND_STRENGTH or "Strength"),
+            s.colorblindFactor, { minValue = 0, maxValue = 1, steps = 20, formatters = { [key] = _G.FormatPercentage } })
+      end
+
+   elseif template:find("Keybinding") or template:find("KeyBinding") then
+      -- Sku has its own complete key-bind menu: one entry per list leads there.
+      if not aState.keybinds then
+         aState.keybinds = true
+         out[#out + 1] = {
+            say = function() return _N.keybinds end,
+            letter = function() return _N.keybinds end,
+            enter = function()
+               pcall(function() HideUIPanel(SettingsPanel) end)
+               tNavTo(SkuKeybindsPath())
+            end,
+         }
+      end
+
+   elseif setting then
+      local vtype = tCall(setting, "GetVariableType")
+      local opts = OptionList(data.options)
+      if vtype == "boolean" and (template:find("Checkbox") or #opts == 0) then
+         out[#out + 1] = EntryToggle(name, setting, init, tip)
+      elseif template:find("Slider") then
+         out[#out + 1] = EntryNumber(name, setting, data.options, init, tip)
+      elseif #opts > 0 then
+         out[#out + 1] = EntryDropdown(name, setting, data.options, init, tip)
+      elseif vtype == "number" and SliderInfo(data.options) then
+         out[#out + 1] = EntryNumber(name, setting, data.options, init, tip)
+      else
+         out[#out + 1] = EntryLabel(name .. _L.unsupported, tip)
+      end
+
+   elseif name ~= "" then
+      out[#out + 1] = EntryLabel(name .. _L.unsupported, tip)
+   end
+end
+
+-- ---------------------------------------------------------------------
+-- The stops of the two windows.
+-- ---------------------------------------------------------------------
+local function GameMenuEntries()
+   local out = {}
+   for _, btn in ipairs(CollectGameMenuButtons()) do
+      local label = StripColor(tostring(tCall(btn, "GetText") or ""))
+      local function off() return tCall(btn, "IsEnabled") == false end
+      local e = {
+         letter = function() return label end,
+         say = function() return label .. ", " .. _N.button .. (off() and (", " .. _L.disabled) or "") end,
+      }
+      if IsMacroButton(label) then
+         -- Blizzard's macro window is not readable: Sku's macro menu instead.
+         e.enter = function()
+            pcall(function() HideUIPanel(GameMenuFrame) end)
+            tNavTo(Sku.MENU_ROOT .. "," .. ((Sku and Sku.L and Sku.L["Macros"]) or "Macros"))
+         end
+      elseif IsAddonsButton(label) then
+         -- Blizzard's addon list is not readable: Sku's AddOn settings instead.
+         e.enter = function()
+            pcall(function() HideUIPanel(GameMenuFrame) end)
+            tNavTo(Sku.MENU_ROOT .. ",Addons," .. Sku.deEn("AddOn-Einstellungen", "AddOn settings", "Réglages des extensions"))
+         end
+      else
+         e.enter = function()
+            if off() then tSay(_L.disabled) return end
+            PlaySound(88)
+            pcall(function() btn:Click() end)
+         end
+      end
+      out[#out + 1] = e
+   end
+   return out
+end
+
+local function SettingsTitle()
+   local list = tCall(SettingsPanel, "GetSettingsList")
+   local t
+   pcall(function() t = list.Header.Title:GetText() end)
+   if type(t) == "string" and t ~= "" then return StripColor(t) end
+   local cat = tCall(SettingsPanel, "GetCurrentCategory")
+   return cat and tostring(CategoryName(cat)) or _N.options
+end
+
+local function CategoryEntry(cat)
+   local name = tostring(CategoryName(cat))
+   return {
+      letter = function() return name end,
+      say = function()
+         local curCat = tCall(SettingsPanel, "GetCurrentCategory")
+         return name .. ((curCat == cat) and (", " .. _N.selected) or "")
+      end,
+      enter = function()
+         PlaySound(88)
+         tCall(SettingsPanel, "SelectCategory", cat)
+         NW.pos.settings = 1
+         nwAfter(0.1, function()
+            local n = #NW:Items("settings")
+            tSay(name .. ", " .. n .. " " .. _N.entries)
+         end)
+      end,
+   }
+end
+
+local function CategoryEntries()
+   local out = {}
+   local cl = SettingsPanel and SettingsPanel.CategoryList
+   local elems = (cl and nwShown(cl)) and ProviderElements(cl.ScrollBox) or {}
+   for _, e in ipairs(elems) do
+      local tpl, d = ElementTemplate(e), ElementData(e)
+      if d.category ~= nil then
+         out[#out + 1] = CategoryEntry(d.category)
+      elseif not tpl:find("Spacer") then
+         local label = StripColor(tResolve(d.label) or tResolve(d.name) or tResolve(d.groupText) or "")
+         if label ~= "" then out[#out + 1] = EntryHeader(label) end
+      end
+   end
+   return out
+end
+
+local function SettingsEntries()
+   local out, state = {}, {}
+   local list = tCall(SettingsPanel, "GetSettingsList")
+   local inits
+   if list and nwShown(list) then inits = ProviderElements(list.ScrollBox) end
+   if not inits or #inits == 0 then
+      local cat = tCall(SettingsPanel, "GetCurrentCategory")
+      inits = cat and GetInitializers(cat) or {}
+   end
+   for _, init in ipairs(inits) do
+      local ok, err = pcall(RowEntries, out, init, state)
+      if not ok and dprint then dprint("gameOptions native: row failed", tostring(err)) end
+   end
+   return out
+end
+
+local function TabEntries()
+   local out = {}
+   local tabs = {}
+   if SettingsPanel then tabs = { SettingsPanel.GameTab, SettingsPanel.AddOnsTab } end
+   for _, tab in ipairs(tabs) do
+      if nwShown(tab) then
+         local label = StripColor(tCall(tab, "GetText") or "")
+         if label ~= "" then
+            out[#out + 1] = {
+               letter = function() return label end,
+               say = function() return label .. ", " .. _N.tab end,
+               enter = function()
+                  PlaySound(88)
+                  pcall(function() tab:Click() end)
+                  tSay(label)
+               end,
+            }
+         end
+      end
+   end
+   return out
+end
+
+local function SearchEntries()
+   return { {
+      letter = function() return _N.search end,
+      say = function()
+         local sb = SettingsPanel and SettingsPanel.SearchBox
+         local t = sb and tCall(sb, "GetText") or ""
+         return _N.search .. ", " .. _N.editbox .. ((t ~= "") and (", " .. t) or "")
+      end,
+      enter = function() NW:FocusSearch() end,
+   } }
+end
+
+local function DefaultsEntries()
+   local list = tCall(SettingsPanel, "GetSettingsList")
+   local b = list and list.Header and list.Header.DefaultsButton
+   if not nwShown(b) then return {} end
+   local label = StripColor(tCall(b, "GetText") or _N.defaults)
+   return { {
+      letter = function() return label end,
+      say = function() return label .. ", " .. _N.button end,
+      enter = function()
+         PlaySound(88)
+         pcall(function() b:Click() end)
+      end,
+   } }
+end
+
+local NW_STOPS = {
+   gamemenu = {
+      { key = "menu", title = function() return _N.menu end, items = GameMenuEntries },
+   },
+   settings = {
+      { key = "tabs", title = function() return _N.tabs end, items = TabEntries },
+      { key = "search", title = function() return _N.search end, items = SearchEntries, isSearch = true },
+      { key = "categories", title = function() return _N.categories end, items = CategoryEntries },
+      { key = "settings", title = SettingsTitle, items = SettingsEntries },
+      { key = "defaults", title = function() return _N.defaults end, items = DefaultsEntries },
+   },
+}
+
+-- ---------------------------------------------------------------------
+-- Session handling.
+-- ---------------------------------------------------------------------
+local function StopItems(aStop)
+   local ok, r = pcall(aStop.items)
+   return (ok and type(r) == "table") and r or {}
+end
+
+function NW:Items(aKey)
+   for _, s in ipairs(self.stops) do
+      if s.key == aKey then return StopItems(s) end
+   end
+   return {}
+end
+
+function NW:Current()
+   local s = self.stops[self.stop]
+   if not s then return nil, {}, 1 end
+   local items = StopItems(s)
+   local p = self.pos[s.key] or 1
+   if p > #items then p = #items end
+   if p < 1 then p = 1 end
+   self.pos[s.key] = p
+   return s, items, p
+end
+
+local function SayOf(e)
+   if not e then return "" end
+   local ok, t = pcall(e.say)
+   return ok and tostring(t) or ""
+end
+
+function NW:SpeakItem(aWithStop)
+   local s, items, p = self:Current()
+   if not s then return end
+   if #items == 0 then
+      tSay((aWithStop and (s.title() .. ", ") or "") .. _N.empty)
+      return
+   end
+   local t = SayOf(items[p])
+   if aWithStop then
+      t = s.title() .. ", " .. t .. ", " .. p .. " " .. _N.of .. " " .. #items
+   end
+   tSay(t)
+end
+
+function NW:Bind()
+   if InCombatLockdown and InCombatLockdown() then return false end
+   local owner = nwFrames()
+   ClearOverrideBindings(owner)
+   for _, k in ipairs(NW_KEYS) do
+      SetOverrideBindingClick(owner, true, k, "SkuNativeWinKey", k)
+   end
+   return true
+end
+
+function NW:Unbind()
+   local owner = _G["SkuNativeWinKeyOwner"]
+   if owner and not (InCombatLockdown and InCombatLockdown()) then ClearOverrideBindings(owner) end
+end
+
+function NW:Start(aKind)
+   if not GameOptions:IsEnabled() then return false end
+   if not NW_STOPS[aKind] then return false end
+   if not self:Bind() then return false end
+   self:HookPanel()
+   self.kind = aKind
+   self.stops = NW_STOPS[aKind]
+   self.sub = nil
+   self.pos = {}
+   if aKind == "settings" then
+      -- The window opens on the search box, as in Blizzard's own panel.
+      self.stop = 2
+      tSay(_N.options)
+      nwAfter(0.3, function() if NW.kind == "settings" then NW:FocusSearch() end end)
+   else
+      self.stop = 1
+      nwAfter(0.05, function() if NW.kind == aKind then NW:SpeakItem(true) end end)
+   end
+   return true
+end
+
+function NW:Stop()
+   self.kind = nil
+   self.sub = nil
+   self:Unbind()
+end
+
+function NW:FocusSearch()
+   local sb = SettingsPanel and SettingsPanel.SearchBox
+   if not sb then return end
+   for i, s in ipairs(self.stops) do
+      if s.isSearch then self.stop = i end
+   end
+   self:SpeakItem(false)
+   pcall(function() sb:SetFocus() end)
+end
+
+function NW:MoveStop(aDir)
+   local n = #self.stops
+   for _ = 1, n do
+      self.stop = self.stop + aDir
+      if self.stop > n then self.stop = 1 end
+      if self.stop < 1 then self.stop = n end
+      local s = self.stops[self.stop]
+      if s.isSearch then
+         self:FocusSearch()
+         return
+      end
+      if #StopItems(s) > 0 then
+         self:SpeakItem(true)
+         return
+      end
+   end
+end
+
+function NW:MoveItem(aDelta, aAbs)
+   local s, items, p = self:Current()
+   if not s or #items == 0 then return end
+   if aAbs then
+      p = (aAbs < 0) and #items or 1
+   else
+      p = p + aDelta
+   end
+   if p < 1 then p = 1 PlaySound(89) end
+   if p > #items then p = #items PlaySound(89) end
+   self.pos[s.key] = p
+   self:SpeakItem(false)
+end
+
+local function FirstLetter(t)
+   t = tostring(t or ""):gsub("^%s+", "")
+   return t:sub(1, 1):upper()
+end
+
+local function LetterJump(aItems, aStart, aLetter)
+   local n = #aItems
+   for i = 1, n do
+      local j = ((aStart - 1 + i) % n) + 1
+      local e = aItems[j]
+      local ok, t = pcall(e.letter or e.say)
+      if ok and FirstLetter(t) == aLetter then return j end
+   end
+   return nil
+end
+
+-- Dropdown list on top of the window: up/down, Enter picks, Escape closes.
+function NW:OpenSub(aName, aOptions, aStart, aOnPick)
+   self.sub = { name = aName, opts = aOptions, pos = aStart or 1, onPick = aOnPick }
+   local owner = nwFrames()
+   SetOverrideBindingClick(owner, true, "ESCAPE", "SkuNativeWinKey", "ESCAPE")
+   local o = aOptions[self.sub.pos]
+   tSay(aName .. ", " .. _N.list .. ", " .. OptionMenuLabel(o) .. ", " .. self.sub.pos .. " " .. _N.of .. " " .. #aOptions)
+end
+
+function NW:CloseSub()
+   self.sub = nil
+   local owner = _G["SkuNativeWinKeyOwner"]
+   if owner and not (InCombatLockdown and InCombatLockdown()) then
+      SetOverrideBinding(owner, true, "ESCAPE", nil)
+   end
+end
+
+function NW:OnSubKey(aKey)
+   local sub = self.sub
+   local n = #sub.opts
+   if aKey == "UP" or aKey == "SHIFT-TAB" then
+      sub.pos = math.max(1, sub.pos - 1)
+   elseif aKey == "DOWN" or aKey == "TAB" then
+      sub.pos = math.min(n, sub.pos + 1)
+   elseif aKey == "HOME" then
+      sub.pos = 1
+   elseif aKey == "END" then
+      sub.pos = n
+   elseif aKey == "ENTER" or aKey == "NUMPADENTER" then
+      local o = sub.opts[sub.pos]
+      if sub.onPick(o) ~= false then self:CloseSub() end
+      return
+   elseif aKey == "ESCAPE" then
+      self:CloseSub()
+      tSay(_N.cancelled)
+      return
+   elseif #aKey == 1 then
+      local items = {}
+      for i, o in ipairs(sub.opts) do items[i] = { letter = function() return o.label end } end
+      local j = LetterJump(items, sub.pos, aKey)
+      if j then sub.pos = j end
+   else
+      return
+   end
+   tSay(OptionMenuLabel(sub.opts[sub.pos]))
+end
+
+function NW:OnKey(aKey)
+   if not self.kind or type(aKey) ~= "string" then return end
+   if self.sub then
+      self:OnSubKey(aKey)
+      return
+   end
+   local s, items, p = self:Current()
+   if aKey == "TAB" then
+      self:MoveStop(1)
+   elseif aKey == "SHIFT-TAB" then
+      self:MoveStop(-1)
+   elseif aKey == "UP" then
+      self:MoveItem(-1)
+   elseif aKey == "DOWN" then
+      self:MoveItem(1)
+   elseif aKey == "HOME" then
+      self:MoveItem(0, 1)
+   elseif aKey == "END" then
+      self:MoveItem(0, -1)
+   elseif aKey == "ENTER" or aKey == "NUMPADENTER" then
+      local e = items[p]
+      if e and e.enter then pcall(e.enter) end
+   elseif aKey == "LEFT" or aKey == "RIGHT" then
+      local e = items[p]
+      local fn = e and ((aKey == "LEFT") and e.left or e.right)
+      if fn then pcall(fn) end
+   elseif aKey == "SPACE" then
+      local e = items[p]
+      local t = e and e.tip and e.tip()
+      tSay((type(t) == "string" and t ~= "") and t or _N.noTip)
+   elseif #aKey == 1 and s then
+      local j = LetterJump(items, p, aKey)
+      if j then
+         self.pos[s.key] = j
+         self:SpeakItem(false)
+      end
+   end
+end
+
+-- Panel and menu hooks, installed once (SettingsPanel may be created late).
+function NW:HookPanel()
+   if not self.menuHooked and GameMenuFrame then
+      self.menuHooked = true
+      GameMenuFrame:HookScript("OnHide", function()
+         if NW.kind ~= "gamemenu" then return end
+         nwAfter(0, function()
+            if NW.kind == "gamemenu" and not nwShown(GameMenuFrame) then NW:Stop() end
+         end)
+      end)
+   end
+   if self.hooked or not _G.SettingsPanel then return end
+   self.hooked = true
+   SettingsPanel:HookScript("OnShow", function()
+      nwAfter(0, function()
+         if nwShown(SettingsPanel) and NW.kind ~= "settings" then NW:Start("settings") end
+      end)
+   end)
+   SettingsPanel:HookScript("OnHide", function()
+      nwAfter(0, function()
+         if NW.kind ~= "settings" then return end
+         if nwShown(GameMenuFrame) then NW:Start("gamemenu") else NW:Stop() end
+      end)
+   end)
+   local sb = SettingsPanel.SearchBox
+   if sb then
+      sb:HookScript("OnTabPressed", function(self)
+         if NW.kind ~= "settings" then return end
+         self:ClearFocus()
+         NW:MoveStop(IsShiftKeyDown() and -1 or 1)
+      end)
+      sb:HookScript("OnEnterPressed", function(self)
+         if NW.kind ~= "settings" then return end
+         self:ClearFocus()
+         for i, s in ipairs(NW.stops) do
+            if s.key == "settings" then NW.stop = i end
+         end
+         NW.pos.settings = 1
+         nwAfter(0.1, function() NW:SpeakItem(true) end)
+      end)
+   end
+end
+
+-- Called from the Escape hook (SkuCore:GameMenuShowHandler) once Blizzard's
+-- game menu is on screen. Returns false when the native window cannot run
+-- (feature off, combat), so the caller can fall back.
+function GameOptions:NativeGameMenuOpen()
+   if not nwShown(GameMenuFrame) then return false end
+   return NW:Start("gamemenu")
+end
+
+nwAfter(1, function() pcall(function() NW:HookPanel() end) end)

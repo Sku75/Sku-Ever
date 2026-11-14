@@ -5719,7 +5719,10 @@ function SkuCore:CheckFrames(aForceLocalRoot, aDontClose, aQuiet)
 				-- the closed window's whole child tree survived and the next Local
 				-- render spoke it again. Nothing is open, so clear it either way.
 				SkuCore.GossipList = {}
-				if SkuOptions:IsMenuOpen() == true then
+				-- An Escape "Spielmenü" session is not a window menu: Escape hides the
+				-- Blizzard GameMenuFrame (and may clear the target) right as the Sku
+				-- Spielmenü opens, which runs this check -- it must not close it again.
+				if SkuOptions:IsMenuOpen() == true and SkuCore.gameMenuActive ~= true then
 					--SkuOptions:SlashFunc("short,lokal")
 					SkuOptions:CloseMenu()
 				end
@@ -5976,6 +5979,16 @@ function SkuCore:GameMenuShowHandler()
 	local tCombatMenu = SkuSettings and SkuSettings:Sub("SkuCore") and SkuSettings:Sub("SkuCore").combatMenuOpen == true
 	if InCombatLockdown and InCombatLockdown() and not tCombatMenu then
 		return
+	end
+	-- Out of combat Blizzard's ORIGINAL game menu stays on screen and is read as a
+	-- window; its Optionen opens Blizzard's own settings panel, read the same way
+	-- (native windows, SkuCore/gameOptions.lua). The Sku "Spielmenü" below remains
+	-- the path in combat (/skucombatmenu) and when the Spieloptionen feature is off.
+	if not (InCombatLockdown and InCombatLockdown()) and SkuCore.GameOptions and SkuCore.GameOptions.NativeGameMenuOpen then
+		local tOk, tStarted = pcall(function() return SkuCore.GameOptions:NativeGameMenuOpen() end)
+		if tOk and tStarted == true then
+			return
+		end
 	end
 	-- W7: Escape opens the improved Sku "Spielmenü" (game-menu mirror whose Optionen
 	-- routes to Einstellungen and Makros to the Sku macro menu). Label must match the
