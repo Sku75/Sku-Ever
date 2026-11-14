@@ -25,10 +25,18 @@ local TARGET_SKU_RADIUS = 30  -- yd: a Sku waypoint this close to a target that 
 
 -- Groups of engine zones that hang together by seams. key = id under which the group's heights and targets are stored.
 -- addon = load-on-demand addon with the group's data (the zone nets are big: loaded only when the player is in the group).
-local GROUPS = {
+-- The list comes from the DATA (SkuEngineGroups in SkuPacks/Engine_Index.lua, written by the build from navpack/groups.json): a new group
+-- or a changed zone list needs no change of this file. The built-in list is only the fallback for an Engine_Index.lua without that table.
+local GROUPS_FALLBACK = {
 	{key = 84, zones = {84, 37, 52, 49, 1431}, addon = "SkuEngineEK"},   -- Stormwind City, Elwynn Forest, Westfall, Redridge Mountains, Duskwood
 	{key = 87, zones = {87, 27, 1432, 1437}, addon = "SkuEngineZW"},   -- Ironforge, Dun Morogh, Loch Modan, Wetlands
+	{key = 1457, zones = {1457, 57}, addon = "SkuEngineKD"},   -- Darnassus, Teldrassil
 }
+-- resolved on every use, not at file load: SkuPacks (Engine_Index.lua) may be loaded after this file
+local function tGroups()
+	local t = _G.SkuEngineGroups
+	return (type(t) == "table" and #t > 0) and t or GROUPS_FALLBACK
+end
 
 local tIndexLoaded
 local tGrids = {}
@@ -74,18 +82,79 @@ local function tDataReady(aGroup)
 end
 
 -- all zones of the group loaded into the engine
+-- [Unload, 15.11.2026] Only the zones of the PLAYER's group stay decoded: the decoded copy is ~85 % of a zone's memory and is rebuilt from the
+-- raw data in well under a second (raw tables stay, they cannot be reloaded). Zones of other groups are dropped here, when the player's
+-- group is loaded (never in combat). Memory stays at one group instead of growing with every group visited in a session.
+local function tUnloadOtherGroups(aGroup)
+	local N = tNet()
+	if not (N.zones and N.decoded) then return end
+	local tKeep = {}
+	for _, z in ipairs(aGroup.zones) do tKeep[z] = true end
+	local tDropped
+	for z in pairs(N.zones) do
+		if not tKeep[z] then tDropped = tDropped or {} tDropped[#tDropped + 1] = z end
+	end
+	if not tDropped then return end
+	for _, z in ipairs(tDropped) do N.zones[z] = nil N.decoded[z] = nil end
+	local tActions = 0
+	for _, zone in pairs(N.zones) do tActions = tActions + #(zone.actions or {}) end
+	N.actionCount = tActions
+	N.generation = N.generation + 1
+	if N.DiscardVirtual then N.DiscardVirtual() end
+	tLog("unloaded zones", table.concat(tDropped, ","))
+end
+
 local function tLoadGroup(aGroup)
 	local N = tNet()
+	if not (InCombatLockdown and InCombatLockdown()) then tUnloadOtherGroups(aGroup) end
 	for _, z in ipairs(aGroup.zones) do
 		if not (N.zones and N.zones[z]) then N.LoadZone(z) end
 	end
 end
 
+-- [Zone choice, 15.11.2026] The zone boxes of the index are rectangles: they overlap at the borders of neighbouring zones (Searing Gorge /
+-- Dun Morogh) and, across continents, share world coordinates. So (1) the player's continent (4th value of UnitPosition = native map id)
+-- limits the zones to that continent (if that leaves nothing, the limit is dropped: the value may be unreliable on a client) and
+-- (2) of several zones the one the point lies DEEPEST in (distance to the box edge relative to the box size) comes first.
+-- aNoSort: only the membership of the zones matters (no depth order); aMap: the player's native map id already read by the caller
+-- (false = none), so that a loop over many points does not ask UnitPosition for every point.
+local function tZonesAt(x, y, aNoSort, aMap)
+	local N = tNet()
+	local tMap = aMap
+	if tMap == nil then
+		local _, _, _, tM = UnitPosition("player")
+		tMap = tM
+	end
+	N.activeMapId = type(tMap) == "number" and tMap or nil
+	local rZones = N.ZonesForPoint(x, y) or {}
+	if #rZones == 0 and N.activeMapId ~= nil then
+		N.activeMapId = nil
+		rZones = N.ZonesForPoint(x, y) or {}
+	end
+	if #rZones > 1 and N.index and not aNoSort then
+		local function tDepth(id)
+			local tBest = -1e9
+			for _, box in pairs((N.index[id] and N.index[id].worldBoxes) or {}) do
+				if x >= box.xmin and x <= box.xmax and y >= box.ymin and y <= box.ymax then
+					local tMargin = math.min(x - box.xmin, box.xmax - x, y - box.ymin, box.ymax - y)
+					local tSize = math.sqrt((box.xmax - box.xmin) * (box.ymax - box.ymin))
+					if tMargin / tSize > tBest then tBest = tMargin / tSize end
+				end
+			end
+			return tBest
+		end
+		local tD = {}
+		for _, id in ipairs(rZones) do tD[id] = tDepth(id) end
+		table.sort(rZones, function(a, b) if tD[a] ~= tD[b] then return tD[a] > tD[b] end return a < b end)
+	end
+	return rZones
+end
+
 -- The group (with data) the world position lies in, or nil.
 local function tGroupAt(x, y)
 	local N = tNet()
-	for _, id in ipairs(N.ZonesForPoint(x, y) or {}) do
-		for _, g in ipairs(GROUPS) do
+	for _, id in ipairs(tZonesAt(x, y)) do
+		for _, g in ipairs(tGroups()) do
 			for _, z in ipairs(g.zones) do
 				if id == z then
 					if tDataReady(g) then return g end
@@ -101,8 +170,8 @@ end
 -- addon: only the player's own group is loaded).
 local function tGroupOf(x, y)
 	local N = tNet()
-	for _, id in ipairs(N.ZonesForPoint(x, y) or {}) do
-		for _, g in ipairs(GROUPS) do
+	for _, id in ipairs(tZonesAt(x, y)) do
+		for _, g in ipairs(tGroups()) do
 			for _, z in ipairs(g.zones) do
 				if id == z then return g end
 			end
@@ -111,12 +180,23 @@ local function tGroupOf(x, y)
 	return nil
 end
 
+-- does ANY zone whose box holds the point belong to the group? (a target in an overlap of two boxes belongs to the player's group if
+-- one of its candidate zones does)
+local function tInGroup(aGroup, x, y, aMap)
+	for _, id in ipairs(tZonesAt(x, y, true, aMap)) do
+		for _, z in ipairs(aGroup.zones) do
+			if id == z then return true end
+		end
+	end
+	return false
+end
+
 -- same group as the player (the engine only routes inside one group)
 local function tInZone(x, y)
 	local px, py = UnitPosition("player")
 	if type(px) ~= "number" or type(py) ~= "number" then return false end
-	local tG = tGroupOf(x, y)
-	return tG ~= nil and tG == tGroupOf(px, py) and tDataReady(tG)
+	local tG = tGroupOf(px, py)
+	return tG ~= nil and tInGroup(tG, x, y) and tDataReady(tG)
 end
 
 -- The group of the PLAYER's position: the zone boxes of the index are rectangles (they reach into zones that have no data), so
@@ -283,7 +363,7 @@ function Engine:Route(aTx, aTy, aFloorZ)
 	if type(px) ~= "number" or type(py) ~= "number" then return nil, "no_position" end
 	local tGroup = tPlayerGroupAt(px, py)
 	if not tGroup then return nil, "wrong_zone" end
-	if tGroupOf(aTx, aTy) ~= tGroup then return nil, "wrong_zone" end
+	if not tInGroup(tGroup, aTx, aTy) then return nil, "wrong_zone" end
 	tLoadGroup(tGroup)
 	local pz, how, tLayers
 	if aFloorZ then
@@ -369,7 +449,10 @@ end
 
 -- Positions of ALL named Sku waypoints (targets) of the engine zones, whatever area or route they belong to. A WV target counts as
 -- "Sku has it" when one of these lies within TARGET_SKU_RADIUS: the engine only fills in where Sku offers nothing.
-local namedCache, namedCacheTime
+local namedCache, namedCacheTime, namedCacheGroup
+local namedVersion = 0   -- counts the changes of Sku waypoints: a list collected in the background is only kept if none happened meanwhile
+local namedWarming = false
+local namedRetries = 0
 local namedHooked = false
 -- the cached list is dropped as soon as a (non-temporary, non-quick) waypoint is created or deleted, so it is never out of date
 local function tNamedDirty(self, aName, ...)
@@ -378,6 +461,7 @@ local function tNamedDirty(self, aName, ...)
 		if string.find(tLow, "^schnellwegpunkt") or string.find(tLow, "^quick waypoint") then return end
 	end
 	namedCache = nil
+	namedVersion = namedVersion + 1
 end
 local function tHookNamed()
 	if namedHooked or not hooksecurefunc then return end
@@ -412,26 +496,87 @@ local function tIsGhostName(aWaypointName)
 	return tFirst ~= nil and tGhostNames[string.lower(tFirst)] == true
 end
 
+-- one waypoint name: does it count (not an "auto" waypoint, not a quick waypoint, not an engine entry, not a placeholder NPC) and does it lie
+-- in the player's group? Then its position is added. Shared by the direct and the background collection so both give the same list.
+local function tNamedConsider(aName, aList, aAutoLen, aGroup, aMap)
+	local tLow = string.lower(aName)
+	if string.sub(aName, 1, aAutoLen) ~= L["auto"].." " and string.sub(aName, -7) ~= ";Engine"
+		and not string.find(tLow, "^schnellwegpunkt") and not string.find(tLow, "^quick waypoint") and not tIsGhostName(aName) then
+		local tD = SkuNav:GetWaypointData2(aName)
+		if tD and tD.worldX and tInGroup(aGroup, tD.worldX, tD.worldY, aMap) then
+			aList[#aList + 1] = {tD.worldX, tD.worldY, aName}
+		end
+	end
+end
+
+-- the player's group (without loading anything) and map id, resolved ONCE for the whole collection: the loop runs over ~50,000 Sku
+-- waypoints, asking UnitPosition and searching the zones for each one took seconds on the client (15.11.2026)
+local function tNamedContext()
+	local tPx, tPy, _, tPMap = UnitPosition("player")
+	if type(tPx) ~= "number" or type(tPy) ~= "number" then return nil end
+	local tPG = tGroupOf(tPx, tPy)
+	if not tPG then return nil end
+	return tPG, tPMap or false
+end
+
+local function tNamedCacheValid(aGroup)
+	return namedCache and namedCacheTime and namedCacheGroup == aGroup.key and GetTime() - namedCacheTime < 600
+end
+
 function Engine:SkuNamedPositions()
 	tHookNamed()
-	if namedCache and namedCacheTime and GetTime() - namedCacheTime < 600 then return namedCache end
+	local tPG, tPMap = tNamedContext()
+	if tPG and tNamedCacheValid(tPG) then return namedCache end
 	local rPos = {}
 	local tList, tState, tInit = SkuNav:ListWaypoints2(false)
 	if not tList then return rPos end
+	if not (tPG and tDataReady(tPG)) then return rPos end
 	local tAutoLen = string.len(L["auto"]) + 1
 	for _, v in tList, tState, tInit do
-		local tLow = string.lower(v)
-		if string.sub(v, 1, tAutoLen) ~= L["auto"].." " and string.sub(v, -7) ~= ";Engine"
-			and not string.find(tLow, "^schnellwegpunkt") and not string.find(tLow, "^quick waypoint") and not tIsGhostName(v) then
-			local tD = SkuNav:GetWaypointData2(v)
-			if tD and tD.worldX and tInZone(tD.worldX, tD.worldY) then
-				rPos[#rPos + 1] = {tD.worldX, tD.worldY, v}
-			end
-		end
+		tNamedConsider(v, rPos, tAutoLen, tPG, tPMap)
 	end
 	-- an empty result means Sku's waypoint cache is not ready yet: do not keep it
-	if #rPos > 0 then namedCache, namedCacheTime = rPos, GetTime() end
+	if #rPos > 0 then namedCache, namedCacheTime, namedCacheGroup = rPos, GetTime(), tPG.key end
 	return rPos
+end
+
+-- The same collection in the background: a few milliseconds per frame instead of one hang of seconds (used by the warm-up after login /
+-- zone change). The result is dropped if the group changed, a Sku waypoint was created or deleted, or a direct call filled the cache meanwhile.
+function Engine:WarmNamedPositions()
+	tHookNamed()
+	if namedWarming then return end
+	local tPG, tPMap = tNamedContext()
+	if not tPG or tNamedCacheValid(tPG) then return end
+	if InCombatLockdown and InCombatLockdown() then return end
+	if not tDataReady(tPG) then return end
+	local tList, tState, tInit = SkuNav:ListWaypoints2(false)
+	if not tList then return end
+	local tNames = {}
+	for _, v in tList, tState, tInit do tNames[#tNames + 1] = v end
+	local tAutoLen = string.len(L["auto"]) + 1
+	local tVersion, tI, tN, rPos = namedVersion, 1, #tNames, {}
+	namedWarming = true
+	local function tStep()
+		if namedVersion ~= tVersion then   -- a waypoint changed (Sku is still building its own): the list is out of date, try again later (3 times)
+			namedWarming = false
+			if namedRetries < 3 then namedRetries = namedRetries + 1 C_Timer.After(5, function() Engine:WarmNamedPositions() end) end
+			return
+		end
+		if InCombatLockdown and InCombatLockdown() then C_Timer.After(1, tStep) return end   -- wait, nothing is done in combat
+		local tNowG = tNamedContext()
+		if not tNowG or tNowG.key ~= tPG.key then namedWarming = false return end   -- the player left the group
+		local tStart = debugprofilestop and debugprofilestop() or 0
+		while tI <= tN do
+			tNamedConsider(tNames[tI], rPos, tAutoLen, tPG, tPMap)
+			tI = tI + 1
+			if debugprofilestop and tI % 64 == 0 and debugprofilestop() - tStart > 3 then break end   -- ~3 ms per frame
+		end
+		if tI <= tN then C_Timer.After(0, tStep) return end
+		namedWarming = false
+		if #rPos > 0 and not tNamedCacheValid(tPG) then namedCache, namedCacheTime, namedCacheGroup = rPos, GetTime(), tPG.key end
+		tLog("named positions collected", #rPos)
+	end
+	C_Timer.After(0, tStep)
 end
 
 -- spatial grid of {x, y} positions (cell = TARGET_SKU_RADIUS) so that "is a Sku waypoint within the radius?" is not a scan of all
@@ -688,7 +833,8 @@ function Engine:Preload()
 	C_Timer.After(#tGroup.zones * 0.5, function() tBuildGrid(tGroup) end)
 	-- the names of Sku's waypoints take ~0.4 s to collect: do it now, not when the first list is opened (kept 10 minutes)
 	C_Timer.After(#tGroup.zones * 0.5 + 6, function()
-		if not (InCombatLockdown and InCombatLockdown()) then namedCache = nil; Engine:SkuNamedPositions() end
+		namedRetries = 0
+		Engine:WarmNamedPositions()
 	end)
 end
 
@@ -707,3 +853,4 @@ if Sku.isForever and CreateFrame and C_Timer then
 		end)
 	end)
 end
+

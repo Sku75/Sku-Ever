@@ -2,6 +2,41 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.31 (15.11.2026)
+
+### Kurzfassung
+- Die Engine-Routen (die Wegfindung für Ziele, die Sku nicht erreicht) gibt es jetzt in allen Gebieten der Östlichen Königreiche und Kalimdors, die in den Forever-Daten stehen: 16 Gruppen statt bisher 2.
+- Nur noch die Gruppe, in der du stehst, wird geladen. Beim Wechsel wird die alte Gruppe wieder aus dem Speicher genommen.
+- Weniger Ruckler nach dem Einloggen: die Namensliste der Engine wird im Hintergrund in kleinen Schritten aufgebaut, nicht mehr in einem Block.
+- An Zonengrenzen und zwischen den Kontinenten wird die richtige Zone gewählt.
+- Installer 1.3: installiert die neuen Engine-Ordner mit.
+
+### Neu: Engine-Routen in allen Gebieten
+Was: Die Engine bietet Ziele (Questgeber, Quest-Ziele, Dungeon-Eingänge, Verkehr und mehr) dort an, wo Sku keinen Weg hat. Jetzt in diesen Gruppen: Sturmwind/Elwynn/Westfall/Rotkamm/Dämmerwald, Eisenschmiede/Dun Morogh/Loch Modan/Sumpfland, Darnassus/Teldrassil, Schlingendorntal, Sümpfe des Elends/Verwüstete Lande/Gebirgspass der Totenwinde, Brennende Steppe/Sengende Schlucht/Ödland, Tirisfal/Unterstadt/Silberwald, Hillsbrad/Alterac/Arathihochland/Hinterland, West- und Ostpestland, Durotar/Orgrimmar/Brachland, Eschental/Dunkelküste, Azshara, Teufelswald/Mondlichtung/Winterquell, Mulgore/Donnerfels/Steinkrallen/Desolace, Feralas/Tausend Nadeln/Düstermarschen, Tanaris/Un'Goro/Silithus. Die Pakete Riverglades, Shen'dralas, Hyjal und Zephras sowie Dalaran bleiben eigene Wegpakete.
+Wie: Die Gruppen stehen in einer Liste in SkuPacks/Engine_Index.lua (SkuEngineGroups); jede Gruppe ist ein eigenes Addon (SkuEngineXX), das erst geladen wird, wenn du dort stehst. Die Daten sind mit dem neuen Bauskript aus den WowNav-Zonen erzeugt und geprüft (Ziele nur in ihrer Zone, Kräuter und Erz nicht in Städten, Quest-Ziele markiert, Routen-Stichprobe je Gruppe).
+
+### Neu: Speicher nur für die eigene Gruppe
+Was: Beim Wechsel in eine andere Gruppe werden die Daten der vorigen aus dem Speicher genommen (nicht im Kampf).
+Wie: SkuNav/EngineRoute.lua (tUnloadOtherGroups) entlädt die entpackten Zonen der anderen Gruppen; bei Bedarf werden sie in Sekundenbruchteilen neu entpackt.
+
+### Verbessert: Hänger nach dem Login
+Was: Die Namensliste der Sku-Wegpunkte für die Engine brauchte auf dem Spiel mehrere Sekunden am Stück und lief nach dem Login zweimal.
+Wie: SkuNav/EngineRoute.lua löst Gruppe und Karte nur noch einmal pro Sammlung auf, die Sammlung läuft in Schritten von etwa 3 Millisekunden pro Bild und bricht bei Wegpunkt-Änderung, Gruppenwechsel oder Kampf ab. Ein einzelner Hänger von gut einer Sekunde bleibt (Skus eigene Wegpunktliste).
+
+### Verbessert: richtige Zone
+Was: Die Zonen-Rechtecke überlappen an Grenzen und zwischen Kontinenten (gleiche Weltkoordinaten). Die Engine nimmt jetzt die Zone des Kontinents, auf dem du stehst, und bei Überlappung die, in der der Punkt am tiefsten liegt.
+Wie: SkuNav/EngineRoute.lua (tZonesAt, tInGroup); der Kontinent kommt aus dem 4. Wert von UnitPosition, fehlt er, gilt wie bisher nur die Lage.
+
+### Downloads
+- Sku-Ever-Spielordner.zip: Sku, SkuPacks und alle SkuEngine-Ordner.
+- Sku-Ever-0.31.zip, SkuPacks.zip und je ein Zip pro SkuEngine-Ordner: dieselben Teile einzeln, werden vom Installer benutzt.
+- Installer 1.3: installiert alle Engine-Ordner. Ältere Installer aktualisieren sich selbst. Wer von Hand installiert, kopiert die neuen SkuEngine-Ordner mit.
+- Sprachausgabe und Beacon-Töne bleiben unverändert bei Version 0.26.
+
+### Hinweis zum Stand
+- Im Spiel getestet: Laden und Listen in Elwynn und Teldrassil sowie die Verbesserung nach dem Login.
+- Noch nicht im Spiel getestet: die übrigen neuen Gruppen und der Wechsel zwischen den Gruppen (offline geprüft).
+
 ## Sku-Ever 0.30 (14.11.2026)
 
 ### Kurzfassung
