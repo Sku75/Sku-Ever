@@ -13,7 +13,7 @@ Der einfachste Weg ist der **Sku-Ever installer**: [Sku-Ever-Installer.exe herun
 
 Alle Dateien liegen auch auf der [Releases-Seite](../../releases/latest).
 
-- **Sku-Ever-Spielordner.zip**: das Addon. Enthält die Ordner Sku, SkuPacks und SkuEngineEK.
+- **Sku-Ever-Spielordner.zip**: das Addon. Enthält die Ordner Sku, SkuPacks, SkuEngineEK und SkuEngineZW.
 - **SkuAudioData_fast_de.zip**: deutsche Sprachausgabe.
 - **SkuBeaconSoundsets.zip**: Grundtöne für Navigation und Klick-Töne. Ohne dieses Paket bleiben die Beacons stumm.
 - **SkuCustomBeaconsEssential.zip** und **SkuCustomBeaconsAdditional.zip**: zusätzliche Beacon-Töne, freiwillig.

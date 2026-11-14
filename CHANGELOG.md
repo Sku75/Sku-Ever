@@ -2,6 +2,35 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.1.
 
+## Sku-Ever 0.28 (14.11.2026)
+
+Neu gegenüber 0.27 (Engine 7)
+- Routen in neuen Gebieten: Rotkamm, Dämmerwald, Dun Morogh, Loch Modan und das Sumpfland haben jetzt Engine-Routen. Rotkamm und Dämmerwald gehören zur Gruppe von Sturmwind, Elwynn und Westfall (SkuEngineEK). Eisenschmiede, Dun Morogh, Loch Modan und Sumpfland bilden eine zweite Gruppe (neues Addon SkuEngineZW). Routen über die Gebietsgrenzen innerhalb einer Gruppe funktionieren.
+- Wichtige Ziele verschwinden nicht mehr aus den Routenlisten: Dungeon-Eingänge, Schiffe und Anleger, Questgeber sowie Monster und Objekte, die Ziel einer Quest sind. Sie werden nur noch ausgeblendet, wenn Sku selbst einen Wegpunkt mit gleichem Namen direkt daneben hat.
+- Sturmwind und Eisenschmiede: Questgeber und Quest-Ziele stehen jetzt auch in den Engine-Listen.
+- Einstiegspunkte (Umschalt+F10 und Nahe Routen): wo die Engine liegt, sind es 4 Sku-Punkte und darunter bis zu 3 Engine-Punkte (am Ende "Engine"); hat Sku dort keine, bis zu 6 Engine-Punkte. Wo es keine Engine-Daten gibt, bleibt es bei der alten Anzahl.
+- Die Ebenenfrage gilt auch für Engine-Einstiegspunkte. Ist die Höhe unklar, wird nun nach der Ebene gefragt statt "Höhe unklar" zu melden.
+- Questgeber und Quest-Ziele stehen nicht mehr doppelt in den Listen, wenn Sku sie schon hat (z. B. Greifenmeister): Namen mit Rollenzusatz in Klammern wie "Thor (Greifenmeister)" werden jetzt mit Skus Namen gleichgesetzt.
+- Kräuter und Erz stehen nicht mehr mitten in Städten (Eisenschmiede, Sturmwind).
+- Es wird nur noch die Engine-Gruppe geladen, in der du gerade stehst (spart Speicher und Ladezeit).
+
+### Fehler behoben
+- Eine laufende Route brach ab, wenn man währenddessen ein Routenmenü (Einstiegspunkte) öffnete. Sie läuft jetzt weiter.
+
+### Downloads
+- Sku-Ever-Spielordner.zip: das Addon mit den Ordnern Sku, SkuPacks, SkuEngineEK und SkuEngineZW.
+- Sku-Ever-0.28.zip, SkuPacks.zip, SkuEngineEK.zip, SkuEngineZW.zip: dieselben Teile einzeln, werden vom Installer benutzt.
+- Installer 1.1: installiert auch das neue Addon SkuEngineZW. Ältere Installer aktualisieren sich selbst. Wer von Hand installiert, kopiert den neuen Ordner SkuEngineZW mit.
+- Sprachausgabe und Beacon-Töne bleiben unverändert bei Version 0.26.
+
+### Hinweis zum Stand
+- Getestet im Spiel: Engine-Ziele und Einstiegspunkte in Sturmwind, Elwynn, Westfall und Eisenschmiede, Laden beider Gruppen.
+- Noch nicht ausführlich im Spiel getestet: Routen in Rotkamm, Dämmerwald, Dun Morogh, Loch Modan und im Sumpfland sowie der Fix für den Routen-Abbruch.
+
+### Bekannt
+- Die neuen Engine-Gruppen brauchen beim ersten Laden etwas Speicher (je nach Gruppe etwa 100 bis 200 MB, solange man dort ist).
+- Eisenschmiede: Die Route von der Halle der Thane zur Tiefenbahn meldet "Höhe unklar".
+
 ## Sku-Ever 0.27 (13.11.2026)
 
 Neu gegenüber 0.26

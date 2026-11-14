@@ -1299,6 +1299,13 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 				tNewMenuSubEntry1.sorting = true
 				tNewMenuSubEntry1.OnAction = function(self, aValue, aName)
 					--print("Route onaction", self, aValue, aName)
+					-- [Entry points, Forever 13.11.2026] an engine entry point was picked: the engine computes the way
+					local tEngT = SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget
+					if tEngT then
+						SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget = nil
+						SkuNav.RouteFollowOnAction(self, {engineTarget = tEngT}, tEngT.name)
+						return
+					end
 					if SkuOptions.db.profile["SkuNav"].routeRecording == true then
 						SkuOptions.Voice:OutputStringBTtts(L["Error"], false, true, 0.3, true)
 						SkuOptions.Voice:OutputStringBTtts(L["Recording in progress"], false, true, 0.3, true)
@@ -1333,7 +1340,9 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 					local tSortedWaypointList = BuildSortedUniqueRouteWps(tRoutesInRange)
 
 					if #tSortedWaypointList == 0 then
-						local tNewMenuEntry = SkuOptions:InjectMenuItems(self, {L["Empty;list"]}, SkuGenericMenuItem)
+						if not (SkuNav.AddEngineEntryPointsForWpNames and SkuNav.AddEngineEntryPointsForWpNames(self, wpTable) > 0) then
+							local tNewMenuEntry = SkuOptions:InjectMenuItems(self, {L["Empty;list"]}, SkuGenericMenuItem)
+						end
 					else
 						-- Vorlage-Struktur wiederhergestellt: pro nahegelegenem Einstiegs-Wp ein
 						-- "Entry point: …"-Zwischenmenü, dessen BuildChildren erst die Metapaths
@@ -1344,7 +1353,7 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 						-- Wp mit "Route folgen beendet").
 						local tCount = 0
 						for k, v in SkuSpairs(tSortedWaypointList) do
-							if tCount < 10 then
+							if tCount < SkuNav.MaxSkuEntryPoints(10) then
 								local tSkuWpName = string.sub(v, string.find(v, "#") + 1)
 								local tLayerText = SkuNav:GetLayerText(SkuNav:GetNonAutoLevel(nil, nil, tSkuWpName, nil))
 
@@ -1355,6 +1364,7 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 									if #tSortedWaypointList == 0 then
 										local tNewMenuEntry = SkuOptions:InjectMenuItems(self, {L["Empty;list"]}, SkuGenericMenuItem)
 									else
+										SkuNav:BackupFollowState()
 										local tMetapaths = SkuNav:GetAllMetaTargetsFromWp5(string.sub(v, string.find(v, "#") + 1), SkuOptions.db.profile["SkuNav"].routesMaxDistance, SkuNav.MaxMetaWPs)--
 										SkuOptions.db.profile["SkuNav"].metapathFollowingStart = v
 										SkuOptions.db.profile["SkuNav"].metapathFollowingMetapaths = tMetapaths
@@ -1402,6 +1412,7 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 															local tNewMenuEntry = SkuOptions:InjectMenuItems(self, { SkuNav:getAnnotatedWaypointLabel(tDistText .. "#" .. tV, tV) }, SkuGenericMenuItem)
 															tNewMenuEntry.OnEnter = function(self, aValue, aName)
 																SkuOptions.db.profile["SkuNav"].metapathFollowingTarget = tV
+																		SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget = nil
 															end
 															tCoveredWps[tV] = true
 															--tHasContent = true
@@ -1415,6 +1426,7 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 								tCount = tCount + 1
 							end
 						end
+						if SkuNav.AddEngineEntryPointsForWpNames then SkuNav.AddEngineEntryPointsForWpNames(self, wpTable) end
 					end
 				end
 
@@ -1424,6 +1436,13 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 				tNewMenuSubEntry1.sorting = true
 				tNewMenuSubEntry1.OnAction = function(self, aValue, aName)
 					--dprint("OnAction", self.name, aValue, aName)
+					-- [Entry points, Forever 13.11.2026] an engine entry point was picked: the engine computes the way
+					local tEngT = SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget
+					if tEngT then
+						SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget = nil
+						SkuNav.RouteFollowOnAction(self, {engineTarget = tEngT}, tEngT.name)
+						return
+					end
 					if SkuOptions.db.profile["SkuNav"].routeRecording == true then
 						SkuOptions.Voice:OutputStringBTtts(L["Error"], false, true, 0.3, true)
 						SkuOptions.Voice:OutputStringBTtts(L["Recording in progress"], false, true, 0.3, true)
@@ -1456,11 +1475,13 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 					local tMaxAllowedDistanceToTargetWp = 500
 					local tSortedWaypointList = BuildSortedUniqueRouteWps(tRoutesInRange)
 					if #tSortedWaypointList == 0 then
-						local tNewMenuEntry = SkuOptions:InjectMenuItems(self, {L["Empty;list"]}, SkuGenericMenuItem)
+						if not (SkuNav.AddEngineEntryPointsForWpNames and SkuNav.AddEngineEntryPointsForWpNames(self, wpTable) > 0) then
+							local tNewMenuEntry = SkuOptions:InjectMenuItems(self, {L["Empty;list"]}, SkuGenericMenuItem)
+						end
 					else
 						local tCount = 0
 						for k, v in SkuSpairs(tSortedWaypointList) do
-							if tCount < 10 then
+							if tCount < SkuNav.MaxSkuEntryPoints(10) then
 								local tSkuWpName = string.sub(v, string.find(v, "#") + 1)
 								local tLayerText = SkuNav:GetLayerText(SkuNav:GetNonAutoLevel(nil, nil, tSkuWpName, nil))
 
@@ -1471,6 +1492,7 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 									if #tSortedWaypointList == 0 then
 										local tNewMenuEntry = SkuOptions:InjectMenuItems(self, {L["Empty;list"]}, SkuGenericMenuItem)
 									else
+										SkuNav:BackupFollowState()
 										local tMetapaths = SkuNav:GetAllMetaTargetsFromWp5(string.sub(v, string.find(v, "#") + 1), SkuOptions.db.profile["SkuNav"].routesMaxDistance, SkuNav.MaxMetaWPs, nil, true)
 										SkuOptions.db.profile["SkuNav"].metapathFollowingStart = v
 										SkuOptions.db.profile["SkuNav"].metapathFollowingMetapaths = tMetapaths
@@ -1522,6 +1544,7 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 													tNewMenuEntry.OnEnter = function(self, aValue, aName)
 														SkuOptions.db.profile["SkuNav"].metapathFollowingTarget = tResults[tV].metarouteIndex
 														SkuOptions.db.profile["SkuNav"].metapathFollowingEndTarget = tResults[tV].targetWpName
+																			SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget = nil
 													end
 													tCoveredWps[tV] = true
 												end
@@ -1532,6 +1555,7 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 								tCount = tCount + 1
 							end
 						end
+						if SkuNav.AddEngineEntryPointsForWpNames then SkuNav.AddEngineEntryPointsForWpNames(self, wpTable) end
 					end
 				end
 			

@@ -2611,6 +2611,7 @@ function SkuNav:ProcessPlayerDead()
 			if #tSortedWaypointList == 0 then
 				SkuNav:SelectWP(L["Quick waypoint"]..";4", true)
 			else
+				SkuNav:BackupFollowState()
 				local tMetapaths = SkuNav:GetAllMetaTargetsFromWp5(SkuNav:GetCleanWpName(tSortedWaypointList[1]), SkuSettings:Sub("SkuNav").routesMaxDistance, SkuNav.MaxMetaWPs, nil, true)
 				SkuSettings:Sub("SkuNav").metapathFollowingStart = SkuNav:GetCleanWpName(tSortedWaypointList[1])
 				SkuSettings:Sub("SkuNav").metapathFollowingMetapaths = tMetapaths
@@ -2896,6 +2897,16 @@ function SkuNav:ProcessCheckReachingWp()
 				local distance = SkuNav:GetDistanceToWp(SkuSettings:Sub("SkuNav").selectedWaypoint) or 0
 				if distance then
 					local tDistanceMod = SkuNav.CurrentStandardWpReachedRange --0
+					if Sku.isForever and SkuNav.followBackup then
+						-- a menu overwrote the data of the running route: put it back instead of ending the route
+						local tS = SkuSettings:Sub("SkuNav")
+						local tB = SkuNav.followBackup
+						if not (tS.metapathFollowingTarget and tS.metapathFollowingMetapaths and tS.metapathFollowingMetapaths[tS.metapathFollowingTarget]) then
+							tS.metapathFollowingStart, tS.metapathFollowingMetapaths, tS.metapathFollowingTarget, tS.metapathFollowingEndTarget = tB.start, tB.metapaths, tB.target, tB.endTarget
+							dprint("follow state restored after menu overwrite")
+						end
+						SkuNav.followBackup = nil
+					end
 					if ((distance < SkuNavWpSize[SkuNav:GetWaypointData2(SkuSettings:Sub("SkuNav").selectedWaypoint).size] + tDistanceMod) or SkuNav.MoveToWp ~= 0) and SkuSettings:Sub("SkuNav").selectedWaypoint ~= "" then
 						local tNextWPNr
 						if SkuSettings:Sub("SkuNav").metapathFollowingTarget then
@@ -3840,6 +3851,16 @@ function SkuNav:ForeverKeepEntriesNearLastRouteWp(aFound, aX, aY)
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
+-- [Forever] The route menus (entry point lists) write their own route data into the same fields that the running route
+-- follows. Keep the references (no copy, no cost) of a running route, so that it can be put back when a point is reached.
+function SkuNav:BackupFollowState()
+	if not Sku.isForever then return end
+	local tS = SkuSettings:Sub("SkuNav")
+	if tS.metapathFollowing == true and tS.metapathFollowingMetapaths and tS.metapathFollowingTarget then
+		SkuNav.followBackup = {start = tS.metapathFollowingStart, metapaths = tS.metapathFollowingMetapaths, target = tS.metapathFollowingTarget, endTarget = tS.metapathFollowingEndTarget}
+	end
+end
+
 function SkuNav:EndFollowingWpOrRt()
 	if SkuNav:GetWaypointData2(SkuSettings:Sub("SkuNav").selectedWaypoint) then
 		if SkuSettings:Sub("SkuNav").selectedWaypoint ~= "" then

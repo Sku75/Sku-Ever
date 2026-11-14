@@ -481,6 +481,60 @@ local function SkuNav_AddEngineRouteLeaf(aParent, aName, aX, aY)
 	return tLeaf
 end
 
+-- [Entry points, Forever 13.11.2026] Engine entry points under the Sku entry points of a target's route list ("Nearby routes", the
+-- quest menus): up to 3 (the nearest points of the engine's data, Engine:EntryPoints), always, labelled "... Engine". Under an entry
+-- the target(s) as engine leaves: picking one lets the engine compute the way from where the player stands, on the floor of the
+-- entry point. aTargets = {{name =, x =, y =}, ...} (targets inside the engine zone only; nearest ten are shown).
+-- [Forever] Number of Sku entry points: 4 where the engine adds its own below them (the engine covers the player's map), else the old
+-- number (aOld: 6 for Shift-F10, 10 for the other lists).
+function SkuNav.MaxSkuEntryPoints(aOld)
+	if Sku.isForever and SkuNav.Engine and SkuNav.Engine:PlayerInZone() then return 4 end
+	return aOld
+end
+
+function SkuNav.AddEngineEntryPointsForTargets(aParent, aTargets, aMax)
+	if not (SkuNav.Engine and SkuNav.Engine:PlayerInZone()) then return 0 end
+	local tTargets = {}
+	local tPlayX, tPlayY = UnitPosition("player")
+	for _, t in ipairs(aTargets or {}) do
+		if t.x and t.y and SkuNav.Engine:PointInZone(t.x, t.y) then
+			tTargets[#tTargets + 1] = {name = t.name, x = t.x, y = t.y, dist = math.floor(math.sqrt((t.x - tPlayX) ^ 2 + (t.y - tPlayY) ^ 2))}
+		end
+	end
+	if #tTargets == 0 then return 0 end
+	table.sort(tTargets, function(a, b) return a.dist < b.dist end)
+	local tPoints = SkuNav.Engine:EntryPoints(aMax or 3)
+	for _, tP in ipairs(tPoints) do
+		local tEntry = SkuOptions:InjectMenuItems(aParent, {((Sku.Loc == "deDE") and "Einstiegspunkt " or "Entry point ")..tP.dist..L[";Meter"].."#"..tP.name..";Engine"}, SkuGenericMenuItem)
+		tEntry.dynamic = true
+		tEntry.sorting = true
+		tEntry.BuildChildren = function(self)
+			local tFloorZ = self.floorZ
+			for i, t in ipairs(tTargets) do
+				if i > 10 then break end
+				local tLeaf = SkuOptions:InjectMenuItems(self, {t.dist..L[";Meter"].."#"..t.name..((string.sub(t.name, -7) ~= ";Engine") and ";Engine" or "")}, SkuGenericMenuItem)
+				tLeaf.OnEnter = function(self)
+					SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_CloseRoute = nil
+					SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget = {x = t.x, y = t.y, name = t.name, floorZ = tFloorZ}
+				end
+			end
+		end
+		local tFl = SkuNav.Engine:FloorChoices()
+		if tFl then SkuNav_WrapEntryWithFloors(tEntry, tFl) end
+	end
+	return #tPoints
+end
+
+-- same for a list of Sku waypoint names (the quest menus): the targets are the waypoints' own positions
+function SkuNav.AddEngineEntryPointsForWpNames(aParent, aNames)
+	local tTargets = {}
+	for _, tName in ipairs(aNames or {}) do
+		local tData = SkuNav:GetWaypointData2(tName)
+		if tData and tData.worldX then tTargets[#tTargets + 1] = {name = tName, x = tData.worldX, y = tData.worldY} end
+	end
+	return SkuNav.AddEngineEntryPointsForTargets(aParent, tTargets)
+end
+
 ---------------------------------------------------------------------------------------------------------------------------------------
 local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypointList)
 	--dprint("SkuNav_MenuBuilder_WaypointSelectionMenu")
@@ -517,7 +571,9 @@ local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypoint
 				local tEnginePending = SkuNav.Engine and SkuNav.Engine.pendingWaypoints and SkuNav.Engine.pendingWaypoints[wpTable[1]]
 				if tEnginePending then
 					if SkuNav.Engine:PlayerInZone() then
-						SkuNav_AddEngineRouteLeaf(self, wpTable[1], tEnginePending.x, tEnginePending.y)
+						if SkuNav.AddEngineEntryPointsForTargets(self, {{name = wpTable[1], x = tEnginePending.x, y = tEnginePending.y}}, 6) == 0 then
+							SkuNav_AddEngineRouteLeaf(self, wpTable[1], tEnginePending.x, tEnginePending.y)
+						end
 					else
 						SkuNav:InjectWpListEmptyHint(self)
 					end
@@ -541,14 +597,16 @@ local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypoint
 				end
 				if #tSortedWaypointList == 0 then
 					if tEngineLeafWanted then
-						SkuNav_AddEngineRouteLeaf(self, wpTable[1], tTargetData.worldX, tTargetData.worldY)
+						if SkuNav.AddEngineEntryPointsForTargets(self, {{name = wpTable[1], x = tTargetData.worldX, y = tTargetData.worldY}}, 6) == 0 then
+							SkuNav_AddEngineRouteLeaf(self, wpTable[1], tTargetData.worldX, tTargetData.worldY)
+						end
 					else
 						SkuNav:InjectWpListEmptyHint(self)
 					end
 				else
 					local tCount = 0
 					for k, v in SkuSpairs(tSortedWaypointList) do
-						if tCount < 10 then
+						if tCount < SkuNav.MaxSkuEntryPoints(10) then
 							local tSkuWpName = ssub(v, string.find(v, "#") + 1)
 							local tLayerText = SkuNav:GetLayerText(SkuNav:GetNonAutoLevel(nil, nil, tSkuWpName, nil))
 
@@ -559,6 +617,7 @@ local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypoint
 								if #tSortedWaypointList == 0 then
 									SkuNav:InjectWpListEmptyHint(self)
 								else
+									SkuNav:BackupFollowState()
 									local tMetapaths = SkuNav:GetAllMetaTargetsFromWp5(ssub(v, string.find(v, "#") + 1), SkuSettings:Sub("SkuNav").routesMaxDistance, SkuNav.MaxMetaWPs, nil, true)
 									SkuSettings:Sub("SkuNav").metapathFollowingStart = v
 									SkuSettings:Sub("SkuNav").metapathFollowingMetapaths = tMetapaths
@@ -622,8 +681,11 @@ local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypoint
 							tCount = tCount + 1
 						end
 					end
-					if tEngineLeafWanted then
-						SkuNav_AddEngineRouteLeaf(self, wpTable[1], tTargetData.worldX, tTargetData.worldY)
+					-- Forever: below the (at most 4) Sku entry points ALWAYS up to 3 engine entry points (labelled "Engine")
+					if tTargetData and tTargetData.worldX then
+						if SkuNav.AddEngineEntryPointsForTargets(self, {{name = wpTable[1], x = tTargetData.worldX, y = tTargetData.worldY}}) == 0 and tEngineLeafWanted then
+							SkuNav_AddEngineRouteLeaf(self, wpTable[1], tTargetData.worldX, tTargetData.worldY)
+						end
 					end
 				end
 
@@ -951,64 +1013,75 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 			local tSortedWaypointList = BuildSortedUniqueRouteWps(tRoutesInRange)
 			local tFloors = SkuNav.Engine and SkuNav.Engine:FloorChoices()
 
-			-- [Engine route, Forever prototype 12.11.2026] where Sku has no waypoint near the player (farther than the nearby-waypoint
-			-- range), the engine is an entry point of its own: "Engine" at distance 0, the first entry. Under it stand the targets Sku
-			-- reaches from its nearest entry point plus the targets Sku has no route to; the way is computed by the engine from where
-			-- the player stands. Near a Sku waypoint nothing changes: Sku's entry points stay as they are.
-			local tNearestEntryRange = tSortedWaypointList[1] and tonumber(string.match(tSortedWaypointList[1], "^(%d+)"))
-			if SkuNav.Engine and SkuNav.Engine:PlayerInZone()
-				and (not tNearestEntryRange or tNearestEntryRange > SkuSettings:Sub("SkuNav").nearbyWpRange) then
-				local tEngineEntry = SkuOptions:InjectMenuItems(self, {(Sku.Loc == "deDE") and "Einstiegspunkt 0 Meter Engine" or "Entry point 0 meters Engine"}, SkuGenericMenuItem)
-				tEngineEntry.dynamic = true
-				tEngineEntry.sorting = true
-				tEngineEntry.BuildChildren = function(self)
-					local tPlayX, tPlayY = UnitPosition("player")
-					local tReach = {}
-					local tFirst = tSortedWaypointList[1]
-					if tFirst and string.find(tFirst, "#") then
-						tReach = SkuNav:GetAllMetaTargetsFromWp5(ssub(tFirst, string.find(tFirst, "#") + 1), SkuSettings:Sub("SkuNav").routesMaxDistance, SkuNav.MaxMetaWPs)
+			-- [Engine route, Forever 13.11.2026] ALWAYS 4 Sku entry points on top and below them up to 3 engine entry points (the
+			-- nearest points of the engine's data, Engine:EntryPoints), wherever the engine covers the player's map. Sku's entries
+			-- keep their order and their children; under an engine entry stand the targets Sku reaches from its nearest entry
+			-- point plus the targets Sku has no route to; the engine computes the way from where the player stands, on the floor
+			-- of the entry point.
+			local tEnginePoints = {}
+			if SkuNav.Engine and SkuNav.Engine:PlayerInZone() then
+				-- where Sku has no entry point at all the engine gets 6 (as before), otherwise 3 below the Sku ones
+				tEnginePoints = SkuNav.Engine:EntryPoints(#tSortedWaypointList == 0 and 6 or 3)
+			end
+			local function tAddEngineEntryPoints()
+				for _, tP in ipairs(tEnginePoints) do
+					local tDir = ""
+					if SkuSettings:Sub("SkuNav").showGlobalDirectionInWaypointLists == true then
+						local tDirString = SkuNav:GetDirectionToAsString(tP.x, tP.y)
+						if tDirString then tDir = " "..tDirString end
 					end
-					local tTargets = {}
-					for tName in pairs(tReach) do
-						local tData = SkuNav:GetWaypointData2(tName)
-						if tData and tData.worldX and SkuNav.Engine:PointInZone(tData.worldX, tData.worldY) then
-							tTargets[#tTargets + 1] = {x = tData.worldX, y = tData.worldY, name = tName, kind = ""}
+					local tEngineEntry = SkuOptions:InjectMenuItems(self, {((Sku.Loc == "deDE") and "Einstiegspunkt " or "Entry point ")..tP.dist..L[";Meter"]..tDir.."#"..tP.name..";Engine"}, SkuGenericMenuItem)
+					tEngineEntry.dynamic = true
+					tEngineEntry.sorting = true
+					tEngineEntry.BuildChildren = function(self)
+						local tPlayX, tPlayY = UnitPosition("player")
+						local tReach = {}
+						local tFirst = tSortedWaypointList[1]
+						if tFirst and string.find(tFirst, "#") then
+							tReach = SkuNav:GetAllMetaTargetsFromWp5(ssub(tFirst, string.find(tFirst, "#") + 1), SkuSettings:Sub("SkuNav").routesMaxDistance, SkuNav.MaxMetaWPs)
+						end
+						local tTargets = {}
+						for tName in pairs(tReach) do
+							local tData = SkuNav:GetWaypointData2(tName)
+							if tData and tData.worldX and SkuNav.Engine:PointInZone(tData.worldX, tData.worldY) then
+								tTargets[#tTargets + 1] = {x = tData.worldX, y = tData.worldY, name = tName, kind = ""}
+							end
+						end
+						for _, tT in ipairs(SkuNav.Engine:ListTargets(tReach)) do tTargets[#tTargets + 1] = tT end
+						for _, tT in ipairs(tTargets) do
+							tT.dist = math.floor(math.sqrt((tT.x - tPlayX) ^ 2 + (tT.y - tPlayY) ^ 2))
+						end
+						table.sort(tTargets, function(a, b) return a.dist < b.dist end)
+						dprint("engineRoute engine entry", "targets", #tTargets)
+						if #tTargets == 0 then
+							SkuNav:InjectWpListEmptyHint(self)
+							return
+						end
+						for _, tT in ipairs(tTargets) do
+							local tDir = ""
+							if SkuSettings:Sub("SkuNav").showGlobalDirectionInWaypointLists == true then
+								local tDirString = SkuNav:GetDirectionToAsString(tT.x, tT.y)
+								if tDirString then tDir = ";"..tDirString end
+							end
+							local tLabel = tT.dist..L[";Meter"]..tDir.."#"..tT.name..((tT.kind and tT.kind ~= "") and (";"..tT.kind) or "")
+							local tChild = SkuOptions:InjectMenuItems(self, {tLabel}, SkuGenericMenuItem)
+							tT.floorZ = self.floorZ
+							tChild.engineTarget = tT
+							tChild.OnEnter = function(self)
+								SkuSettings:Sub("SkuNav").metapathFollowingUnitDbWaypoint = nil
+								SkuSettings:Sub("SkuNav").metapathFollowingUnitDbWaypointData = nil
+							end
 						end
 					end
-					for _, tT in ipairs(SkuNav.Engine:ListTargets(tReach)) do tTargets[#tTargets + 1] = tT end
-					for _, tT in ipairs(tTargets) do
-						tT.dist = math.floor(math.sqrt((tT.x - tPlayX) ^ 2 + (tT.y - tPlayY) ^ 2))
-					end
-					table.sort(tTargets, function(a, b) return a.dist < b.dist end)
-					dprint("engineRoute engine entry", "targets", #tTargets)
-					if #tTargets == 0 then
-						SkuNav:InjectWpListEmptyHint(self)
-						return
-					end
-					for _, tT in ipairs(tTargets) do
-						local tDir = ""
-						if SkuSettings:Sub("SkuNav").showGlobalDirectionInWaypointLists == true then
-							local tDirString = SkuNav:GetDirectionToAsString(tT.x, tT.y)
-							if tDirString then tDir = ";"..tDirString end
-						end
-						local tLabel = tT.dist..L[";Meter"]..tDir.."#"..tT.name..((tT.kind and tT.kind ~= "") and (";"..tT.kind) or "")
-						local tChild = SkuOptions:InjectMenuItems(self, {tLabel}, SkuGenericMenuItem)
-						tT.floorZ = self.floorZ
-						tChild.engineTarget = tT
-						tChild.OnEnter = function(self)
-							SkuSettings:Sub("SkuNav").metapathFollowingUnitDbWaypoint = nil
-							SkuSettings:Sub("SkuNav").metapathFollowingUnitDbWaypointData = nil
-						end
-					end
+					if tFloors then SkuNav_WrapEntryWithFloors(tEngineEntry, tFloors) end
 				end
-				if tFloors then SkuNav_WrapEntryWithFloors(tEngineEntry, tFloors) end
 			end
 
-			if #tSortedWaypointList == 0 then
+			if #tSortedWaypointList == 0 and #tEnginePoints == 0 then
 				SkuNav:InjectWpListEmptyHint(self)
 			else
 				local tCount = 0
-				local tMaxEntryPoints = Sku.isForever and 6 or 10
+				local tMaxEntryPoints = SkuNav.MaxSkuEntryPoints(Sku.isForever and 6 or 10)
 				for k, v in SkuSpairs(tSortedWaypointList) do
 					if tCount < tMaxEntryPoints then
 
@@ -1093,6 +1166,7 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 						tCount = tCount + 1
 					end
 				end
+				tAddEngineEntryPoints()
 			end
 
 end

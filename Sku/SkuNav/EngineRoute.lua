@@ -26,8 +26,8 @@ local TARGET_SKU_RADIUS = 30  -- yd: a Sku waypoint this close to a target that 
 -- Groups of engine zones that hang together by seams. key = id under which the group's heights and targets are stored.
 -- addon = load-on-demand addon with the group's data (the zone nets are big: loaded only when the player is in the group).
 local GROUPS = {
-	{key = 84, zones = {84, 37, 52}, addon = "SkuEngineEK"},   -- Stormwind City, Elwynn Forest, Westfall
-	{key = 87, zones = {87}},                                    -- Ironforge
+	{key = 84, zones = {84, 37, 52, 49, 1431}, addon = "SkuEngineEK"},   -- Stormwind City, Elwynn Forest, Westfall, Redridge Mountains, Duskwood
+	{key = 87, zones = {87, 27, 1432, 1437}, addon = "SkuEngineZW"},   -- Ironforge, Dun Morogh, Loch Modan, Wetlands
 }
 
 local tIndexLoaded
@@ -97,8 +97,26 @@ local function tGroupAt(x, y)
 	return nil
 end
 
+-- The group a world point lies in WITHOUT loading its data addon (a point in another group must not make us load that group's big
+-- addon: only the player's own group is loaded).
+local function tGroupOf(x, y)
+	local N = tNet()
+	for _, id in ipairs(N.ZonesForPoint(x, y) or {}) do
+		for _, g in ipairs(GROUPS) do
+			for _, z in ipairs(g.zones) do
+				if id == z then return g end
+			end
+		end
+	end
+	return nil
+end
+
+-- same group as the player (the engine only routes inside one group)
 local function tInZone(x, y)
-	return tGroupAt(x, y) ~= nil
+	local px, py = UnitPosition("player")
+	if type(px) ~= "number" or type(py) ~= "number" then return false end
+	local tG = tGroupOf(x, y)
+	return tG ~= nil and tG == tGroupOf(px, py) and tDataReady(tG)
 end
 
 -- The group of the PLAYER's position: the zone boxes of the index are rectangles (they reach into zones that have no data), so
@@ -169,6 +187,12 @@ function Engine:PlayerHeight(x, y, aGroup)
 		end
 		if supported then left[#left + 1] = (band.zMin + band.zMax) / 2 end
 	end
+	-- [Floor fallback, Forever 13.11.2026] no band fits the heights of the Sku waypoints around (their heights do not match the map there,
+	-- e.g. at the Hall of Thanes): then ALL floors of the map at this point are possible and the floor question is asked, instead of
+	-- "height unknown" without any choice.
+	if #left == 0 then
+		for _, band in ipairs(bands) do left[#left + 1] = (band.zMin + band.zMax) / 2 end
+	end
 	table.sort(left)
 	-- layers at most 2 yd apart are the same
 	local layers = {}
@@ -234,6 +258,23 @@ function Engine:FloorChoices()
 	return tLayers
 end
 
+-- [Entry points, Forever 13.11.2026] The engine entry points of the route lists: the nearest named engine targets (the catalog targets
+-- that Sku does not cover, the same ones the target lists offer: dungeon entrances, landings, quest givers, ...), at most aMax, one per
+-- name. As the entry points of Sku are the nearest waypoints. Returns {{x, y, name, kind, dist}, ...}, nearest first. (The engine
+-- routes from where the player stands; the entry point only names the place and carries the floor question.)
+function Engine:EntryPoints(aMax)
+	local rList, tSeen = {}, {}
+	for _, t in ipairs(self:ListTargets(nil)) do
+		local tKey = string.lower(t.name)
+		if not tSeen[tKey] then
+			tSeen[tKey] = true
+			rList[#rList + 1] = t
+			if #rList >= aMax then break end
+		end
+	end
+	return rList
+end
+
 -- Engine route from the player's position to a target (x, y). Returns a list of world points {{x, y}, ...} or nil, reason.
 function Engine:Route(aTx, aTy, aFloorZ)
 	if not self:Available() then return nil, "unavailable" end
@@ -242,7 +283,7 @@ function Engine:Route(aTx, aTy, aFloorZ)
 	if type(px) ~= "number" or type(py) ~= "number" then return nil, "no_position" end
 	local tGroup = tPlayerGroupAt(px, py)
 	if not tGroup then return nil, "wrong_zone" end
-	if tGroupAt(aTx, aTy) ~= tGroup then return nil, "wrong_zone" end
+	if tGroupOf(aTx, aTy) ~= tGroup then return nil, "wrong_zone" end
 	tLoadGroup(tGroup)
 	local pz, how, tLayers
 	if aFloorZ then
@@ -432,10 +473,68 @@ local function tMaxDistance()
 	return type(tMax) == "number" and tMax or nil
 end
 
-local function tTargetsWithoutSku(aGroup, aGrid, px, py, aMaxDist)
+-- RULE (Lena, 13.11.2026): the radius test must not hide the targets that matter most. Sku makes a waypoint of EVERY object (braziers,
+-- banners ...), so some waypoint nearly always lies within TARGET_SKU_RADIUS.
+--   * kinds Sku's own data does not have at all (dungeon entrances, public transport = landings, ships, trams): always offered.
+--   * quest giver targets (kind "Questgeber...") and targets that are the goal of a quest (7th field = 1: monsters, objects, kill credits;
+--     set by navpack/mark_questtargets.py): hidden only by a Sku waypoint of the SAME name within the radius (a true duplicate).
+local ALWAYS_OFFER_KINDS = {Dungeoneingang = true, Verkehr = true}
+
+-- Names are compared without brackets and case: the catalog says "Thor (Greifenmeister)", Sku's own waypoint says "Thor Greifenmeister"
+-- (14.11.2026: the Gryphon Master stood twice in the lists).
+local function tNormName(aName)
+	local r = string.lower(aName)
+	r = string.gsub(r, "[%(%)]", " ")
+	r = string.gsub(r, "%s+", " ")
+	return (string.gsub(r, "^ ", ""):gsub(" $", ""))
+end
+
+local namedByNameFor, namedByName
+local function tNamedByName(aNamed)
+	if namedByNameFor ~= aNamed then
+		namedByNameFor, namedByName = aNamed, {}
+		for i = 1, #aNamed do
+			local w = aNamed[i]
+			local tFirst = string.match(w[3], "^([^;]*)")
+			if tFirst then
+				local k = tNormName(tFirst)
+				local c = namedByName[k]
+				if not c then c = {} namedByName[k] = c end
+				c[#c + 1] = w
+			end
+		end
+	end
+	return namedByName
+end
+
+local function tSameNameNear(aByName, t)
+	for _, tName in ipairs({t[3], t[4]}) do
+		local tBase = string.match(tName, "^(.-)%s*%(")
+		for _, tKey in ipairs({tNormName(tName), tBase and tNormName(tBase) or false}) do
+		local c = tKey and aByName[tKey]
+		if c then
+			for i = 1, #c do
+				local w = c[i]
+				if (w[1] - t[1]) ^ 2 + (w[2] - t[2]) ^ 2 <= TARGET_SKU_RADIUS ^ 2 then return true end
+			end
+		end
+		end
+	end
+	return false
+end
+
+local function tTargetsWithoutSku(aGroup, aGrid, px, py, aMaxDist, aNamed)
 	local rBest, rOrder = {}, {}
 	for _, t in ipairs(_G.SkuEngineTargets[aGroup.key] or {}) do
-		if not tNearGrid(aGrid, t[1], t[2]) then
+		local tShow
+		if ALWAYS_OFFER_KINDS[t[5]] then
+			tShow = true
+		elseif aNamed and (t[7] == 1 or string.sub(t[5], 1, 10) == "Questgeber") then
+			tShow = not tSameNameNear(tNamedByName(aNamed), t)
+		else
+			tShow = not tNearGrid(aGrid, t[1], t[2])
+		end
+		if tShow then
 			local tName = (Sku.Loc == "deDE") and t[3] or t[4]
 			local tKind = (Sku.Loc == "deDE") and t[5] or (t[6] or t[5])
 			local tKey = tName.."\1"..tKind
@@ -475,7 +574,7 @@ function Engine:ListTargets(aReachable)
 	end
 	local tNamed = self:SkuNamedPositions()
 	local tMaxDist = tMaxDistance()
-	for _, t in ipairs(tTargetsWithoutSku(tGroup, tPosGrid({tSkuNear, tNamed}), px, py, tMaxDist)) do
+	for _, t in ipairs(tTargetsWithoutSku(tGroup, tPosGrid({tSkuNear, tNamed}), px, py, tMaxDist, tNamed)) do
 		t.dist = math.floor(t.dist)
 		rList[#rList + 1] = t
 	end
@@ -546,7 +645,8 @@ function Engine:ListWaypointTargets(aSkuPositions)
 	local tGroup = tPlayerGroupAt(px, py)
 	if not tGroup then return rList end
 	aSkuPositions = aSkuPositions or {}
-	for _, t in ipairs(tTargetsWithoutSku(tGroup, tPosGrid({aSkuPositions, self:SkuNamedPositions()}), px, py)) do
+	local tNamedAll = self:SkuNamedPositions()
+	for _, t in ipairs(tTargetsWithoutSku(tGroup, tPosGrid({aSkuPositions, tNamedAll}), px, py, nil, tNamedAll)) do
 		local name = t.name..";"..t.kind..";Engine"
 		local entry = {key = name, x = t.x, y = t.y, dist = math.floor(t.dist)}
 		rList[#rList + 1] = entry
@@ -597,6 +697,13 @@ if Sku.isForever and CreateFrame and C_Timer then
 	tPreloadFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 	tPreloadFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 	tPreloadFrame:SetScript("OnEvent", function()
-		C_Timer.After(8, function() Engine:Preload() end)
+		C_Timer.After(8, function()
+			if not Engine.__revisionLogged then
+				-- shadow number of the engine (data + code), never spoken: only in the debug log, see navpack/engine-staende/README.md
+				Engine.__revisionLogged = true
+				dprint("engine revision", tostring(_G.SkuEngineRevision or "?"))
+			end
+			Engine:Preload()
+		end)
 	end)
 end
