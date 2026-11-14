@@ -229,6 +229,215 @@ local tMinimapDefaults = {}
 local tRange = 15
 local tCurrentMMPosX, tCurrentMMPosY = -(tRange / 2), -(tRange / 2)
 
+-- WoW Forever (since the client build of 13.11.2026): the names the minimap puts
+-- in the tooltip arrive as SECRET strings. Lowering, finding or comparing them
+-- throws ("attempt to perform string conversion on a secret string value"), so
+-- they can no longer be matched against SkuCore.RessourceTypes. What still works:
+-- truthiness, string.format and Sku's speech path SkuVoice:SpeakSecretText. So a
+-- secret line is taken as "a tracked dot is here": the active scan groups such
+-- hits by position and speaks every group's name through SpeakSecretText, the
+-- passive notifier speaks the name when a dot appears under the cursor. The
+-- per-resource filters cannot apply to secret names; the tracking spells (find
+-- herbs / minerals) decide what shows, all other tracking is off while scanning.
+local function tIsSecret(aValue)
+   return Sku.IsSecret ~= nil and Sku.IsSecret(aValue) == true
+end
+local SECRET_KEY_PREFIX = "\001secret"
+local tSecretCount = 0
+
+-- Leaves only spell tracking (find herbs, find minerals, ...) on, so the dots
+-- under the cursor are resources; tApplyMinimapState switches the rest back on.
+local function tSpellTrackingOnly()
+   pcall(function()
+      local tCount = GetNumTrackingTypes()
+      for i = 1, tCount do
+         local result = GetTrackingInfo(i)
+         local category
+         if type(result) == "table" then
+            category = result.type or result.category
+         else
+            local _, _, _, c = GetTrackingInfo(i)
+            category = c
+         end
+         if category ~= "spell" then
+            SetTracking(i, false)
+         end
+      end
+   end)
+end
+
+-- Telling resources from other dots without their names (they are secret):
+-- some dots stay on the minimap whatever the tracking (an NPC the game shows
+-- for a quest, for one). WowVision sorts its dots the same way, by switching
+-- tracking types. Here the gathering searches are switched off for a moment
+-- and the place is read again: what is still named there is not a resource.
+-- Find Herbs, Find Minerals, Find Treasure, Find Fish.
+local GATHER_TRACKING_SPELLS = { [2383] = true, [2580] = true, [2481] = true, [43308] = true }
+
+-- The active gathering searches; without a known spell id every active
+-- spell search counts.
+local function tActiveGatherTracking()
+   local tKnown, tSpells = {}, {}
+   pcall(function()
+      for i = 1, GetNumTrackingTypes() do
+         local info = C_Minimap and C_Minimap.GetTrackingInfo and C_Minimap.GetTrackingInfo(i)
+         if type(info) == "table" and info.active and info.type == "spell" then
+            tSpells[#tSpells + 1] = i
+            if info.spellID and GATHER_TRACKING_SPELLS[info.spellID] then tKnown[#tKnown + 1] = i end
+         end
+      end
+   end)
+   return (#tKnown > 0) and tKnown or tSpells
+end
+
+local function tSetTrackingList(aList, aOn)
+   for _, i in ipairs(aList) do pcall(SetTracking, i, aOn) end
+end
+
+-- What the game names under the cursor right now, without reading a name:
+--   present: anything named (either channel: the minimap tooltip data or the
+--            shown GameTooltip);
+--   size:    how big the name text is, as a measure of HOW MANY names. The
+--            game puts every name into ONE tooltip line (WowVision measured
+--            it, 2026-11-10), so the number of lines says nothing; the
+--            rendered line count of that text, or its height, does. nil when
+--            the game keeps that secret too.
+local function tPlainNumber(aFn)
+   local ok, v = pcall(aFn)
+   if ok and type(v) == "number" and not tIsSecret(v) then return v end
+   return nil
+end
+
+local function tReadState()
+   local tPresent = false
+   if C_TooltipInfo and C_TooltipInfo.GetMinimapMouseover then
+      local ok, n = pcall(function()
+         local data = C_TooltipInfo.GetMinimapMouseover()
+         if type(data) == "table" and type(data.lines) == "table" then return #data.lines end
+         return 0
+      end)
+      if ok and type(n) == "number" and not tIsSecret(n) and n > 0 then tPresent = true end
+   end
+   local tSize
+   if GameTooltip:IsShown() then
+      local n = tPlainNumber(function() return GameTooltip:NumLines() end)
+      if n and n > 0 then
+         tPresent = true
+         local fs = _G["GameTooltipTextLeft1"]
+         if fs then
+            tSize = tPlainNumber(function() return fs:GetNumLines() end)
+            if not tSize or tSize < 1 then tSize = tPlainNumber(function() return fs:GetStringHeight() end) end
+         end
+      end
+   end
+   return { present = tPresent, size = tSize }
+end
+
+-- The verdict for one place from the read with the gathering searches on
+-- and the one with them off:
+--   "resource": nothing stays named, every name there is a resource;
+--   "mixed":    something stays, but fewer names: a resource and another dot;
+--   "other":    the same stays named: no resource (an NPC, your pet, ...);
+--   nil:        no check was possible.
+local function tVerdict(aOn, aOff)
+   if not aOn or not aOff then return nil end
+   if not aOff.present then return "resource" end
+   if aOn.size and aOff.size and aOff.size < aOn.size then return "mixed" end
+   return "other"
+end
+
+local function tStateText(a)
+   if not a then return "nil" end
+   return (a.present and "da" or "leer") .. "/" .. tostring(a.size)
+end
+
+-- The game works out the mouseover when something moves under the cursor:
+-- shift the minimap by one pixel, back and forth.
+local tNudged = false
+local function tNudge()
+   local point, relativeTo, relativePoint, x, y = Minimap:GetPoint(1)
+   if not point then return end
+   tNudged = not tNudged
+   Minimap:ClearAllPoints()
+   Minimap:SetPoint(point, relativeTo, relativePoint, x + (tNudged and 1 or -1), y)
+end
+
+-- For each place (aPlace(i) puts place i under the cursor): what is still
+-- named with the gathering searches off (a read state, see tReadState).
+-- aDone(states) gets nil when no check was possible (no gathering search
+-- active, combat). The searches always come back on, also after an error
+-- (5 s safety net).
+local function tCountWithoutGathering(aCount, aPlace, aDone)
+   -- SWITCHED OFF (14.11.2026): the game lets an addon switch a tracking SPELL
+   -- (find herbs, find minerals) off, but not back on outside a key press, so the
+   -- check left the player's herb search off. Until there is a safe way it does
+   -- nothing and reports "no check possible".
+   if true then
+      aDone(nil)
+      return
+   end
+   local tGather = tActiveGatherTracking()
+   if #tGather == 0 or aCount == 0 or InCombatLockdown() then
+      aDone(nil)
+      return
+   end
+   local tFinished = false
+   local tOff = {}
+   local tIdx = 1
+   local function finish()
+      if tFinished then return end
+      tFinished = true
+      tSetTrackingList(tGather, true)
+      pcall(aDone, tOff)
+   end
+   C_Timer.After(5, function()
+      if not tFinished then
+         tFinished = true
+         tSetTrackingList(tGather, true)
+      end
+   end)
+   tSetTrackingList(tGather, false)
+   local function frames(n, fn)
+      if n <= 0 then fn() else C_Timer.After(0, function() frames(n - 1, fn) end) end
+   end
+   local nextPlace
+   -- Three reads, each after a nudge. The last says whether something stays
+   -- (an earlier one may still show the dots of the search just switched off);
+   -- the size is the smallest seen while something stayed.
+   local function read(k, aState)
+      pcall(tNudge)
+      C_Timer.After(0, function()
+         if tFinished then return end
+         local c = tReadState()
+         if aState and aState.size and c.size and aState.size < c.size then c.size = aState.size end
+         if k < 3 then
+            read(k + 1, c)
+         else
+            tOff[tIdx] = c
+            tIdx = tIdx + 1
+            nextPlace()
+         end
+      end)
+   end
+   nextPlace = function()
+      if tFinished then return end
+      if tIdx > aCount or InCombatLockdown() then
+         finish()
+         return
+      end
+      local ok = pcall(aPlace, tIdx)
+      if not ok then
+         finish()
+         return
+      end
+      frames(4, function()
+         if tFinished then return end
+         read(1, nil)
+      end)
+   end
+   nextPlace()
+end
+
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- Minimap-State save/restore helpers — werden von allen Scan-Pfaden
 -- benutzt, damit Zoom-Level und Rotation NACH dem Scan wieder dem
@@ -354,7 +563,7 @@ function MinimapScanner:MinimapScanChildFrames()
                for i = 1, GameTooltip:NumLines() do
                   local lineFrame = _G['GameTooltipTextLeft' .. i]
                   local lineRaw = lineFrame and lineFrame:GetText()
-                  if lineRaw then
+                  if lineRaw and not tIsSecret(lineRaw) then
                      local line = string.lower(lineRaw)
                      for r = 1, #tChildRessourceTypes do
                         for x = 1, #tChildRessourceTypes[r] do
@@ -393,6 +602,28 @@ function MinimapScanner:MinimapScanFindActiveRessource(aX, aY)
    for i = 1, GameTooltip:NumLines() do
       local lineFrame = _G['GameTooltipTextLeft' .. i]
       local lineRaw = lineFrame and lineFrame:GetText()
+      if lineRaw and tIsSecret(lineRaw) then
+         -- A secret name: group the hit with an earlier one close by (same box
+         -- rule as the named path below), else open a new group. The group keeps
+         -- the first hit's text for the announcement.
+         local tRangeNew = 20
+         for tKey, tBoxes in pairs(tFoundPositions) do
+            local b = tBoxes[1]
+            if b and b.secretText and math.abs(b.xMax - aX) < tRangeNew and math.abs(b.yMax - aY) < tRangeNew
+               and math.abs(b.xMin - aX) < tRangeNew and math.abs(b.yMin - aY) < tRangeNew then
+               if b.xMin > aX then b.xMin = aX end
+               if b.xMax < aX then b.xMax = aX end
+               if b.yMin > aY then b.yMin = aY end
+               if b.yMax < aY then b.yMax = aY end
+               return tKey
+            end
+         end
+         tSecretCount = tSecretCount + 1
+         local tKey = SECRET_KEY_PREFIX .. tSecretCount
+         tFoundPositions[tKey] = { { xMin = aX - 1, xMax = aX + 1, yMin = aY - 1, yMax = aY + 1, secretText = lineRaw,
+            hitX = aX, hitY = aY, onState = tReadState() } }
+         return tKey
+      end
       if lineRaw then
          local line = string.lower(lineRaw)
          for r = 1, #tRessourceTypes do
@@ -489,17 +720,20 @@ local function MinimapScanStep()
 
    if tCurrentMMPosY > (tRange / 2) then
       tCurrentMMPosX, tCurrentMMPosY = -(tRange / 2), -(tRange / 2)
-      MinimapScanner.IsMMScanning = false
-      C_Timer.After(1, function()
-         MinimapScanner.noMouseOverNotification = true
-      end)
-      MinimapScanner:MinimapScanProcessResults()
+      MinimapScanner:FinishGridScan()
+      return
    end
 
    SetMinimapPosition(tCurrentMMPosX, tCurrentMMPosY)
 
    C_Timer.After(0, function()
-      local tResultString = MinimapScanner:MinimapScanFindActiveRessource(tCurrentMMPosX, tCurrentMMPosY)
+      -- Under pcall: an error here used to break the step chain, and the minimap
+      -- stayed moved and shrunk under the cursor.
+      local tReadOk, tResultString = pcall(MinimapScanner.MinimapScanFindActiveRessource, MinimapScanner, tCurrentMMPosX, tCurrentMMPosY)
+      if not tReadOk then
+         dprint("MinimapScanStep: read failed", tostring(tResultString))
+         tResultString = nil
+      end
       if tResultString then
          if not tScanResults[tResultString] then
             tScanResults[tResultString] = 0
@@ -510,6 +744,60 @@ local function MinimapScanStep()
          MinimapScanStep()
       end
    end)
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- End of the grid scan: groups with secret names are checked with the
+-- gathering searches off (see tCountWithoutGathering); a group whose place
+-- stays just as named is no resource and is dropped, so it is neither
+-- announced nor set as a quick waypoint. Then the results as before.
+local PET_DROP_METERS = 10
+function MinimapScanner:FinishGridScan()
+   local tKeys = {}
+   for k, boxes in pairs(tFoundPositions) do
+      if boxes[1] and boxes[1].secretText and tScanResults[k] then tKeys[#tKeys + 1] = k end
+   end
+   local function done(aOff)
+      -- Your pet follows you and its dot sits on the minimap's centre; a group
+      -- that close to you is taken for it and dropped while a pet is out.
+      if UnitExists and UnitExists("pet") then
+         for _, k in ipairs(tKeys) do
+            local b = tFoundPositions[k] and tFoundPositions[k][1]
+            if b then
+               local xC = b.xMin + math.abs(b.xMax - b.xMin) / 2 + 2.5
+               local yC = b.yMin + math.abs(b.yMax - b.yMin) / 2 + 0.5
+               local tMeters = math.sqrt(xC * xC + yC * yC) * tMinimapYardsMod
+               dprint("MinimapScan: group", k, "distance", math.floor(tMeters))
+               if tMeters < PET_DROP_METERS then
+                  tScanResults[k] = nil
+                  tFoundPositions[k] = nil
+               end
+            end
+         end
+      end
+      if aOff then
+         for n, k in ipairs(tKeys) do
+            local b = tFoundPositions[k] and tFoundPositions[k][1]
+            local tV = b and tVerdict(b.onState, aOff[n])
+            dprint("MinimapVerify: group", n, "on", tStateText(b and b.onState), "off", tStateText(aOff[n]), "->", tostring(tV))
+            if tV == "other" then
+               tScanResults[k] = nil
+               tFoundPositions[k] = nil
+            end
+         end
+      end
+      MinimapScanner.IsMMScanning = false
+      C_Timer.After(1, function()
+         MinimapScanner.noMouseOverNotification = true
+      end)
+      pcall(MinimapScanner.MinimapScanProcessResults, MinimapScanner)
+      -- IsMMScanning is false now: this step puts the minimap back.
+      MinimapScanStep()
+   end
+   tCountWithoutGathering(#tKeys, function(n)
+      local b = tFoundPositions[tKeys[n]][1]
+      SetMinimapPosition(b.hitX, b.hitY)
+   end, done)
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
@@ -609,7 +897,11 @@ function MinimapScanner:MinimapScan(aRange)
    aRange = aRange or 20
    tScanResults = {}
    tFoundPositions = {}
+   tSecretCount = 0
    MinimapScanner.noMouseOverNotification = true
+   -- Only the tracking spells' dots (herbs, ore, ...): secret names cannot be
+   -- filtered afterwards. The captured state above switches the rest back on.
+   tSpellTrackingOnly()
 
    -- Try fast child-frame scan first (works if blips are interactive frames)
    local ok, tChildResults = pcall(MinimapScanner.MinimapScanChildFrames, MinimapScanner)
@@ -676,9 +968,48 @@ function MinimapScanner:MinimapScanProcessResults()
    end
 
    local tQuickWpNumber = 1
+   -- Secret names cannot be queued one by one (SpeakSecretText replaces what is
+   -- queued), so their lines are collected into ONE format string with the
+   -- names as arguments and spoken at the end.
+   local tSecretFormat, tSecretArgs = {}, {}
    for i, v in pairs(tScanResults) do
       local xCenter, yCenter
-      if tFoundPositions[i] then
+      if tFoundPositions[i] and tFoundPositions[i][1] and tFoundPositions[i][1].secretText then
+         local b = tFoundPositions[i][1]
+         local tempX = math.abs(b.xMax - b.xMin)
+         local tempY = math.abs(b.yMax - b.yMin)
+         xCenter = b.xMin + (tempX / 2) + 2.5
+         yCenter = b.yMin + (tempY / 2) + 0.5
+         local xa, ya = UnitPosition("player")
+         if xa then
+            xa = xa + (yCenter * -1)
+            ya = ya + xCenter
+            local tDistance = SkuNav.Geo:Distance(0, 0, xCenter, yCenter)
+            local tPlain = SkuNav.Geo:GetDirectionToAsString(xa, ya) .. " " .. math.floor(tDistance * tMinimapYardsMod) .. " " .. L["Meter"]
+            local tNr = string.gsub(tostring(tQuickWpNumber or ""), "%%", "%%%%")
+            tSecretFormat[#tSecretFormat + 1] = tNr .. " %s " .. string.gsub(tPlain, "%%", "%%%%")
+            tSecretArgs[#tSecretArgs + 1] = b.secretText
+            if tQuickWpNumber then
+               local tAreaId = SkuNav.Geo:GetCurrentAreaId()
+               local worldx, worldy = UnitPosition("player")
+               local tPlayerContintentId = select(3, SkuNav.Geo:GetAreaData(SkuNav.Geo:GetCurrentAreaId())) or -1
+               SkuNav:SetWaypoint(L["Quick waypoint"] .. ";" .. tQuickWpNumber, {
+                  ["contintentId"] = tPlayerContintentId,
+                  ["areaId"] = tAreaId,
+                  ["worldX"] = worldx + ((yCenter * tMinimapYardsMod)) * -1,
+                  ["worldY"] = worldy + ((xCenter * tMinimapYardsMod)),
+                  ["createdAt"] = GetTime(),
+                  ["createdBy"] = "SkuCore",
+                  ["size"] = 1,
+               })
+               tQuickWpNumber = tQuickWpNumber + 1
+               if tQuickWpNumber > 4 then tQuickWpNumber = nil end
+            end
+         else
+            tSecretFormat[#tSecretFormat + 1] = "%s"
+            tSecretArgs[#tSecretArgs + 1] = b.secretText
+         end
+      elseif tFoundPositions[i] then
          for q = 1, #tFoundPositions[i] do
             local tempX = (tFoundPositions[i][q].xMax + 1000) - (tFoundPositions[i][q].xMin + 1000)
             if tempX < 0 then
@@ -732,6 +1063,13 @@ function MinimapScanner:MinimapScanProcessResults()
          end
       end
    end
+   if #tSecretFormat > 0 then
+      print(#tSecretFormat .. " " .. Sku.deEn("Ressourcen gefunden, die Namen nur per Sprachausgabe",
+         "resources found, names by speech only", "ressources trouvées, noms seulement par la voix"))
+      pcall(function()
+         SkuOptions.Voice:SpeakSecretText(table.concat(tSecretFormat, ", "), unpack(tSecretArgs))
+      end)
+   end
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
@@ -742,6 +1080,10 @@ local tRessourceTypes = {
 }
 local tInitialCenterMouse
 local tPrevResult = ""
+-- Passive notifier with secret names: the size of the name text last seen
+-- (baseline), a pause for the check, and how many empty reads in a row.
+local tPassiveSize, tPassiveBlockedUntil
+local tEmptyStreak = 0
 local mmx, mmy
 
 -- [v43.0] Tooltip-Auswertung des Schnellscans, herausgezogen aus dem
@@ -761,6 +1103,10 @@ local function tScanFastScrapeTooltip()
    for i = 1, GameTooltip:NumLines() do
       local lineFrame = _G['GameTooltipTextLeft' .. i]
       local lineRaw = lineFrame and lineFrame:GetText()
+      if lineRaw and tIsSecret(lineRaw) then
+         -- Only spell tracking is on during this scan: a named dot here is a resource.
+         return { secret = lineRaw }
+      end
       if lineRaw then
          lineRaw = SkuUtil:Unescape(lineRaw)
          local line = string.lower(lineRaw)
@@ -883,6 +1229,15 @@ function MinimapScanner:MinimapScanFast()
       pcall(_G["MiniMapTrackingFrame"].Hide, _G["MiniMapTrackingFrame"])
    end
 
+   -- The minimap on top of every other frame and without clicks while it lies
+   -- under the cursor, as in the active scan (PrepareMinimap): otherwise another
+   -- frame can hold the mouse focus and the game names nothing. RestoreMinimap
+   -- puts strata, level and clicks back (StoreMinimap captured them).
+   pcall(function()
+      MinimapCluster:SetFrameStrata("HIGH")
+      MinimapCluster:SetFrameLevel(9002)
+      Minimap:SetMouseClickEnabled(false)
+   end)
    mmx, mmy = Minimap:GetSize()
    Minimap:SetAlpha(0)
    Minimap:SetSize(15, 15)
@@ -912,15 +1267,200 @@ function MinimapScanner:MinimapScanFast()
          foundResult = nil
       end
 
-      -- Größe wiederherstellen, dann normalen Restore-Pfad gehen.
-      if mmx and mmy then
-         pcall(Minimap.SetSize, Minimap, mmx, mmy)
+      local function tFinishTail(aResult)
+         -- Größe wiederherstellen, dann normalen Restore-Pfad gehen.
+         if mmx and mmy then
+            pcall(Minimap.SetSize, Minimap, mmx, mmy)
+         end
+         pcall(MinimapScanner.RestoreMinimap, MinimapScanner)
+         Minimap:SetAlpha(1)
+         C_Timer.After(0.1, function() GameTooltip:SetAlpha(1) end)
+         pcall(tApplyMinimapState, tPrevState)
+         pcall(MinimapScanner.MinimapScanFastStop, MinimapScanner, aResult)
       end
+
+      -- Secret names (see tIsSecret). The shrunk minimap names everything in
+      -- range at once, so your pet or a quest NPC can be in the same read as a
+      -- herb. Checked with the gathering searches off while the shrunk minimap
+      -- still lies under the cursor, but only when something NEW may be there:
+      -- nothing was named before, or the name text grew. A dot that is no
+      -- resource is remembered as the baseline and not checked again.
+      if type(foundResult) == "table" and foundResult.secret then
+         -- 14.11.2026: herb and ore names are secret too, so nothing in a secret
+         -- read can be identified as a resource. The passive notifier only speaks
+         -- what it can identify: a secret read stays silent.
+         if true then
+            tFinishTail(foundResult)
+            return
+         end
+         local tOn = tReadState()
+         local tNew
+         if tPrevResult == "" then
+            tNew = true
+         elseif tOn.size and tPassiveSize and tOn.size > tPassiveSize then
+            tNew = true
+         end
+         if tNew and tPassiveBlockedUntil and GetTime() < tPassiveBlockedUntil then tNew = false end
+         if not tNew then
+            if tOn.size and (not tPassiveSize or tOn.size < tPassiveSize) then tPassiveSize = tOn.size end
+            tFinishTail(foundResult)
+            return
+         end
+         tCountWithoutGathering(1, function() end, function(aOff)
+            local tV = tVerdict(tOn, aOff and aOff[1])
+            dprint("MinimapVerify: passive on", tStateText(tOn), "off", tStateText(aOff and aOff[1]), "->", tostring(tV))
+            tPassiveSize = tOn.size
+            if tV == "resource" or tV == nil then
+               foundResult.say = "name"
+            elseif tV == "mixed" then
+               foundResult.say = "generic"
+            elseif not tOn.size then
+               -- No resource, and no way to see new names next to it: no
+               -- further checks for a while (each one switches the searches).
+               tPassiveBlockedUntil = GetTime() + 15
+            end
+            tFinishTail(foundResult)
+         end)
+         return
+      end
+      tFinishTail(foundResult)
+   end)
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Key "minikarte vorlesen" (SKU_KEY_MMREAD, default Ctrl+F): what the passive
+-- notifier used to do, once, on demand. The minimap is shrunk to a few pixels
+-- under the centred cursor, so every dot in range lies under it, and the game
+-- names them all in its minimap tooltip. Everything named is spoken as it
+-- comes, quests and NPCs included: the names are secret on WoW Forever and
+-- cannot be filtered. Tracking and zoom are left as they are (zoom goes to the
+-- widest view for the read and back). Out of combat only.
+function MinimapScanner:MinimapReadAll()
+   if not MinimapScanner:IsEnabled() then return end
+   if InCombatLockdown() or SkuCore.inCombat == true then
+      SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Nicht im Kampf", "Not in combat", "Pas en combat"), true, true, 0.2)
+      return
+   end
+   if MinimapScanner.MinimapScanFastRunning == true or MinimapScanner.IsMMScanning == true then return end
+   MinimapScanner.MinimapScanFastRunning = true
+   MinimapScanner.MinimapScanFastStartedAt = GetTime()
+   MinimapScanner.noMouseOverNotification = true
+
+   local tPrevState = tCaptureMinimapState()
+   local tSize = {}
+   local tDone = false
+
+   local function tRelease()
+      MinimapScanner.noMouseOverNotification = nil
+      MinimapScanner.MinimapScanFastRunning = false
+      MinimapScanner.MinimapScanFastStartedAt = nil
+      MinimapScanner.IsMMScanning = false
+   end
+
+   local function tRestore()
+      if tSize.w and tSize.h then pcall(Minimap.SetSize, Minimap, tSize.w, tSize.h) end
       pcall(MinimapScanner.RestoreMinimap, MinimapScanner)
-      Minimap:SetAlpha(1)
+      pcall(Minimap.SetAlpha, Minimap, 1)
       C_Timer.After(0.1, function() GameTooltip:SetAlpha(1) end)
       pcall(tApplyMinimapState, tPrevState)
-      pcall(MinimapScanner.MinimapScanFastStop, MinimapScanner, foundResult)
+   end
+
+   -- Every text the game names under the cursor: from the minimap tooltip data,
+   -- else from the shown GameTooltip. Secret texts stay untouched.
+   local function tReadTexts()
+      local tTexts = {}
+      if C_TooltipInfo and C_TooltipInfo.GetMinimapMouseover then
+         pcall(function()
+            local data = C_TooltipInfo.GetMinimapMouseover()
+            if type(data) == "table" and type(data.lines) == "table" then
+               for _, line in ipairs(data.lines) do
+                  if type(line) == "table" and line.leftText ~= nil then tTexts[#tTexts + 1] = line.leftText end
+               end
+            end
+         end)
+      end
+      if #tTexts == 0 and GameTooltip:IsShown() then
+         pcall(function()
+            for i = 1, GameTooltip:NumLines() do
+               local fs = _G["GameTooltipTextLeft" .. i]
+               local t = fs and fs:GetText()
+               if t ~= nil then tTexts[#tTexts + 1] = t end
+            end
+         end)
+      end
+      return tTexts
+   end
+
+   local function tSpeak(aTexts)
+      if #aTexts == 0 then
+         SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Nichts auf der Minikarte", "Nothing on the minimap", "Rien sur la minicarte"), true, true, 0.2)
+         return
+      end
+      local tAnySecret = false
+      for _, t in ipairs(aTexts) do
+         if tIsSecret(t) then tAnySecret = true end
+      end
+      if not tAnySecret then
+         local tParts = {}
+         for _, t in ipairs(aTexts) do
+            local c = tostring(t):gsub("|T.-|t", ""):gsub("|A.-|a", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("\n", ", ")
+            if c ~= "" then tParts[#tParts + 1] = c end
+         end
+         SkuOptions.Voice:OutputStringBTtts(table.concat(tParts, ", "), true, true, 0.2)
+         return
+      end
+      local tFormat = {}
+      for i = 1, #aTexts do tFormat[i] = "%s" end
+      pcall(function() SkuOptions.Voice:SpeakSecretText(table.concat(tFormat, ", "), unpack(aTexts)) end)
+   end
+
+   local function tFinish(aTexts)
+      if tDone then return end
+      tDone = true
+      pcall(tRestore)
+      tRelease()
+      pcall(tSpeak, aTexts or {})
+   end
+
+   -- safety net: whatever happens, the minimap comes back
+   C_Timer.After(4, function() if not tDone then tFinish({}) end end)
+
+   pcall(SkuCore.GameWorldObjects.GameWorldObjectsCenterMouseCursor, SkuCore.GameWorldObjects, 0.5)
+   C_Timer.After(0.35, function()
+      if tDone then return end
+      if InCombatLockdown() then tFinish({}) return end
+      local ok = pcall(function()
+         pcall(tEnterScanState)
+         MinimapScanner:StoreMinimap()
+         for _, v in pairs(MinimapScanner.minimapChildren) do
+            if v:IsShown() then pcall(v.Hide, v) end
+         end
+         MinimapCluster:SetFrameStrata("HIGH")
+         MinimapCluster:SetFrameLevel(9002)
+         Minimap:SetMouseClickEnabled(false)
+         tSize.w, tSize.h = Minimap:GetSize()
+         GameTooltip:SetAlpha(0)
+         Minimap:SetAlpha(0)
+         Minimap:SetSize(15, 15)
+         Minimap:ClearAllPoints()
+         local cx, cy = GetCursorPosition()
+         Minimap:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx / UIParent:GetScale(), cy / UIParent:GetScale())
+      end)
+      if not ok then tFinish({}) return end
+      -- up to six reads, each after a one-pixel nudge, until the game names something
+      local tTries = 0
+      local function tAttempt()
+         if tDone then return end
+         tTries = tTries + 1
+         local tTexts = tReadTexts()
+         if #tTexts > 0 or tTries >= 6 then
+            tFinish(tTexts)
+         else
+            pcall(tNudge)
+            C_Timer.After(0.05, tAttempt)
+         end
+      end
+      C_Timer.After(0.1, tAttempt)
    end)
 end
 
@@ -938,7 +1478,12 @@ function MinimapScanner:MinimapScanFastStop(aResult)
    -- scan matched to produce it, so the two agree by construction.
    local tRouteScan = MinimapScanner.routeScanSilent
    MinimapScanner.routeScanSilent = nil
-   if SkuCore.GatherRoute and SkuCore.GatherRoute.OnMinimapScanResult then
+   -- A secret name cannot be compared with the route's node: it proves nothing
+   -- either way, so the route is not told.
+   local tSecretInfo = type(aResult) == "table" and aResult or nil
+   local tSecret = tSecretInfo and tSecretInfo.secret or nil
+   if tSecretInfo then aResult = nil end
+   if not tSecret and SkuCore.GatherRoute and SkuCore.GatherRoute.OnMinimapScanResult then
       pcall(SkuCore.GatherRoute.OnMinimapScanResult, SkuCore.GatherRoute, aResult, tRouteScan)
    end
 
@@ -949,6 +1494,17 @@ function MinimapScanner:MinimapScanFastStop(aResult)
       -- start hearing ore names they never asked for. tPrevResult is left
       -- untouched on purpose: it is the announce path's dedup state, and a silent
       -- scan writing to it would swallow the NEXT ambient announcement.
+   elseif tSecret then
+      -- The tail decided (see MinimapScanFast): "name" speaks the names,
+      -- "generic" says a resource is near (it shares the read with another dot,
+      -- and which name is which cannot be told), nothing stays quiet.
+      if tSecretInfo.say == "name" then
+         pcall(function() SkuOptions.Voice:SpeakSecretText("%s", tSecret) end)
+      elseif tSecretInfo.say == "generic" then
+         SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Ressource in der Nähe", "Resource nearby", "Ressource à proximité"), false, true, 0.2)
+      end
+      tPrevResult = SECRET_KEY_PREFIX
+      tEmptyStreak = 0
    elseif aResult then
       if tPrevResult ~= aResult then
          aResult = string.gsub(aResult, "\\", " slash")
@@ -956,8 +1512,15 @@ function MinimapScanner:MinimapScanFastStop(aResult)
          SkuOptions.Voice:OutputStringBTtts(aResult, false, true, 0.2)
          tPrevResult = aResult
       end
+      tEmptyStreak = 0
    else
-      tPrevResult = ""
+      -- Only three empty reads in a row count as "gone": a single read that
+      -- names nothing must not make the same dot be announced again.
+      tEmptyStreak = tEmptyStreak + 1
+      if tEmptyStreak >= 3 then
+         tPrevResult = ""
+         tPassiveSize = nil
+      end
    end
    MinimapScanner.noMouseOverNotification = nil
    MinimapScanner.IsMMScanning = false
@@ -1024,7 +1587,10 @@ function MinimapScanner:MinimapScannerOnLogin()
          self.timeCounter = 0
          return
       end
-      if SkuSettings:Sub("SkuCore").ressourceScanning.notifyOnRessources ~= true then
+      -- 14.11.2026: the passive notifier is replaced by the key "minikarte
+      -- vorlesen" (MinimapReadAll): the minimap names are secret on WoW Forever
+      -- and cannot be filtered, so it would announce every dot while walking.
+      if true then
          return
       end
       if SkuCore.inCombat == true then

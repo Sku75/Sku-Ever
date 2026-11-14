@@ -607,20 +607,9 @@ local beginTime = debugprofilestop()
 
       ttime = ttime + time
       if ttime > 0.05 then
-			--mirror bars
-			for i, v in pairs(SkuCore.aq.mirrorBars) do
-				v.value = GetMirrorTimerProgress(v.name)
-				
-				local tValue = v.value
-				if tValue < 0 then
-					tValue = 0
-				end
-				
-				if math.floor(tValue / (v.maxValue / 100)) <= (v.prevStepPct - v.stepPct) then
-					v.prevStepPct = math.floor(tValue / (v.maxValue / 100))
-					SkuOptions.Voice:OutputStringBTtts(v.label.." "..math.floor(tValue / (v.maxValue / 100)), false, true, 0.2)
-				end
-			end
+			--mirror bars (breath, fatigue, feign death): see Aq:MirrorBarsTick. Under
+			-- pcall: an error in the bars must not stop the health monitors below.
+			pcall(Aq.MirrorBarsTick, Aq)
 			ttime = 0
 		end
 
@@ -912,28 +901,115 @@ end
 
 --mirror bars
 ---------------------------------------------------------------------------------------------------------------------------------------
+-- The game's timer bars: breath under water (BREATH), fatigue in deep water
+-- (EXHAUSTION), feign death (FEIGNDEATH). Rebuilt 14.11.2026 for WoW Forever:
+-- one announcement every 6 seconds while a bar runs down, "Atem 80". The fill
+-- comes from GetMirrorTimerProgress while the game hands it out as a plain
+-- number; if it arrives as a secret value (or not at all), it is worked out
+-- from the time since the bar started and the bar's speed, so the announcement
+-- keeps running either way. A bar that fills again (surfacing) is silent.
+local MIRROR_INTERVAL = 6
+local MIRROR_LABELS = {
+	BREATH = Sku.deEn("Atem", "Breath", "Respiration"),
+	EXHAUSTION = Sku.deEn("Erschöpfung", "Fatigue", "Fatigue"),
+	FEIGNDEATH = Sku.deEn("Totstellen", "Feign death", "Feindre la mort"),
+}
+-- Breath under water lasts a minute when the game does not say otherwise.
+local MIRROR_DEFAULT_MAX = 60000
+
+local function tMirrorPlain(aValue)
+	if type(aValue) ~= "number" then return nil end
+	if Sku.IsSecret and Sku.IsSecret(aValue) then return nil end
+	return aValue
+end
+
+-- The fill in percent, 0..100.
+local function tMirrorPercent(v)
+	local tMax = v.maxMs or MIRROR_DEFAULT_MAX
+	local tProgress
+	if GetMirrorTimerProgress then
+		local ok, p = pcall(GetMirrorTimerProgress, v.name)
+		if ok then tProgress = tMirrorPlain(p) end
+	end
+	if not tProgress then
+		-- Worked out: the bar's start value minus the time it has run, at its speed.
+		local tSpeed = math.abs(v.scale or -1)
+		tProgress = (v.startMs or tMax) - (GetTime() - v.startedAt - (v.pausedFor or 0)) * 1000 * tSpeed
+	end
+	if tMax <= 0 then return nil end
+	if tProgress < 0 then tProgress = 0 end
+	if tProgress > tMax then tProgress = tMax end
+	return math.floor(tProgress * 100 / tMax)
+end
+
+function Aq:MirrorBarsTick()
+	local tNow = GetTime()
+	for _, v in pairs(SkuCore.aq.mirrorBars) do
+		-- BREATH is announced from the character status (SkuCore:AnnounceBreath).
+		if v.name ~= "BREATH" and v.draining and not v.paused and not v.done and tNow >= v.nextAt then
+			v.nextAt = v.nextAt + MIRROR_INTERVAL
+			local tPct = tMirrorPercent(v)
+			if tPct then
+				SkuOptions.Voice:OutputStringBTtts(v.label .. " " .. tPct, false, true, 0.2)
+				if tPct <= 0 then v.done = true end
+			end
+		end
+	end
+end
+
 function Aq:MIRROR_TIMER_START(eventName, timerName, value, maxValue, scale, paused, timerLabel)
-	SkuCore.aq.mirrorBars[timerName] = {}
-	SkuCore.aq.mirrorBars[timerName].name = timerName
-	SkuCore.aq.mirrorBars[timerName].value = value
-	SkuCore.aq.mirrorBars[timerName].maxValue = maxValue
-	SkuCore.aq.mirrorBars[timerName].scale = scale
-	SkuCore.aq.mirrorBars[timerName].paused = paused
-	SkuCore.aq.mirrorBars[timerName].pausedDuration = 0
-	SkuCore.aq.mirrorBars[timerName].label = timerLabel
-	SkuCore.aq.mirrorBars[timerName].stepPct = 10
-	SkuCore.aq.mirrorBars[timerName].prevStepPct = 100
+	if type(timerName) ~= "string" or (Sku.IsSecret and Sku.IsSecret(timerName)) then return end
+	local tScale = tMirrorPlain(scale)
+	local tLabel = MIRROR_LABELS[timerName]
+	if not tLabel then
+		if type(timerLabel) == "string" and not (Sku.IsSecret and Sku.IsSecret(timerLabel)) and timerLabel ~= "" then
+			tLabel = timerLabel
+		else
+			tLabel = timerName
+		end
+	end
+	local tPaused = paused
+	if Sku.IsSecret and Sku.IsSecret(tPaused) then tPaused = nil end
+	SkuCore.aq.mirrorBars[timerName] = {
+		name = timerName,
+		startMs = tMirrorPlain(value),
+		maxMs = tMirrorPlain(maxValue),
+		scale = tScale,
+		-- runs down unless the game says it fills (positive speed)
+		draining = (tScale == nil) or (tScale < 0),
+		paused = (tPaused == true or (type(tPaused) == "number" and tPaused > 0)) and true or false,
+		pausedFor = 0,
+		label = tLabel,
+		startedAt = GetTime(),
+		nextAt = GetTime() + MIRROR_INTERVAL,
+		done = false,
+	}
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
 function Aq:MIRROR_TIMER_STOP(eventName, timerName)
+	if type(timerName) ~= "string" or (Sku.IsSecret and Sku.IsSecret(timerName)) then return end
 	SkuCore.aq.mirrorBars[timerName] = nil
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
 function Aq:MIRROR_TIMER_PAUSE(eventName, timerName, pause)
-	SkuCore.aq.mirrorBars[timerName].paused = true
-	SkuCore.aq.mirrorBars[timerName].pausedDuration = pause
+	if type(timerName) ~= "string" or (Sku.IsSecret and Sku.IsSecret(timerName)) then return end
+	local v = SkuCore.aq.mirrorBars[timerName]
+	if not v then return end
+	local tPause = tMirrorPlain(pause)
+	if tPause == 0 then
+		-- resumed: the paused time does not count for the worked-out fill
+		if v.paused and v.pausedAt then
+			v.pausedFor = (v.pausedFor or 0) + (GetTime() - v.pausedAt)
+			v.nextAt = GetTime() + MIRROR_INTERVAL
+		end
+		v.paused = false
+		v.pausedAt = nil
+	else
+		v.paused = true
+		v.pausedAt = GetTime()
+	end
 end
 
 --global

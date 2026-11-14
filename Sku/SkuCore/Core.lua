@@ -2047,6 +2047,22 @@ function SkuCore:OnEnable()
 		else
 			SkuStatus.submerged = 0
 		end
+		-- Breath under water: while the character is submerged, the breath is asked
+		-- every 6 seconds and the number spoken (SkuCore:AnnounceBreath). Driven by
+		-- the character status, not by the timer events, which WoW Forever no longer
+		-- reliably delivers to Sku.
+		if IsSubmerged() == true then
+			if not SkuStatus.breathSince then
+				SkuStatus.breathSince = GetTime()
+				SkuStatus.breathNextAt = GetTime() + SkuCore.BREATH_INTERVAL
+			elseif GetTime() >= SkuStatus.breathNextAt then
+				SkuStatus.breathNextAt = SkuStatus.breathNextAt + SkuCore.BREATH_INTERVAL
+				pcall(SkuCore.AnnounceBreath, SkuCore)
+			end
+		else
+			SkuStatus.breathSince = nil
+			SkuStatus.breathNextAt = nil
+		end
 		if IsSwimming() == true and SkuStatus.submerged == 0 then
 			if SkuStatus.swimming == 0 then
 				SkuStatus.swimming = GetTime()
@@ -2402,12 +2418,16 @@ function SkuCore:OnEnable()
 
 		if SkuOptions:SkuKeyBindsMatchKey(aKey, "SKU_KEY_NOTIFYONRESOURCES") then
 			dprint("SKU_KEY_NOTIFYONRESOURCES")
-			if SkuSettings:Sub("SkuCore").ressourceScanning.notifyOnRessources == true then
-				SkuSettings:Sub("SkuCore").ressourceScanning.notifyOnRessources = false
-				SkuOptions.Voice:OutputStringBTtts(L["notify On Ressources"].." "..L["Off"], true, true, 0.2, true, nil, nil, 2)
-			else
-				SkuSettings:Sub("SkuCore").ressourceScanning.notifyOnRessources = true
-				SkuOptions.Voice:OutputStringBTtts(L["notify On Ressources"].." "..L["On"], true, true, 0.2, true, nil, nil, 2)
+			-- 14.11.2026: the automatic announcement while walking is replaced by the
+			-- key "minikarte vorlesen" (SKU_KEY_MMREAD): on WoW Forever the minimap
+			-- names are secret and cannot be filtered, so it would speak everything.
+			SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Die automatische Ansage ist ersetzt durch minikarte vorlesen",
+				"The automatic announcement is replaced by read minimap", "L'annonce automatique est remplacée par lire la minicarte"), true, true, 0.2, true, nil, nil, 2)
+		end
+
+		if SkuOptions:SkuKeyBindsMatchKey(aKey, "SKU_KEY_MMREAD") then
+			if SkuCore.MinimapScanner and SkuCore.MinimapScanner.MinimapReadAll then
+				SkuCore.MinimapScanner:MinimapReadAll()
 			end
 		end
 
@@ -2503,6 +2523,7 @@ function SkuCore:OnEnable()
 		tArm("SKU_KEY_PANICMODE")
 		tArm("SKU_KEY_MMSCANWIDE")
 		tArm("SKU_KEY_MMSCANNARROW")
+		tArm("SKU_KEY_MMREAD")
 		tArm("SKU_KEY_GROUPMEMBERSRANGECHECK")
 		tArm("SKU_KEY_TAXICANCEL")
 		for x = 1, 6 do
@@ -3648,6 +3669,71 @@ function SkuCore:PLAYER_ENTERING_WORLD(...)
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
+-- Breath under water, spoken as "Atem <percent>" (called every SkuCore.BREATH_INTERVAL
+-- seconds from the status loop while submerged). The number is asked from the
+-- game each time (GetMirrorTimerProgress("BREATH"), milliseconds left):
+--   * a plain number: percent of the bar's full length;
+--   * a secret number (WoW Forever): it cannot be divided, so it goes through a
+--     curve (0 ms -> 0, full -> 100), the only arithmetic allowed on a secret,
+--     and the result straight to the speech output (as SkuCore:SpeakPetHealth);
+--   * no answer at all: worked out from the time under water.
+-- With a readable timer list and no breath bar in it (water breathing) it stays silent.
+SkuCore.BREATH_INTERVAL = 6
+local BREATH_DEFAULT_MAX = 60000
+local tBreathCurve, tBreathCurveMax
+
+function SkuCore:AnnounceBreath()
+	local tLabel = Sku.deEn("Atem", "Breath", "Respiration")
+	local tMax, tSeen, tUnknown = nil, false, false
+	if GetMirrorTimerInfo then
+		for tIndex = 1, 3 do
+			local ok, tName, _, tMaxValue = pcall(GetMirrorTimerInfo, tIndex)
+			if ok and tName ~= nil then
+				if Sku.IsSecret(tName) then
+					tUnknown = true
+				elseif tName == "BREATH" then
+					tSeen = true
+					if type(tMaxValue) == "number" and not Sku.IsSecret(tMaxValue) and tMaxValue > 0 then tMax = tMaxValue end
+				end
+			end
+		end
+	else
+		tUnknown = true
+	end
+	if not tSeen and not tUnknown then return end
+	tMax = tMax or BREATH_DEFAULT_MAX
+
+	local okP, tProgress = pcall(GetMirrorTimerProgress, "BREATH")
+	if okP and tProgress ~= nil then
+		if not Sku.IsSecret(tProgress) and type(tProgress) == "number" then
+			if tProgress < 0 then tProgress = 0 end
+			if tProgress > tMax then tProgress = tMax end
+			SkuOptions.Voice:OutputStringBTtts(tLabel .. " " .. math.floor(tProgress * 100 / tMax), false, true, 0.2)
+			return
+		end
+		if C_CurveUtil and C_CurveUtil.CreateCurve then
+			if not tBreathCurve or tBreathCurveMax ~= tMax then
+				tBreathCurve = C_CurveUtil.CreateCurve()
+				tBreathCurve:SetType(Enum.LuaCurveType.Linear)
+				tBreathCurve:AddPoint(0, 0)
+				tBreathCurve:AddPoint(tMax, 100)
+				tBreathCurveMax = tMax
+			end
+			local okC, tPct = pcall(tBreathCurve.Evaluate, tBreathCurve, tProgress)
+			if okC and tPct ~= nil then
+				local okS = pcall(function() SkuOptions.Voice:SpeakSecretText(tLabel .. " %d", tPct) end)
+				if okS then return end
+			end
+		end
+	end
+
+	-- No usable answer: worked out from the time under water.
+	local tLeft = tMax - (GetTime() - (SkuStatus.breathSince or GetTime())) * 1000
+	if tLeft < 0 then tLeft = 0 end
+	SkuOptions.Voice:OutputStringBTtts(tLabel .. " " .. math.floor(tLeft * 100 / tMax), false, true, 0.2)
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------
 -- Is the breath bar up? Clients with the MirrorTimer1 frame: its visibility (unchanged). Forever has no such frame
 -- (its mirror timers live in a container), so there the timer API says it: some timer with the name BREATH.
 function SkuCore:IsBreathTimerActive()
@@ -3658,6 +3744,9 @@ function SkuCore:IsBreathTimerActive()
 	if GetMirrorTimerInfo then
 		for tIndex = 1, 3 do
 			local tName = GetMirrorTimerInfo(tIndex)
+			-- A secret name cannot be compared (WoW Forever): then a running bar
+			-- cannot be ruled out, and the caller already knows we are under water.
+			if tName ~= nil and Sku.IsSecret(tName) then return true end
 			if tName == "BREATH" then return true end
 		end
 	end
