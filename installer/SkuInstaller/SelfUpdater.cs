@@ -41,10 +41,11 @@ namespace SkuInstaller
     /// process id — which is what every other approach spends its complexity on.
     ///
     /// WHAT IT REFUSES TO DO.
-    ///   - It only ever self-updates the PERSISTENT copy. The exe the user just
-    ///     downloaded into Downloads is by definition the newest one the website
-    ///     serves, and silently rewriting a file in someone's Downloads folder is
-    ///     not ours to do.
+    ///   - It never rewrites a file outside its own folder. Every copy checks,
+    ///     the persistent one and a downloaded one alike (a downloaded exe can be
+    ///     days old when it is finally run). A downloaded copy puts the new
+    ///     version into the persistent folder and restarts from there; the file
+    ///     in Downloads or on the desktop stays untouched.
     ///   - It never runs an unverified binary: the published SHA-256 must match,
     ///     and the downloaded file's own version resource must be newer than ours.
     ///     Any mismatch aborts the swap.
@@ -85,6 +86,19 @@ namespace SkuInstaller
 
         private static string RunningExe => Assembly.GetExecutingAssembly().Location;
 
+        private static bool RunningFromPersistentCopy =>
+            string.Equals(RunningExe, Shortcut.PersistentExe, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// The exe a self-update replaces and restarts: ourselves when we are the
+        /// persistent copy, otherwise the persistent copy in %LOCALAPPDATA%.
+        /// </summary>
+        internal static string TargetExe => TargetOverride ??
+            (RunningFromPersistentCopy ? RunningExe : Shortcut.PersistentExe);
+
+        /// <summary>Test hook for SkuSelfTest's swap proof (rename the running harness).</summary>
+        internal static string TargetOverride;
+
         /// <summary>
         /// Housekeeping for the run that follows a swap: drop the renamed old exe
         /// and remember what to announce. Also runs when NO update happened, so a
@@ -102,7 +116,7 @@ namespace SkuInstaller
             // below would point at somebody else's directory, and deleting files
             // there because they happen to match a name we chose is not a licence
             // we have.
-            if (!string.Equals(RunningExe, Shortcut.PersistentExe, StringComparison.OrdinalIgnoreCase))
+            if (!RunningFromPersistentCopy)
                 return;
 
             // A download that was cancelled or died leaves its staging file
@@ -153,12 +167,8 @@ namespace SkuInstaller
             if (HasSwitch(args, UpdatedSwitch))
                 return false;   // we ARE the update; do not immediately look again
 
-            string running = RunningExe;
-            if (!string.Equals(running, Shortcut.PersistentExe, StringComparison.OrdinalIgnoreCase))
-            {
-                Logger.Info($"Not the persistent copy ({running}); skipping the self-update check.");
-                return false;
-            }
+            if (!RunningFromPersistentCopy)
+                Logger.Info($"Running from {RunningExe}; a newer installer would go to {Shortcut.PersistentExe}.");
 
             return true;
         }
@@ -348,9 +358,17 @@ namespace SkuInstaller
         /// </summary>
         public static void Apply(string staged)
         {
-            string running = RunningExe;
+            string running = TargetExe;
             string backup = SiblingPath(BackupName);
             if (backup == null) throw new IOException("Could not determine the updater folder.");
+
+            if (!File.Exists(running))
+            {
+                // Downloaded copy, no persistent copy yet: nothing to step aside.
+                File.Move(staged, running);
+                Logger.Info($"New updater version placed at {running}.");
+                return;
+            }
 
             if (File.Exists(backup) && !TryDelete(backup))
                 throw new IOException("The previous version could not be cleared out of the way.");
@@ -377,7 +395,7 @@ namespace SkuInstaller
         /// </summary>
         public static void RestartAndExit(string[] args)
         {
-            string running = RunningExe;
+            string running = TargetExe;
             var forwarded = new StringBuilder();
             foreach (var a in args ?? new string[0])
             {
@@ -403,8 +421,10 @@ namespace SkuInstaller
         {
             try
             {
-                string dir = Path.GetDirectoryName(RunningExe);
-                return string.IsNullOrEmpty(dir) ? null : Path.Combine(dir, name);
+                string dir = Path.GetDirectoryName(TargetExe);
+                if (string.IsNullOrEmpty(dir)) return null;
+                Directory.CreateDirectory(dir);
+                return Path.Combine(dir, name);
             }
             catch { return null; }
         }

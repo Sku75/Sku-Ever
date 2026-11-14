@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -81,6 +81,12 @@ namespace SkuInstaller
             if (args.Length > 0 && args[0] == "versionfile")
             {
                 RunVersionFileTest(args.Length > 1 ? args[1] : null);
+                return;
+            }
+
+            if (args.Length > 0 && args[0] == "downloadedcopy")
+            {
+                RunDownloadedCopyTest(args.Length > 1 ? args[1] : "0.1");
                 return;
             }
 
@@ -258,6 +264,70 @@ namespace SkuInstaller
         }
 
         /// <summary>
+        /// The path a DOWNLOADED (non-persistent) copy takes: check online, stage
+        /// the new exe in the persistent folder, put it there, and name it as the
+        /// exe to restart. The persistent folder is redirected into %TEMP%, so the
+        /// real updater in %LOCALAPPDATA% is never touched. The restart itself is
+        /// not performed (it would need elevation and a window).
+        /// </summary>
+        private static void RunDownloadedCopyTest(string poseAs)
+        {
+            string sandbox = Path.Combine(Path.GetTempPath(), "SkuEverDownloadedCopyTest");
+            try { if (Directory.Exists(sandbox)) Directory.Delete(sandbox, true); } catch { }
+            Shortcut.DirOverride = sandbox;
+
+            Console.WriteLine("=== Downloaded copy self-update ===");
+            Console.WriteLine($"    running from    : {System.Reflection.Assembly.GetExecutingAssembly().Location}");
+            Console.WriteLine($"    persistent dir  : {sandbox}");
+            Console.WriteLine($"    posing as       : {poseAs}");
+
+            bool ok = true;
+            ok &= Expect("check allowed for a downloaded copy", true, SelfUpdater.ShouldCheck(new string[0]));
+            ok &= Expect("target is the persistent exe", true,
+                         string.Equals(SelfUpdater.TargetExe, Shortcut.PersistentExe, StringComparison.OrdinalIgnoreCase));
+
+            var info = SelfUpdater.Check(poseAs);
+            ok &= Expect("update offered", true, info != null);
+            if (info != null)
+            {
+                Console.WriteLine($"    offered         : {info.Version}");
+                try
+                {
+                    string staged = SelfUpdater.DownloadAsync(info, null, CancellationToken.None)
+                                               .GetAwaiter().GetResult();
+                    ok &= Expect("staged inside persistent dir", true,
+                                 string.Equals(Path.GetDirectoryName(staged), sandbox, StringComparison.OrdinalIgnoreCase));
+                    SelfUpdater.Apply(staged);
+                    string placed = Shortcut.PersistentExe;
+                    string ver = File.Exists(placed)
+                        ? System.Diagnostics.FileVersionInfo.GetVersionInfo(placed).FileVersion : "(missing)";
+                    Console.WriteLine($"    placed          : {placed} ({ver})");
+                    ok &= Expect("new exe placed in persistent dir", true, File.Exists(placed));
+                    ok &= Expect("placed exe is the offered version", true,
+                                 AddonInstaller.CompareVersions(ver, info.Version) == 0);
+                    ok &= Expect("running exe untouched", true,
+                                 File.Exists(System.Reflection.Assembly.GetExecutingAssembly().Location));
+
+                    // Second round: a persistent copy now exists and must be stepped aside.
+                    string staged2 = SelfUpdater.DownloadAsync(info, null, CancellationToken.None)
+                                                .GetAwaiter().GetResult();
+                    SelfUpdater.Apply(staged2);
+                    ok &= Expect("existing persistent copy replaced, old one set aside", true,
+                                 File.Exists(placed) && File.Exists(Path.Combine(sandbox, "SkuEverUpdater.old.exe")));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"    FAIL: {ex.Message}");
+                    ok = false;
+                }
+            }
+
+            try { Directory.Delete(sandbox, true); } catch { }
+            Console.WriteLine(ok ? "    PASS" : "    FAIL");
+            if (!ok) Environment.ExitCode = 1;
+        }
+
+        /// <summary>
         /// Reads a version file exactly as the installer would, and checks that
         /// what came out is usable. Point it at installer\dist\installer-version.txt
         /// after release.ps1 has written one (that is the default).
@@ -423,16 +493,17 @@ namespace SkuInstaller
             if (isChild)
             {
                 string running = System.Reflection.Assembly.GetExecutingAssembly().Location;
-                string staged = Path.Combine(Path.GetDirectoryName(running) ?? "", "SkuUpdater.new.exe");
+                string staged = Path.Combine(Path.GetDirectoryName(running) ?? "", "SkuEverUpdater.new.exe");
                 Console.WriteLine($"    child running from : {running}");
 
                 // Stand in for a downloaded exe. Content is irrelevant to the
                 // swap; being a real file in the same folder is not.
                 File.Copy(running, staged, overwrite: true);
 
+                SelfUpdater.TargetOverride = running;
                 SelfUpdater.Apply(staged);
 
-                string backup = Path.Combine(Path.GetDirectoryName(running) ?? "", "SkuUpdater.old.exe");
+                string backup = Path.Combine(Path.GetDirectoryName(running) ?? "", "SkuEverUpdater.old.exe");
                 bool inPlace = File.Exists(running);
                 bool steppedAside = File.Exists(backup);
                 bool stagingGone = !File.Exists(staged);

@@ -23,7 +23,10 @@ namespace SkuInstaller
         public const string UpdaterExeName = "SkuEverUpdater.exe";
         public const string ShortcutName = "Sku-Ever Updater.lnk";
 
-        public static string PersistentDir =>
+        /// <summary>Test hook for SkuSelfTest: a throwaway folder instead of %LOCALAPPDATA%.</summary>
+        internal static string DirOverride;
+
+        public static string PersistentDir => DirOverride ??
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                          UpdaterDirName);
 
