@@ -38,8 +38,19 @@ end
 -- starts. The value is secret, so it cannot be compared against a threshold ("only below 50 %"); a fixed interval is the only
 -- thing that can be decided without reading it. The key (SKU_KEY_PETHEALTH) works as before, whatever this setting says.
 ---------------------------------------------------------------------------------------------------------------------------------------
-local PET_HEALTH_AUTO_INTERVAL = 10
+local PET_HEALTH_AUTO_INTERVAL = 10   -- default; the player can choose one of PET_HEALTH_INTERVALS (setting petHealthInterval)
 local PET_HEALTH_AUTO_FIRST = 4
+local PET_HEALTH_INTERVALS = {5, 10, 15, 20}
+
+local function tPetHealthInterval()
+	if not (SkuSettings and SkuSettings.Get) then return PET_HEALTH_AUTO_INTERVAL end
+	local tOk, tVal = pcall(SkuSettings.Get, SkuSettings, "SkuCore", "petHealthInterval")
+	if not tOk or type(tVal) ~= "number" then return PET_HEALTH_AUTO_INTERVAL end
+	for _, v in ipairs(PET_HEALTH_INTERVALS) do
+		if v == tVal then return tVal end
+	end
+	return PET_HEALTH_AUTO_INTERVAL
+end
 
 local function tPetHealthAutoEnabled()
 	if not Sku.isForever then return false end
@@ -80,7 +91,7 @@ tPetHealthAutoFrame:SetScript("OnEvent", function(self, aEvent)
 			tPetHealthFirst = nil
 			tPetHealthAutoTick()
 			if UnitAffectingCombat("player") then
-				tPetHealthTicker = C_Timer.NewTicker(PET_HEALTH_AUTO_INTERVAL, tPetHealthAutoTick)
+				tPetHealthTicker = C_Timer.NewTicker(tPetHealthInterval(), tPetHealthAutoTick)
 			end
 		end)
 	end
@@ -90,9 +101,9 @@ end)
 function SkuCore.PetHealthAutoMenuBuilder(aParentEntry)
 	if not Sku.isForever then return end
 	local tNewMenuEntry = SkuOptions:InjectMenuItems(aParentEntry, {
-		Sku.deEn("Pet-Gesundheit im Kampf automatisch ansagen (alle 10 Sekunden)",
-			"Announce pet health automatically in combat (every 10 seconds)",
-			"Annoncer automatiquement la santé du familier en combat (toutes les 10 secondes)"),
+		Sku.deEn("Pet-Gesundheit im Kampf automatisch ansagen",
+			"Announce pet health automatically in combat",
+			"Annoncer automatiquement la santé du familier en combat"),
 	}, SkuGenericMenuItem)
 	tNewMenuEntry.sorting = true
 	tNewMenuEntry.GetCurrentValue = function(self, aValue, aName)
@@ -110,4 +121,34 @@ function SkuCore.PetHealthAutoMenuBuilder(aParentEntry)
 		end
 	end
 	SkuOptions:MakeInPlaceToggle(tNewMenuEntry, L["No"], L["Yes"])
+
+	-- Interval between the announcements (5, 10, 15 or 20 seconds). Takes effect with the next fight.
+	local function tLabel(aSeconds)
+		return aSeconds..Sku.deEn(" Sekunden", " seconds", " secondes")
+	end
+	local tIntervalEntry = SkuOptions:InjectMenuItems(aParentEntry, {
+		Sku.deEn("Pet-Gesundheit im Kampf: Abstand der Ansagen",
+			"Pet health in combat: time between announcements",
+			"Santé du familier en combat : intervalle entre les annonces"),
+	}, SkuGenericMenuItem)
+	tIntervalEntry.sorting = true
+	tIntervalEntry.isSelect = true
+	tIntervalEntry.dynamic = true
+	tIntervalEntry.GetCurrentValue = function(self, aValue, aName)
+		return tLabel(tPetHealthInterval())
+	end
+	tIntervalEntry.OnAction = function(self, aValue, aName)
+		local tSeconds = tonumber(string.match(tostring(aName or ""), "%d+"))
+		for _, v in ipairs(PET_HEALTH_INTERVALS) do
+			if v == tSeconds then
+				SkuSettings:Set("SkuCore", "petHealthInterval", v)
+				return
+			end
+		end
+	end
+	tIntervalEntry.BuildChildren = function(self)
+		for _, v in ipairs(PET_HEALTH_INTERVALS) do
+			SkuOptions:InjectMenuItems(self, {tLabel(v)}, SkuGenericMenuItem)
+		end
+	end
 end

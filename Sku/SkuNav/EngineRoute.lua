@@ -704,7 +704,29 @@ local function tSameNameNear(aByName, t)
 	return false
 end
 
-local function tTargetsWithoutSku(aGroup, aGrid, px, py, aMaxDist, aNamed)
+-- [Multi-floor NPCs, 15.11.2026] An NPC (quest giver, trainer, vendor ...) that stands where the map has several floors (Tower of Azora:
+-- the enchanting trainer is on the top floor) is ALSO offered as an engine target when Sku has a waypoint for it: Sku's way to its
+-- waypoint (no height) can end on the wrong floor, the engine way ends on the NPC's own floor. Only in the target lists (aReachable given).
+local NON_NPC_KINDS = {Kreatur = true, Objekt = true, Kraut = true, Erzvorkommen = true, Angelplatz = true, Portal = true}
+local tMultiFloorCache = setmetatable({}, {__mode = "k"})
+local function tMultiFloor(t)
+	local c = tMultiFloorCache[t]
+	if c == nil then
+		local tBands = tNet().HeightBands(t[1], t[2]) or {}
+		local tMids = {}
+		for _, b in ipairs(tBands) do tMids[#tMids + 1] = (b.zMin + b.zMax) / 2 end
+		table.sort(tMids)
+		local tLayers = 0
+		for i, z in ipairs(tMids) do
+			if i == 1 or z - tMids[i - 1] > 2 then tLayers = tLayers + 1 end
+		end
+		c = tLayers > 1
+		tMultiFloorCache[t] = c
+	end
+	return c
+end
+
+local function tTargetsWithoutSku(aGroup, aGrid, px, py, aMaxDist, aNamed, aMultiFloor)
 	local rBest, rOrder = {}, {}
 	for _, t in ipairs(_G.SkuEngineTargets[aGroup.key] or {}) do
 		local tShow
@@ -715,6 +737,7 @@ local function tTargetsWithoutSku(aGroup, aGrid, px, py, aMaxDist, aNamed)
 		else
 			tShow = not tNearGrid(aGrid, t[1], t[2])
 		end
+		if not tShow and aMultiFloor and not NON_NPC_KINDS[t[5]] and tMultiFloor(t) then tShow = true end
 		if tShow then
 			local tName = (Sku.Loc == "deDE") and t[3] or t[4]
 			local tKind = (Sku.Loc == "deDE") and t[5] or (t[6] or t[5])
@@ -755,7 +778,7 @@ function Engine:ListTargets(aReachable)
 	end
 	local tNamed = self:SkuNamedPositions()
 	local tMaxDist = tMaxDistance()
-	for _, t in ipairs(tTargetsWithoutSku(tGroup, tPosGrid({tSkuNear, tNamed}), px, py, tMaxDist, tNamed)) do
+	for _, t in ipairs(tTargetsWithoutSku(tGroup, tPosGrid({tSkuNear, tNamed}), px, py, tMaxDist, tNamed, aReachable ~= nil)) do
 		t.dist = math.floor(t.dist)
 		rList[#rList + 1] = t
 	end

@@ -608,6 +608,7 @@ SkuCore.defaults = {
 	-- view/dive with the mouse while swimming turn it off here.
 	pitchLockAuto = true,
 	petHealthAuto = true,
+	petHealthInterval = 10,
 	turnToUnit = {
 		speed = 6,
 		soundOnSuccess = "sound-waterdrop5",
@@ -722,6 +723,7 @@ SkuSettings:Register("SkuCore", {
 	-- Einstellungen -> Allgemein (SkuCore.PitchLockAutoMenuBuilder).
 	["pitchLockAuto"]                             = { scope = "profile", default = true, type = "boolean" },
 	["petHealthAuto"]                             = { scope = "profile", default = true, type = "boolean" },
+	["petHealthInterval"]                         = { scope = "profile", default = 10, type = "number" },
 	-- Gather routes (SkuCore/gatherRoute.lua). Their menu lives inside
 	-- Einstellungen -> Scan -> Ressourcen Scan -> Sammelrouten and is built by
 	-- SkuCore.GatherRoute:MenuBuilder, so these three carry no option node here.

@@ -2,6 +2,28 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.33 (15.11.2026)
+
+### Kurzfassung
+- Mehrstöckige NPCs (zum Beispiel die Verzauberkunst-Lehrerin im Turm von Azora) stehen in den Routenlisten jetzt zusätzlich als Engine-Ziel, auch wenn Sku einen Wegpunkt dafür hat. Der Engine-Weg endet auf der Etage des NPCs (Engine 12).
+- Das Datenpaket (Quests, NPCs, Objekte) ist mit QuestieDB 1.1.1 neu gebaut: 1649 Quests und 3261 NPCs, dazu Quest-Korrekturen aus der neuen Datenbank.
+- Neue Einstellung: Abstand der automatischen Pet-Gesundheitsansage im Kampf, wählbar 5, 10, 15 oder 20 Sekunden (Standard 10).
+
+### Neu: Mehrstöckige NPCs als Engine-Ziel
+Was: Skus Wegpunkte haben keine Höhe, ein Sku-Weg zu einem NPC in einem mehrstöckigen Gebäude kann auf der falschen Etage enden. Die Engine kennt die Etage des NPCs. Bisher blendete sie ihr Ziel aus, sobald Sku einen Wegpunkt in der Nähe hatte.
+Wie: SkuNav/EngineRoute.lua (tMultiFloor, NON_NPC_KINDS): Lehrer, Questgeber, Händler und ähnliche NPCs an Stellen mit mehreren Etagen werden in der Zielliste (Umschalt-F10) zusätzlich als Engine-Eintrag gezeigt. Skus eigene Einträge bleiben unverändert; die Einstiegspunkte ändern sich nicht. Folge: solche NPCs stehen zweimal in der Liste (Sku und Engine).
+
+### Verbessert: Datenpaket mit QuestieDB 1.1.1
+Was: Aktualisierte Quest-, NPC-, Objekt- und Gegenstandsdaten, Quest-XP und Übersetzungen aus QuestieDB 1.1.1.
+Wie: navpack/build_dbpack.py mit der neuen Datenbank neu gebaut, danach die Quest-Korrekturen und das Ausblenden technischer Platzhalter-NPCs wie bisher angewendet. Die Objekt-Nummern blieben stabil (14 neue), die Wegpakete bleiben gültig. SkuPacks/DataPack_ForeverQuests.lua.
+
+### Neu: Abstand der Pet-Ansage einstellbar
+Was: Einstellungen, Allgemein: "Pet-Gesundheit im Kampf: Abstand der Ansagen" mit 5, 10, 15 oder 20 Sekunden. Gilt ab dem nächsten Kampf. Ein Schwellenwert (nur unter 30 Prozent) ist nicht möglich, weil der Wert auf Forever geheim ist.
+Wie: SkuCore/petHealth.lua (tPetHealthInterval) und SkuCore/Options.lua (Einstellung petHealthInterval, Standard 10).
+
+### Engine-Nummer
+Engine 12. Alle SkuEngineXX-Addons und SkuPacks tragen die neue Revision.
+
 ## Sku-Ever 0.32 (15.11.2026)
 
 ### Kurzfassung
