@@ -343,6 +343,13 @@ end
 -- name. As the entry points of Sku are the nearest waypoints. Returns {{x, y, name, kind, dist}, ...}, nearest first. (The engine
 -- routes from where the player stands; the entry point only names the place and carries the floor question.)
 function Engine:EntryPoints(aMax)
+	-- [Quest book speed, 15.11.2026] ~65 ms per call and called again for every step through the quest menu: kept for 10 s while the
+	-- player stands on the same spot (the result only depends on the position).
+	local px, py = UnitPosition("player")
+	local tC = self.entryPointsCache
+	if tC and tC.x == px and tC.y == py and tC.max == aMax and (GetTime() - tC.time) < 10 then
+		return tC.list
+	end
 	local rList, tSeen = {}, {}
 	for _, t in ipairs(self:ListTargets(nil)) do
 		local tKey = string.lower(t.name)
@@ -352,6 +359,9 @@ function Engine:EntryPoints(aMax)
 			if #rList >= aMax then break end
 		end
 	end
+	if type(px) == "number" and type(py) == "number" then
+		self.entryPointsCache = {x = px, y = py, max = aMax, time = GetTime(), list = rList}
+	end
 	return rList
 end
 
@@ -359,6 +369,18 @@ end
 -- waypoint (quest book "Annahme", route lists) has no height and its position differs a little from the catalog (map percent, rounding),
 -- so the exact match (0.5 yd) failed and the route went to the nearest of ALL floors at (x, y): a tower with 7 floors (Tower of Azora)
 -- ended on the wrong floor. Now: the exact match first; else the nearest catalog target of the SAME NAME within SNAP_YD.
+-- [Special targets, 15.11.2026] Targets the catalog does not have (no NPC, no node of the engine): {x, y, nameDe, nameEn, kindDe, kindEn,
+-- nil, z}. They are added to the catalog of their group. The 8th field is the height of the floor the target lies on: the route ends on
+-- that floor (without it the shortest of all floors at (x, y) wins, which is the wrong one where floors lie on top of each other).
+local EXTRA_TARGETS = {}   -- empty: the only entry (warlock summoning circle, Stormwind) was tried in the game on 15.11.2026 and taken out again
+local tExtrasDone = {}
+local function tEnsureExtras(aGroup)
+	local tList = _G.SkuEngineTargets and _G.SkuEngineTargets[aGroup.key]
+	if not tList or tExtrasDone[tList] then return end
+	tExtrasDone[tList] = true
+	for _, t in ipairs(EXTRA_TARGETS[aGroup.key] or {}) do tList[#tList + 1] = t end
+end
+
 local SNAP_YD = 10
 local function tSnapNorm(aName)
 	local r = string.lower(aName)
@@ -367,6 +389,7 @@ local function tSnapNorm(aName)
 	return (string.gsub(string.gsub(r, "^ ", ""), " $", ""))
 end
 local function tCatalogTargetFor(aGroup, aTx, aTy, aName)
+	tEnsureExtras(aGroup)
 	local tList = _G.SkuEngineTargets and _G.SkuEngineTargets[aGroup.key] or {}
 	for _, t in ipairs(tList) do
 		if math.abs(t[1] - aTx) < 0.5 and math.abs(t[2] - aTy) < 0.5 then return t end
@@ -430,7 +453,17 @@ function Engine:Route(aTx, aTy, aFloorZ, aName)
 				end
 			end
 		end
-		for _, band in ipairs(not best and N.HeightBands(aTx, aTy) or {}) do
+		local tBands = not best and N.HeightBands(aTx, aTy) or {}
+		if tCat and tCat[8] and #tBands > 1 then
+			-- special target with its own floor: only the floor of that height (within 6 yd)
+			local tOne, tOneD
+			for _, band in ipairs(tBands) do
+				local d = math.abs((band.zMin + band.zMax) / 2 - tCat[8])
+				if not tOneD or d < tOneD then tOne, tOneD = band, d end
+			end
+			if tOne and tOneD <= 6 then tBands = {tOne} end
+		end
+		for _, band in ipairs(tBands) do
 			local tz = (band.zMin + band.zMax) / 2
 			local goal = N.Bind(aTx, aTy, tz)
 			if goal then
@@ -659,7 +692,7 @@ end
 --   * kinds Sku's own data does not have at all (dungeon entrances, public transport = landings, ships, trams): always offered.
 --   * quest giver targets (kind "Questgeber...") and targets that are the goal of a quest (7th field = 1: monsters, objects, kill credits;
 --     set by navpack/mark_questtargets.py): hidden only by a Sku waypoint of the SAME name within the radius (a true duplicate).
-local ALWAYS_OFFER_KINDS = {Dungeoneingang = true, Verkehr = true}
+local ALWAYS_OFFER_KINDS = {Dungeoneingang = true, Verkehr = true, Sonderziel = true}
 
 -- Names are compared without brackets and case: the catalog says "Thor (Greifenmeister)", Sku's own waypoint says "Thor Greifenmeister"
 -- (14.11.2026: the Gryphon Master stood twice in the lists).
@@ -707,7 +740,7 @@ end
 -- [Multi-floor NPCs, 15.11.2026] An NPC (quest giver, trainer, vendor ...) that stands where the map has several floors (Tower of Azora:
 -- the enchanting trainer is on the top floor) is ALSO offered as an engine target when Sku has a waypoint for it: Sku's way to its
 -- waypoint (no height) can end on the wrong floor, the engine way ends on the NPC's own floor. Only in the target lists (aReachable given).
-local NON_NPC_KINDS = {Kreatur = true, Objekt = true, Kraut = true, Erzvorkommen = true, Angelplatz = true, Portal = true}
+local NON_NPC_KINDS = {Sonderziel = true, Kreatur = true, Objekt = true, Kraut = true, Erzvorkommen = true, Angelplatz = true, Portal = true}
 local tMultiFloorCache = setmetatable({}, {__mode = "k"})
 local function tMultiFloor(t)
 	local c = tMultiFloorCache[t]
@@ -728,6 +761,7 @@ end
 
 local function tTargetsWithoutSku(aGroup, aGrid, px, py, aMaxDist, aNamed, aMultiFloor)
 	local rBest, rOrder = {}, {}
+	tEnsureExtras(aGroup)
 	for _, t in ipairs(_G.SkuEngineTargets[aGroup.key] or {}) do
 		local tShow
 		if ALWAYS_OFFER_KINDS[t[5]] then
@@ -959,4 +993,3 @@ if Sku.isForever and CreateFrame and C_Timer then
 		end)
 	end)
 end
-

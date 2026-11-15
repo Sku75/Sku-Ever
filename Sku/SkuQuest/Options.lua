@@ -1279,8 +1279,19 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 	end
 
 	local tPlayX, tPlayY = UnitPosition("player")
-	local tRoutesInRange = SkuNav:GetAllLinkedWPsInRangeToCoords(tPlayX, tPlayY, SkuNav.MaxMetaEntryRange)--SkuOptions.db.profile["SkuNav"].nearbyWpRange)
-	
+	-- [Quest book speed, 15.11.2026] This scan costs ~60 ms and was repeated for every step through the quest menu (Annahme, Ziel,
+	-- Abgabe, ...) although the player had not moved: the result is kept for 10 s while position and range stay the same.
+	local tRoutesInRange
+	local tRangeNow = SkuNav.MaxMetaEntryRange
+	local tCache = SkuQuest.routesInRangeCache
+	local tNow = GetTime()
+	if tCache and tCache.x == tPlayX and tCache.y == tPlayY and tCache.range == tRangeNow and (tNow - tCache.time) < 10 then
+		tRoutesInRange = tCache.result
+	else
+		tRoutesInRange = SkuNav:GetAllLinkedWPsInRangeToCoords(tPlayX, tPlayY, tRangeNow)--SkuOptions.db.profile["SkuNav"].nearbyWpRange)
+		SkuQuest.routesInRangeCache = type(tRoutesInRange) == "table" and {x = tPlayX, y = tPlayY, range = tRangeNow, time = tNow, result = tRoutesInRange} or nil
+	end
+
 	local tHasContent = false
 	for unitGeneralName, wpTable in pairs(tResultWPs) do
 		--dprint(unitGeneralName, wpTable)

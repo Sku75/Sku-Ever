@@ -2,6 +2,24 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.34 (15.11.2026)
+
+### Kurzfassung
+- Das Questbuch baut seine Routenlisten schneller auf: Der Routen-Scan (etwa 60 ms) und die Engine-Einstiegspunkte (etwa 65 ms) werden nicht mehr bei jedem Schritt durch das Questmenü neu berechnet.
+- Die Aktualisierung der Quest-Marker läuft in Salven (3 bis 9 Aufrufe pro Sekunde) nur noch einmal pro Sekunde, das beseitigt kurzes Ruckeln.
+- Engine 14 (kleiner Unterbau für Sonderziele, ohne sichtbare Änderung).
+
+### Verbessert: Questbuch, Routenliste
+Was: Beim Durchgehen eines Questziels (Annahme, Ziel, Abgabe) wurde bei jedem Schritt derselbe Routen-Scan in der Umgebung (etwa 62 ms, vier Mal hintereinander) und die Berechnung der Engine-Einstiegspunkte (etwa 65 ms) wiederholt, obwohl der Spieler stillstand.
+Wie: SkuQuest/Options.lua (CreateRtWpSubmenu) merkt sich das Ergebnis des Scans 10 Sekunden, solange Position und Reichweite gleich bleiben. SkuNav/EngineRoute.lua (Engine:EntryPoints) merkt sich die Einstiegspunkte ebenso 10 Sekunden pro Position. Gemessen mit einer temporären Zeitmessung, die nicht im Release ist.
+
+### Verbessert: Quest-Marker ruckeln nicht mehr
+Was: Quest-Ereignisse kommen in Salven; jeder Aufruf der Marker-Aktualisierung kostete etwa 11 ms, bis zu neun Mal in einer Sekunde.
+Wie: SkuQuest/Core.lua (UpdateZoneAvailableQuestList): Ein Aufruf innerhalb einer Sekunde nach dem letzten wird nicht sofort ausgeführt, sondern es folgt EIN Nachlauf nach der Salve. Ein erzwungener Aufruf (Einstellung geändert) läuft sofort.
+
+### Engine-Nummer
+Engine 14. In SkuNav/EngineRoute.lua gibt es neu eine (leere) Liste für Sonderziele mit Höhenangabe; ein Test mit einem Ziel in Sturmwind wurde wieder entfernt. Alle SkuEngineXX-Addons und SkuPacks tragen die neue Revision.
+
 ## Sku-Ever 0.33 (15.11.2026)
 
 ### Kurzfassung

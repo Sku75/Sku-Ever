@@ -1303,6 +1303,24 @@ function SkuQuest:UpdateZoneAvailableQuestList(aForce)
 		and Sku:IsDataReady("skudb.objects") and Sku:IsDataReady("skudb.items")) then
 		return
 	end
+	-- [Quest book speed, 15.11.2026] Quest events come in bursts (3 to 9 calls within one second, ~11 ms each = a visible hitch): a call
+	-- within 1 s of the last run is not run itself; ONE trailing run follows after the burst. A forced call (settings changed) runs at once.
+	if not aForce then
+		local tNowTime = GetTime()
+		if SkuQuest.lastZoneListUpdate and (tNowTime - SkuQuest.lastZoneListUpdate) < 1 then
+			if not SkuQuest.zoneListUpdatePending then
+				SkuQuest.zoneListUpdatePending = true
+				C_Timer.After(1, function()
+					SkuQuest.zoneListUpdatePending = false
+					SkuQuest:UpdateZoneAvailableQuestList()
+				end)
+			end
+			return
+		end
+		SkuQuest.lastZoneListUpdate = tNowTime
+	else
+		SkuQuest.lastZoneListUpdate = nil
+	end
 	SkuSettings:Sub("SkuQuest", nil, "char").questMarkerBeacons = SkuSettings:Sub("SkuQuest", nil, "char").questMarkerBeacons or {}
 	SkuSettings:Sub("SkuQuest", nil, "char").questMarkerBeacons.activeBeaconsIgnore = SkuSettings:Sub("SkuQuest", nil, "char").questMarkerBeacons.activeBeaconsIgnore or {}
 
