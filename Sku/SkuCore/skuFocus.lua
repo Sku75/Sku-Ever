@@ -155,7 +155,10 @@ end
 local function announceGameFocus()
    if UnitExists("focus") then
       local tName = UnitName("focus")
-      if tName and tName ~= "" then
+      if Sku.IsSecret(tName) then
+         -- 15.11.2026: a protected name may be spoken, but not joined or compared.
+         SkuOptions.Voice:SpeakSecretText(string.gsub(L["Game focus set to "], "%%", "%%%%") .. "%s", tName)
+      elseif tName and tName ~= "" then
          SkuOptions.Voice:OutputStringBTtts(L["Game focus set to "]..tName, true, true, 0.2, nil, nil, nil, 2)
       end
    else
@@ -204,6 +207,13 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------
 function SkuFocus:SetFocusUnitName(aFocusNumber, aFocusTargetName)
    if not SkuFocus:IsEnabled() then return end
+   -- 15.11.2026: on WoW Forever the target's name can be secret. It cannot be
+   -- compared or put into the /tar macro, so the focus cannot be set.
+   if Sku.IsSecret(aFocusTargetName) then
+      SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Name geschützt, Fokus nicht möglich",
+         "Name protected, focus not possible", "Nom protégé, focalisation impossible"), true, true, 0.2, nil, nil, nil, 2)
+      return
+   end
    if not InCombatLockdown() then
       if not aFocusTargetName or aFocusTargetName == "" then
          _G["focus"..aFocusNumber]:SetAttribute("macrotext1", "")

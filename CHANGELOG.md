@@ -2,6 +2,32 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.35 (15.11.2026)
+
+### Kurzfassung
+- Keine Fehlermeldung mehr bei Rufen und Emotes von NSCs im Chat, zum Beispiel in der Tiefenbahn.
+- Fokus setzen auf ein Ziel mit geschütztem Namen bricht nicht mehr mit einem Fehler ab, Sku sagt stattdessen "Name geschützt, Fokus nicht möglich".
+- Setzt du den Spiel-Fokus auf ein Ziel mit geschütztem Namen, liest Sku den Namen über die Spielstimme vor.
+
+### Behoben: Fehler im Chat bei Rufen und Emotes von NSCs
+Was: Nach Rufen, Sprüchen und Emotes von NSCs (in der ersten Instanz und in der Tiefenbahn beobachtet) kam immer wieder die Fehlermeldung "HistoryKeeper.lua:9: attempted to index a table that cannot be accessed while tainted (execution tainted by 'Sku')", an einem Abend 33 Mal. Die Chat-Ansage selbst lief weiter.
+Wie: Sku liest die Chat-Nachrichten selbst (SkuChat/Core.lua) und holt für jede eine Verlaufsnummer vom Chatverlauf des Spiels (ChatHistory_GetAccessID). Bei NSC-Rufen kann der Absender seit dem 13.11.2026 ein geheimer Wert sein. Das Spiel legt ihn in seiner eigenen Verlaufsliste ab, und ab dann ist diese ganze Liste für Addons gesperrt: jeder weitere Zugriff von Sku bricht ab. Die bisherige Prüfung in SkuChat_SafeAccessID sah nur nach, ob die Werte der einzelnen Nachricht geheim sind, nicht ob die Liste gesperrt ist. Jetzt läuft der Zugriff unter pcall. Verweigert ihn das Spiel, bekommt die Nachricht keine Verlaufsnummer. Die Nummer dient nur der Gruppierung im Chatverlauf, die Nachricht wird ganz normal angezeigt und angesagt.
+
+### Behoben: Fokus setzen auf ein Ziel mit geschütztem Namen
+Was: Die Tasten zum Setzen von Fokus 1 bis 8 brachen bei manchen Zielen mit dem Fehler "skuFocus.lua:208: attempt to compare local 'aFocusTargetName' (a secret string value)" ab. Jetzt sagt Sku "Name geschützt, Fokus nicht möglich".
+Wie: Sku-Fokus baut aus dem Namen des Ziels ein Anvisier-Makro ("/tar Name", SkuFocus:SetFocusUnitName in SkuCore/skuFocus.lua). Auf WoW: Forever kann UnitName("target") einen geheimen Namen liefern. Den darf ein Addon weder vergleichen noch in einen Text einsetzen, deshalb lässt sich das Makro für solche Ziele nicht bauen. SetFocusUnitName prüft den Namen jetzt zuerst mit Sku.IsSecret und sagt in dem Fall die Meldung an, statt abzubrechen.
+
+### Geändert: Ansage beim Spiel-Fokus
+Was: Setzt du den Fokus des Spiels selbst (Fokus-Taste des Spiels, /focus) auf ein Ziel mit geschütztem Namen, sagt Sku "Fokus festgelegt auf" und den Namen.
+Wie: Die Ansage (announceGameFocus in SkuCore/skuFocus.lua) setzte den Namen mit dem Ansagetext zusammen, das hätte bei einem geheimen Namen denselben Fehler ausgelöst. Ein geheimer Name geht jetzt über SkuVoice:SpeakSecretText an die Sprachausgabe des Spiels, ein lesbarer Name wie bisher über die normale Ansage.
+
+### Downloads
+- Sku-Ever-Spielordner.zip, Sku-Ever-0.35.zip: mit den beiden Korrekturen. Alle anderen Pakete (SkuPacks, die 16 SkuEngine-Gruppen) und der Installer sind unverändert gegenüber 0.34.
+
+### Hinweis zum Stand
+- Getestet im Spiel (auf 0.32): Nach dem Reload keine Fehlermeldungen mehr.
+- Noch nicht gezielt getestet: die Fokus-Ansage bei einem Ziel mit geschütztem Namen.
+
 ## Sku-Ever 0.34 (15.11.2026)
 
 ### Kurzfassung

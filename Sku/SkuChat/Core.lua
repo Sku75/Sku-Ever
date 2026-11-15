@@ -1786,7 +1786,13 @@ local function SkuChat_SafeAccessID(...)
 			if Sku.IsSecret((select(i, ...))) then return nil end
 		end
 	end
-	return ChatHistory_GetAccessID(...)
+	-- 15.11.2026: once the game has stored a secret sender (NPC yells and emotes,
+	-- e.g. in the Deeprun Tram) in its chat history table, that table is closed to
+	-- addons and every lookup throws. The id only groups the chat history, so a
+	-- refused lookup simply leaves it out.
+	local ok, id = pcall(ChatHistory_GetAccessID, ...)
+	if ok then return id end
+	return nil
 end
 
 function SkuChat_MessageEventHandler(self, event, ...)
