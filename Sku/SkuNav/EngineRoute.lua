@@ -355,8 +355,45 @@ function Engine:EntryPoints(aMax)
 	return rList
 end
 
+-- [Target floor, 15.11.2026] The catalog target a route goal stands for. Its node carries the floor of the NPC. A goal from a Sku
+-- waypoint (quest book "Annahme", route lists) has no height and its position differs a little from the catalog (map percent, rounding),
+-- so the exact match (0.5 yd) failed and the route went to the nearest of ALL floors at (x, y): a tower with 7 floors (Tower of Azora)
+-- ended on the wrong floor. Now: the exact match first; else the nearest catalog target of the SAME NAME within SNAP_YD.
+local SNAP_YD = 10
+local function tSnapNorm(aName)
+	local r = string.lower(aName)
+	r = string.gsub(r, "[%(%)]", " ")
+	r = string.gsub(r, "%s+", " ")
+	return (string.gsub(string.gsub(r, "^ ", ""), " $", ""))
+end
+local function tCatalogTargetFor(aGroup, aTx, aTy, aName)
+	local tList = _G.SkuEngineTargets and _G.SkuEngineTargets[aGroup.key] or {}
+	for _, t in ipairs(tList) do
+		if math.abs(t[1] - aTx) < 0.5 and math.abs(t[2] - aTy) < 0.5 then return t end
+	end
+	if type(aName) ~= "string" then return nil end
+	local tFirst = string.match(string.match(aName, "([^#]*)$") or aName, "^([^;]*)")
+	if not tFirst or tFirst == "" then return nil end
+	local tKey = tSnapNorm(tFirst)
+	local tBest, tBestD
+	for _, t in ipairs(tList) do
+		local d = (t[1] - aTx) ^ 2 + (t[2] - aTy) ^ 2
+		if d <= SNAP_YD ^ 2 and (not tBestD or d < tBestD) then
+			for _, tCat in ipairs({t[3], t[4]}) do
+				local tBase = string.match(tCat, "^(.-)%s*%(")
+				if tSnapNorm(tCat) == tKey or (tBase and tSnapNorm(tBase) == tKey) then
+					tBest, tBestD = t, d
+					break
+				end
+			end
+		end
+	end
+	return tBest
+end
+
 -- Engine route from the player's position to a target (x, y). Returns a list of world points {{x, y}, ...} or nil, reason.
-function Engine:Route(aTx, aTy, aFloorZ)
+-- aName (optional): the name of the target (Sku waypoint name or catalog name), to find its catalog target when the position is a bit off.
+function Engine:Route(aTx, aTy, aFloorZ, aName)
 	if not self:Available() then return nil, "unavailable" end
 	local N = tNet()
 	local px, py = UnitPosition("player")
@@ -375,23 +412,22 @@ function Engine:Route(aTx, aTy, aFloorZ)
 	end
 	if not pz and not tLayers then return nil, "height_unknown" end
 	-- the best route from a bound start to the target (every floor of the map at the target is tried, the shortest wins)
+	local tCat = tCatalogTargetFor(tGroup, aTx, aTy, aName)
 	local function tBestFrom(start)
 		local best
 		-- a target of the catalog (landing, boarding point on the ship, fishing spot, ...) has a node of its own at its coordinates
 		-- (the dock model of the engine): the route ends exactly on it, no cell is needed there
-		for _, t in ipairs(_G.SkuEngineTargets[tGroup.key] or {}) do
-			if math.abs(t[1] - aTx) < 0.5 and math.abs(t[2] - aTy) < 0.5 then
-				for _, z in ipairs(tGroup.zones) do
-					local zone = N.zones and N.zones[z]
-					local i = zone and N.TargetNodeAt and N.TargetNodeAt(zone, t[1], t[2], nil, 3)
-					if i then
-						local goal = N.NodeTargetBinding(zone, i, t[1], t[2], "target_node")
-						local r = N.Route(start, goal)
-						if r and (not best or r.length < best.length) then best = r end
-						break
-					end
+		if tCat then
+			local t = tCat
+			for _, z in ipairs(tGroup.zones) do
+				local zone = N.zones and N.zones[z]
+				local i = zone and N.TargetNodeAt and N.TargetNodeAt(zone, t[1], t[2], nil, 3)
+				if i then
+					local goal = N.NodeTargetBinding(zone, i, t[1], t[2], "target_node")
+					local r = N.Route(start, goal)
+					if r and (not best or r.length < best.length) then best = r end
+					break
 				end
-				break
 			end
 		end
 		for _, band in ipairs(not best and N.HeightBands(aTx, aTy) or {}) do
@@ -755,8 +791,50 @@ end
 
 -- Called by SkuNav.RouteFollowOnAction when the picked list entry is an engine target. Fills the data that the unit route
 -- ("Einheiten Route") follows (world points) and returns true; otherwise says why not and returns false.
+-- [Back, Forever 15.11.2026] "Reverse route" (Ctrl-Shift-Z) of Sku walks the waypoints of the route backwards. The way points of an
+-- engine route are temporary waypoints ("Einheiten;Route;n"); they are deleted when the route ends, so Sku's reverse data points at
+-- nothing and the key stays silent. The engine therefore keeps the points of its last route and, when Sku's reverse data is gone,
+-- walks them back as a new engine route (the points reversed, from the one nearest to the player).
+local tReverseHooked = false
+local function tHookReverse()
+	if tReverseHooked or type(SkuNav.StartReverseRtFollow) ~= "function" then return end
+	tReverseHooked = true
+	local tOrig = SkuNav.StartReverseRtFollow
+	SkuNav.StartReverseRtFollow = function(self, ...)
+		local tRev = SkuNav.ReverseRt and SkuNav.ReverseRt.meta
+		local tSkuOk = tRev and tRev.metapathFollowingStart and SkuNav:GetWaypointData2(tRev.metapathFollowingStart)
+		if not tSkuOk and Engine.lastRoute and Engine:ReverseFollow() then return end
+		return tOrig(self, ...)
+	end
+end
+
+-- the last engine route backwards, from the point nearest to the player (a tie goes to the later point). Returns true when started.
+function Engine:ReverseFollow()
+	local tLast = self.lastRoute
+	local px, py = UnitPosition("player")
+	if not tLast or type(px) ~= "number" or type(py) ~= "number" then return false end
+	local tBest, tBestD
+	for i, p in ipairs(tLast.pts) do
+		local d = (p[1] - px) ^ 2 + (p[2] - py) ^ 2
+		if not tBestD or d <= tBestD then tBest, tBestD = i, d end
+	end
+	if not tBest or tBestD > 40 ^ 2 then return false end
+	local rev = {}
+	for i = tBest, 1, -1 do rev[#rev + 1] = {tLast.pts[i][1], tLast.pts[i][2]} end
+	if #rev < 2 then return false end
+	tLog("reverse", "points", #rev)
+	SkuNav.RouteFollowOnAction({name = "Engine"}, {engineTarget = {points = rev, x = rev[#rev][1], y = rev[#rev][2], name = "Engine"}}, "Engine")
+	return true
+end
+
 function Engine:PrepareFollow(aTarget)
-	local pts, why = self:Route(aTarget.x, aTarget.y, aTarget.floorZ)
+	local pts, why
+	if aTarget.points then
+		pts = {}   -- the way back: the points are given (reversed route), nothing to compute
+		for i, p in ipairs(aTarget.points) do pts[i] = {p[1], p[2]} end
+	else
+		pts, why = self:Route(aTarget.x, aTarget.y, aTarget.floorZ, aTarget.name)
+	end
 	if not pts then
 		SkuOptions.Voice:OutputStringBTtts(L["Error"], false, true, 0.3, true)
 		-- plain texts, no new Sku.L keys (the locale library raises an error for a missing key)
@@ -771,7 +849,12 @@ function Engine:PrepareFollow(aTarget)
 		return false
 	end
 	-- the last point is the target itself
-	pts[#pts + 1] = {aTarget.x, aTarget.y}
+	if not aTarget.points then pts[#pts + 1] = {aTarget.x, aTarget.y} end
+	-- kept for "reverse route" (see above)
+	local tKeep = {}
+	for i, p in ipairs(pts) do tKeep[i] = {p[1], p[2]} end
+	self.lastRoute = {pts = tKeep}
+	tHookReverse()
 	SkuSettings:Sub("SkuNav").metapathFollowingUnitDbWaypoint = true
 	SkuSettings:Sub("SkuNav").metapathFollowingUnitDbWaypointData = pts
 	SkuNav.engineWorldPoints = true

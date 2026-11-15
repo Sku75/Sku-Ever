@@ -2,6 +2,28 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.32 (15.11.2026)
+
+### Kurzfassung
+- Quest-Ziele im Questbuch (zum Beispiel Questgeber im Turm von Azora) landen jetzt auf der richtigen Ebene: die Engine nimmt das Ziel mit gleichem Namen aus ihrem Katalog, statt irgendeine Ebene am Zielpunkt zu wählen (Engine 10).
+- Im Questbuch bietet die Engine ihre Ziele jetzt auch unter den Sku-Einstiegspunkten an, nicht nur unter den Engine-Einstiegspunkten.
+- "Route umdrehen" (Strg-Umschalt-Z) funktioniert jetzt auch nach einer Engine-Route (Engine 11).
+
+### Behoben: falsche Ebene bei Quest-Zielen
+Was: Ein Ziel aus dem Questbuch hat nur x/y, keine Höhe. Die Engine nahm bisher nur bei fast exaktem Treffer das eigene Ziel; sonst die kürzeste Route zu irgendeiner Ebene am Zielpunkt. In Türmen mit mehreren Ebenen (Turm von Azora) war das oft die falsche.
+Wie: SkuNav/EngineRoute.lua (tCatalogTargetFor): exakter Treffer, sonst der nächste Katalogeintrag gleichen Namens innerhalb von 10 Yard. Engine:Route und PrepareFollow reichen dafür den Namen durch.
+
+### Neu: Engine-Ziele auch unter Sku-Einstiegspunkten im Questbuch
+Was: Wer im Questbuch einen Sku-Einstiegspunkt wählte, sah nur das Sku-Ziel. Jetzt steht darunter zusätzlich das Engine-Ziel (bis zu drei nächste Spawns, mit der üblichen Ebenenfrage).
+Wie: SkuNav/Options.lua (AddEngineLeavesForWpNames) und zwei Aufrufe in SkuQuest/Options.lua bei "Route" und "Closest route".
+
+### Behoben: Route umdrehen nach Engine-Route
+Was: Nach einer Engine-Route tat Strg-Umschalt-Z nichts, weil Skus Rückweg auf bereits gelöschte, vorübergehende Wegpunkte zeigte.
+Wie: SkuNav/EngineRoute.lua (tHookReverse, Engine:ReverseFollow): die Engine merkt sich ihre letzte Route und läuft sie ab dem nächsten Punkt rückwärts, wenn Skus Daten ungültig sind. Bei gültigen Daten oder mehr als 40 Yard Abstand gilt Skus eigener Weg.
+
+### Engine-Nummer
+Engine 11. Alle SkuEngineXX-Addons und SkuPacks tragen die neue Revision.
+
 ## Sku-Ever 0.31 (15.11.2026)
 
 ### Kurzfassung

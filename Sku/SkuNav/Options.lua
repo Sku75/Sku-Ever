@@ -535,6 +535,32 @@ function SkuNav.AddEngineEntryPointsForWpNames(aParent, aNames)
 	return SkuNav.AddEngineEntryPointsForTargets(aParent, tTargets)
 end
 
+-- [Quest book, Forever 15.11.2026] The engine target next to the Sku targets: under every Sku entry point of the quest book route
+-- lists the engine way to the same NPC is offered as an entry "<distance> Meter#<name>;Engine" (the engine computes the way from where
+-- the player stands; where the player's floor is unclear the floor question follows, as with the engine entry points). Without it a
+-- Sku route that does not lead to the NPC (Tower of Azora, other floors) had no alternative under the Sku entry points. Up to aMax (3)
+-- nearest waypoints of the names that lie in the engine zone.
+function SkuNav.AddEngineLeavesForWpNames(aParent, aNames, aMax)
+	if not (Sku.isForever and SkuNav.Engine and SkuNav.Engine:PlayerInZone()) then return 0 end
+	local tPlayX, tPlayY = UnitPosition("player")
+	if type(tPlayX) ~= "number" or type(tPlayY) ~= "number" then return 0 end
+	local tTargets = {}
+	for _, tName in ipairs(aNames or {}) do
+		local tData = SkuNav:GetWaypointData2(tName)
+		if tData and tData.worldX and SkuNav.Engine:PointInZone(tData.worldX, tData.worldY) then
+			tTargets[#tTargets + 1] = {name = tName, x = tData.worldX, y = tData.worldY, dist = (tData.worldX - tPlayX) ^ 2 + (tData.worldY - tPlayY) ^ 2}
+		end
+	end
+	table.sort(tTargets, function(a, b) return a.dist < b.dist end)
+	local rCount = 0
+	for _, t in ipairs(tTargets) do
+		if rCount >= (aMax or 3) then break end
+		SkuNav_AddEngineRouteLeaf(aParent, t.name, t.x, t.y)
+		rCount = rCount + 1
+	end
+	return rCount
+end
+
 ---------------------------------------------------------------------------------------------------------------------------------------
 local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypointList)
 	--dprint("SkuNav_MenuBuilder_WaypointSelectionMenu")

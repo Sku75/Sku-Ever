@@ -1423,6 +1423,14 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 										end
 									end
 								end
+								-- [Quest book, Forever 15.11.2026] the engine way to the same NPC next to the Sku targets of this entry point
+								do
+									local tSkuBuild = tNewMenuEntry.BuildChildren
+									tNewMenuEntry.BuildChildren = function(self)
+										tSkuBuild(self)
+										if SkuNav.AddEngineLeavesForWpNames then SkuNav.AddEngineLeavesForWpNames(self, wpTable, 3) end
+									end
+								end
 								tCount = tCount + 1
 							end
 						end
@@ -1550,6 +1558,14 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 												end
 											end
 										end
+									end
+								end
+								-- [Quest book, Forever 15.11.2026] the engine way to the same NPC next to the Sku targets of this entry point
+								do
+									local tSkuBuild = tNewMenuEntry.BuildChildren
+									tNewMenuEntry.BuildChildren = function(self)
+										tSkuBuild(self)
+										if SkuNav.AddEngineLeavesForWpNames then SkuNav.AddEngineLeavesForWpNames(self, wpTable, 3) end
 									end
 								end
 								tCount = tCount + 1
