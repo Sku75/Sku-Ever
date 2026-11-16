@@ -390,7 +390,7 @@ namespace SkuInstaller
         [System.Runtime.InteropServices.DllImport("kernel32.dll")]
         private static extern bool CloseHandle(IntPtr handle);
 
-        private static string ProcessImagePath(int pid)
+        internal static string ProcessImagePath(int pid)
         {
             IntPtr h = OpenProcess(0x1000, false, pid);   // PROCESS_QUERY_LIMITED_INFORMATION
             if (h == IntPtr.Zero) return null;

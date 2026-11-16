@@ -43,6 +43,12 @@ namespace SkuInstaller
             // Every branch here falls through to a normal run. Offline, no version
             // file published, hash mismatch, user says no: the installer carries on
             // with the exe that is already here and can still install Sku.
+            // Sku-Ever 1.6: a downloaded copy only places the persistent copy and
+            // hands the run over to it; the persistent copy then moves the
+            // downloaded file to the Recycle Bin (Bootstrap.cs).
+            if (Bootstrap.HandOff(args)) return;
+            Bootstrap.StartRemoval(args);
+
             SelfUpdater.CleanUpPreviousVersion(args);
 
             if (SelfUpdater.ShouldCheck(args))

@@ -214,6 +214,11 @@ namespace SkuInstaller
                 sb.AppendLine(SelfUpdater.PostUpdateNotice);
                 sb.AppendLine();
             }
+            if (!string.IsNullOrEmpty(Bootstrap.Notice))
+            {
+                sb.AppendLine(Bootstrap.Notice);
+                sb.AppendLine();
+            }
 
             if (!anyClient)
             {

@@ -120,6 +120,7 @@ namespace SkuInstaller
             ["selfupdate.failed"]      = "The installer could not update itself.\n\n{0}\n\nIt carries on with version {1}. Installing and updating Sku-Ever works normally.",
             ["selfupdate.badHash"]     = "The downloaded file does not match the published checksum and was discarded.",
             ["selfupdate.done"]        = "The installer updated itself to version {0}.",
+            ["bootstrap.removed"]      = "The downloaded installer file is no longer needed and goes to the Recycle Bin. From now on, start Sku-Ever with the desktop shortcut \"Sku-Ever install and update\".",
 
             // ── end of run (CompletionForm) ──────────────────────────────────
             ["done.heading.ok"]        = "Finished",
@@ -356,6 +357,7 @@ namespace SkuInstaller
             ["selfupdate.failed"]      = "Der Installer konnte sich nicht selbst aktualisieren.\n\n{0}\n\nEr arbeitet mit Version {1} weiter. Sku-Ever installieren und aktualisieren funktioniert ganz normal.",
             ["selfupdate.badHash"]     = "Die heruntergeladene Datei stimmt nicht mit der veröffentlichten Prüfsumme überein und wurde verworfen.",
             ["selfupdate.done"]        = "Der Installer hat sich auf Version {0} aktualisiert.",
+            ["bootstrap.removed"]      = "Die heruntergeladene Installer-Datei wird nicht mehr gebraucht und kommt in den Papierkorb. Starte Sku-Ever ab jetzt über die Desktop-Verknüpfung „Sku-Ever installieren und aktualisieren“.",
 
             // ── Abschluss (CompletionForm) ───────────────────────────────────
             ["done.heading.ok"]        = "Fertig",
@@ -598,6 +600,7 @@ namespace SkuInstaller
             ["selfupdate.failed"]      = "L'installateur n'a pas pu se mettre à jour.\n\n{0}\n\nIl poursuit avec la version {1}. Installer et mettre à jour Sku-Ever fonctionne normalement.",
             ["selfupdate.badHash"]     = "Le fichier téléchargé ne correspond pas à la somme de contrôle publiée ; il a été écarté.",
             ["selfupdate.done"]        = "L'installateur s'est mis à jour vers la version {0}.",
+            ["bootstrap.removed"]      = "Le fichier d'installation téléchargé n'est plus nécessaire et va dans la corbeille. Désormais, lancez Sku-Ever avec le raccourci du bureau « Sku-Ever install and update ».",
 
             // ── fin de l'exécution (CompletionForm) ──────────────────────────
             ["done.heading.ok"]        = "Terminé",

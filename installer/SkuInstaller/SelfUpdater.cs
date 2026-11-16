@@ -86,7 +86,7 @@ namespace SkuInstaller
 
         private static string RunningExe => Assembly.GetExecutingAssembly().Location;
 
-        private static bool RunningFromPersistentCopy =>
+        internal static bool RunningFromPersistentCopy =>
             string.Equals(RunningExe, Shortcut.PersistentExe, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>

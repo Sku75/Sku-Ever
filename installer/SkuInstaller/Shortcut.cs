@@ -21,7 +21,15 @@ namespace SkuInstaller
     {
         public const string UpdaterDirName = "SkuEverUpdater";
         public const string UpdaterExeName = "SkuEverUpdater.exe";
-        public const string ShortcutName = "Sku-Ever Updater.lnk";
+        // Sku-Ever 1.6: a neutral name. "Updater" read like something other than
+        // the installer the user had downloaded.
+        public static string ShortcutName => Loc.Current == Lang.De
+            ? "Sku-Ever installieren und aktualisieren.lnk"
+            : "Sku-Ever install and update.lnk";
+
+        /// <summary>Names used by earlier versions; removed when the new shortcut is made.</summary>
+        private static readonly string[] OldShortcutNames =
+            { "Sku-Ever Updater.lnk", "Sku-Ever installieren und aktualisieren.lnk", "Sku-Ever install and update.lnk" };
 
         /// <summary>Test hook for SkuSelfTest: a throwaway folder instead of %LOCALAPPDATA%.</summary>
         internal static string DirOverride;
@@ -137,6 +145,25 @@ namespace SkuInstaller
                 sc.Save();
 
                 Logger.Info($"Created shortcut: {lnkPath}");
+
+                // Only shortcuts with one of our own earlier names that point at
+                // our own updater copy are removed.
+                foreach (var old in OldShortcutNames)
+                {
+                    string oldPath = Path.Combine(folder, old);
+                    if (string.Equals(oldPath, lnkPath, StringComparison.OrdinalIgnoreCase) || !File.Exists(oldPath)) continue;
+                    try
+                    {
+                        dynamic oldSc = shell.CreateShortcut(oldPath);
+                        string oldTarget = oldSc.TargetPath;
+                        if (string.Equals(oldTarget, target, StringComparison.OrdinalIgnoreCase))
+                        {
+                            File.Delete(oldPath);
+                            Logger.Info($"Removed old shortcut: {oldPath}");
+                        }
+                    }
+                    catch (Exception ex) { Logger.Warning($"Could not remove old shortcut {oldPath}: {ex.Message}"); }
+                }
             }
             catch (Exception ex)
             {
