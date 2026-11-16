@@ -439,6 +439,31 @@ local tExtrasDone = {}
 -- [WV-only areas, 16.11.2026] WV asks for the floor of a TARGET that has no fixed node of its own and lies over several walkable floors
 -- (ReadMe, targets, field l). Here the question is the target list itself: such a target is offered once per floor, "<name>, floor n of N"
 -- ("<name>, Ebene n von N"), with the height of the floor as 8th field (the route ends on that floor). Only for groups flagged wv.
+-- [Multi-node targets, 16.11.2026] A target can have SEVERAL fixed nodes at its coordinates (one per floor, e.g. Constable Aonda in Zephras:
+-- 814.9 and 826.7). WV (TargetResolver, levels) asks which one; the engine used to take only the lowest. This lists them, lowest first:
+-- { {zone, i, z}, ... } (public API only: one TargetNodeAt per height band of the point).
+local function tNodesAt(aGroup, x, y)
+	local N = tNet()
+	local rList, tSeen = {}, {}
+	if not (N and N.TargetNodeAt and N.HeightBands) then return rList end
+	local tMids = {}
+	for _, b in ipairs(N.HeightBands(x, y) or {}) do tMids[#tMids + 1] = (b.zMin + b.zMax) / 2 end
+	for _, z in ipairs(aGroup.zones) do
+		local zone = N.zones and N.zones[z]
+		if zone then
+			for _, m in ipairs(tMids) do
+				local i = N.TargetNodeAt(zone, x, y, m, 3)
+				if i and not tSeen[z .. ":" .. i] then
+					tSeen[z .. ":" .. i] = true
+					rList[#rList + 1] = {zone = zone, i = i, z = zone.z[i]}
+				end
+			end
+		end
+	end
+	table.sort(rList, function(a, b) return a.z < b.z end)
+	return rList
+end
+
 local function tExpandTargetFloors(aGroup, aList)
 	local N = tNet()
 	local rNew, tSplit = {}, 0
@@ -450,7 +475,14 @@ local function tExpandTargetFloors(aGroup, aList)
 				local zone = N.zones and N.zones[z]
 				if zone and N.TargetNodeAt and N.TargetNodeAt(zone, t[1], t[2], nil, 3) then tHasNode = true break end
 			end
-			if not tHasNode then
+			local tNodes = tHasNode and tNodesAt(aGroup, t[1], t[2]) or {}
+			if #tNodes > 1 then
+				-- several fixed nodes: one entry per node, the node's height as 8th field (Route ends on that node)
+				for i, n in ipairs(tNodes) do
+					rNew[#rNew + 1] = {t[1], t[2], t[3]..", Ebene "..i.." von "..#tNodes, t[4]..", floor "..i.." of "..#tNodes, t[5], t[6], t[7], n.z}
+				end
+				tDone, tSplit = true, tSplit + 1
+			elseif not tHasNode then
 				local tMids = {}
 				for _, b in ipairs(N.HeightBands(t[1], t[2]) or {}) do tMids[#tMids + 1] = (b.zMin + b.zMax) / 2 end
 				table.sort(tMids)
@@ -528,7 +560,21 @@ end
 
 -- Engine route from the player's position to a target (x, y). Returns a list of world points {{x, y}, ...} or nil, reason.
 -- aName (optional): the name of the target (Sku waypoint name or catalog name), to find its catalog target when the position is a bit off.
-function Engine:Route(aTx, aTy, aFloorZ, aName)
+-- Heights of the fixed nodes at a point when it has SEVERAL (WV areas only, the target stands on more than one floor), else nil.
+function Engine:TargetFloors(aX, aY)
+	local px, py = UnitPosition("player")
+	if type(px) ~= "number" or type(py) ~= "number" then return nil end
+	local tGroup = tPlayerGroupAt(px, py)
+	if not tGroup or not tWvAt(tGroup, aX, aY) then return nil end
+	tLoadGroup(tGroup)
+	local tList = tNodesAt(tGroup, aX, aY)
+	if #tList < 2 then return nil end
+	local rZ = {}
+	for i, n in ipairs(tList) do rZ[i] = n.z end
+	return rZ
+end
+
+function Engine:Route(aTx, aTy, aFloorZ, aName, aTargetZ)
 	if not self:Available() then return nil, "unavailable" end
 	local N = tNet()
 	local px, py = UnitPosition("player")
@@ -554,14 +600,32 @@ function Engine:Route(aTx, aTy, aFloorZ, aName)
 		-- (the dock model of the engine): the route ends exactly on it, no cell is needed there
 		if tCat then
 			local t = tCat
-			for _, z in ipairs(tGroup.zones) do
-				local zone = N.zones and N.zones[z]
-				local i = zone and N.TargetNodeAt and N.TargetNodeAt(zone, t[1], t[2], nil, 3)
-				if i then
-					local goal = N.NodeTargetBinding(zone, i, t[1], t[2], "target_node")
+			local tMulti = tWvAt(tGroup, t[1], t[2]) and tNodesAt(tGroup, t[1], t[2]) or {}
+			if #tMulti > 1 then
+				-- several nodes (floors) at the target, WV areas only: the floor of the picked entry decides (8th field, within 6 yd);
+				-- a goal without a picked floor (quest book name) takes the shortest route of all nodes
+				local tPick
+				local tTz = aTargetZ or t[8]
+				if tTz then
+					for _, n in ipairs(tMulti) do
+						if math.abs(n.z - tTz) <= 6 and (not tPick or math.abs(n.z - tTz) < math.abs(tPick.z - tTz)) then tPick = n end
+					end
+				end
+				for _, n in ipairs(tPick and {tPick} or tMulti) do
+					local goal = N.NodeTargetBinding(n.zone, n.i, t[1], t[2], "target_node")
 					local r = N.Route(start, goal)
 					if r and (not best or r.length < best.length) then best = r end
-					break
+				end
+			else
+				for _, z in ipairs(tGroup.zones) do
+					local zone = N.zones and N.zones[z]
+					local i = zone and N.TargetNodeAt and N.TargetNodeAt(zone, t[1], t[2], nil, 3)
+					if i then
+						local goal = N.NodeTargetBinding(zone, i, t[1], t[2], "target_node")
+						local r = N.Route(start, goal)
+						if r and (not best or r.length < best.length) then best = r end
+						break
+					end
 				end
 			end
 		end
@@ -1007,7 +1071,7 @@ function Engine:PrepareFollow(aTarget)
 		tZs = aTarget.zs
 	else
 		local _
-		pts, why, _, tZs = self:Route(aTarget.x, aTarget.y, aTarget.floorZ, aTarget.name)
+		pts, why, _, tZs = self:Route(aTarget.x, aTarget.y, aTarget.floorZ, aTarget.name, aTarget.targetZ)
 	end
 	if not pts then
 		SkuOptions.Voice:OutputStringBTtts(L["Error"], false, true, 0.3, true)

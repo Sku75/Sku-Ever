@@ -1887,6 +1887,7 @@ L["ein"]  = "on" --
 L["Gegnerstatus Kampf"]  = "Enemy combat status" --
 L["Beep"]  = "Beep" --
 L["Ansage"]  = "Announce" --
+L["Blizzard Zielname automatisch regeln"]  = "Control Blizzard target name announcement automatically" --
 L["Lesebalken anzeigen"]  = "Show reading bar" --
 L["Schriftgroesse"]  = "Font size" --
 L["winzig"]  = "tiny" --

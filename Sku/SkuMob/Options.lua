@@ -57,6 +57,16 @@ SkuMob.options = {
 		},
 	}
 }
+-- Forever: Blizzards Zielname-Ansage automatisch regeln (Monitor -> Ziel Optionen). Logik: SkuMob:ApplyBlizzardTargetName (Core.lua).
+if Sku.isForever then
+	SkuMob.options.args.blizzardTargetNameAuto = {
+		name = L["Blizzard Zielname automatisch regeln"],
+		order = 8,
+		desc = "",
+		type = "toggle",
+		OnAction = function() if SkuMob.ApplyBlizzardTargetName then SkuMob:ApplyBlizzardTargetName() end end,
+	}
+end
 ---------------------------------------------------------------------------------------------------------------------------------------
 SkuMob.defaults = {
 	enable = true,
@@ -83,6 +93,8 @@ SkuSettings:Register("SkuMob", {
 	["autoSetSkuRaidTargetsToInCombatCreatures"]   = { scope = "profile", default = false, type = "boolean" },
 	["InCombatSound"]                              = { scope = "profile", default = "Interface\\AddOns\\Sku\\SkuMob\\assets\\Target_in_combat_low.mp3", type = "string" },
 	["enemyCombatStatusMode"]                      = { scope = "profile", default = "beep", type = "string" },
+	["blizzardTargetNameAuto"]                    = { scope = "profile", default = true,  type = "boolean" },
+	["blizzardTargetNameOriginal"]                = { scope = "profile", default = "", type = "string" },
 })
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- =========================================================================

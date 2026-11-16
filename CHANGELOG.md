@@ -2,6 +2,40 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.39 (16.11.2026)
+
+### Kurzfassung
+- Auf WoW: Forever hörst du den Namen eines Ziels (Tab, Rundum-Zielwahl, Fokus) nicht mehr doppelt. Die Gegner-Lebenspunkte bleiben, in Instanzen bleibt Blizzards Namensansage an.
+- Neuer Schalter unter Monitor, Ziel Optionen: "Blizzard Zielname Ansage automatisch regeln". Aus gibt dir die Einstellung des Spiels zurück.
+- Ziele, die auf mehreren Ebenen stehen (zum Beispiel Wachtmeisterin Aonda und Coriella Calmbreeze in Zephras), werden pro Ebene angeboten, auch im Questbuch. Die Route endet auf der gewählten Ebene (Engine 17.2).
+- Ein Menüeintrag "Questie" erzeugte beim Aufbau der Tastenbelegung einen Fehler im Protokoll. Das ist behoben.
+
+### Behoben: Gegnername doppelt (nur WoW: Forever)
+Was: Wer ein Ziel gewählt hat, hörte den Namen zweimal: einmal mit der Gesundheit, einmal mit Name und Stufe. Die erste Stimme ist die Kampf-Audioansage des Spiels (Combat Audio Alerts, "Zielname"), die zweite Sku. Zusätzlich sprach Sku den Namen bei einem Zielwechsel durch Weiche Interaktion doppelt aus.
+Wie: SkuMob/Core.lua (ApplyBlizzardTargetName) stellt die Spiel-Einstellung CAASayTargetName außerhalb von Instanzen auf aus und in Instanzen auf an, nie im Kampf. Die Zielgesundheit des Spiels bleibt an. Die Doppelansage durch Weiche Interaktion ist über eine kurze Sperre je Ziel (0,6 s) und durch Weglassen des Namensteils in der Zielansage (innerhalb von 5 s) behoben.
+
+### Neu: Schalter für die Blizzard-Namensansage
+Was: Monitor, Ziel Optionen, "Blizzard Zielname Ansage automatisch regeln" (Standard: an). Ausgeschaltet stellt Sku die ursprüngliche Einstellung des Spiels wieder her, wer die Stimme des Spiels draußen mag, kann sie so zurückholen.
+Wie: SkuMob/Options.lua (blizzardTargetNameAuto, blizzardTargetNameOriginal), Texte in locales deDE, enUS, frFR. Der Schalter gibt es nur auf Forever.
+
+### Neu: Ziele auf mehreren Ebenen (Engine 17.2)
+Was: Ein Ziel kann an derselben Stelle mehrere feste Knoten haben, einen pro Ebene. Die Engine nahm bisher immer den tiefsten. Jetzt steht es wie bei WowVision pro Ebene in den Listen ("Name, Ebene n von N"), im Questbuch und bei Nahe Routen gibt es unter jedem Einstiegspunkt einen Eintrag je Ebene, und die Route endet auf dem Knoten der gewählten Ebene. Ohne Wahl nimmt sie die kürzeste Route über alle Knoten.
+Wie: SkuNav/EngineRoute.lua (tNodesAt, Engine:TargetFloors, tExpandTargetFloors, Route mit Zielhöhe), SkuNav/Options.lua (AddEngineEntryPointsForTargets, targetZ). Gilt nur in den Gebieten mit Merkmal wv.
+
+### Behoben: Menüeintrag "Questie"
+Was: Beim Aufbau der Tastenbelegung wurde das Objekt des Addons Questie als Menüname genommen; im Protokoll stand "menu node without text name".
+Wie: SkuCore/Options.lua prüft, dass die Kategorie-Konstante ein Text ist.
+
+### Engine-Nummer
+Engine 17.2.
+
+### Downloads
+- Sku-Ever-Spielordner.zip, Sku-Ever-0.39.zip: mit den Änderungen.
+- Installer (1.6), SkuPacks und die 20 SkuEngine-Gruppen sind unverändert gegenüber 0.38.
+
+### Hinweis zum Stand
+Im Spiel bestätigt: kein doppelter Name außerhalb von Instanzen, Gegner-HP bleiben, der Schalter wirkt in beide Richtungen; Ebenenwahl bei Aonda (Questbuch) und Coriella (Ziele-Liste). Noch nicht getestet: der Name in Instanzen (einmal, doppelt oder gar nicht).
+
 ## Sku-Ever 0.38 (16.11.2026)
 
 ### Kurzfassung

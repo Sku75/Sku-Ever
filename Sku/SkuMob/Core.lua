@@ -366,6 +366,11 @@ function SkuMob:PLAYER_SOFT_TARGET_INTERACTION(aEvent, ...)
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
+-- Forever: a unit whose name the soft targeting just spoke is not announced by name a second time when it becomes the
+-- hard target a moment later (the name came twice in a row). Level, marker and reaction are still spoken.
+local tSoftSpokenGuid, tSoftSpokenTime = nil, 0
+local SOFT_SPOKEN_WINDOW = 5
+local tSoftQueuedGuid, tSoftQueuedTime = nil, 0
 local tLastSoftEnemyGuid
 function SkuMob:PLAYER_SOFT_ENEMY_CHANGED(arg1, arg2, arg3)
 	tSoftTrace("enemy", "softenemy", arg2, arg3)
@@ -485,9 +490,17 @@ function SkuMob:PLAYER_SOFT_INTERACT_CHANGED(aEvent, aGuid, aNewGuid)
 				if not tName then
 					dprint("SkuMob softInteract: NO NAME - UnitName returned nil, name not spoken")
 				end
+				-- Forever: the game sends this event twice for one change; the same unit within 0.6 s is spoken once.
+				if Sku.isForever and tName and tSoftGuid and tSoftGuid == tSoftQueuedGuid and (GetTime() - tSoftQueuedTime) < 0.6 then
+					dprint("SkuMob softInteract: silent - same unit queued a moment ago")
+					tName = nil
+				elseif Sku.isForever and tName and tSoftGuid then
+					tSoftQueuedGuid, tSoftQueuedTime = tSoftGuid, GetTime()
+				end
 				if tName then
 					C_Timer.After(0.1, function()
 						dprint("SkuMob softInteract: speak name", Sku.IsSecret(tName) and "(secret)" or tName)
+							if Sku.isForever and tSoftGuid then tSoftSpokenGuid, tSoftSpokenTime = tSoftGuid, GetTime() end
 						-- no readable health (no pool, or hidden on Forever): dead only by its flag, else alive
 						local hp = Sku.UnitHealthPercent("softinteract") or (tSoftDead and 0 or 100)
 						-- An enemy's name is a secret value in a Forever instance (e.g. a corpse to loot); its GUID is a
@@ -774,6 +787,16 @@ function SkuMob:PLAYER_TARGET_CHANGED(event, aUnitId)
 		-- line is built with a marker in its place and spoken at the end through SkuVoice:SpeakSecretText.
 		local tNameSecret = tUnitName ~= nil and Sku.IsSecret(tUnitName)
 		local tNameOut = tNameSecret and "\1" or tUnitName
+			-- Forever: soft targeting spoke this unit's name moments ago -> do not say it again as hard target.
+			if Sku.isForever and aUnitId == "target" and tUnitGUID and tUnitGUID == tSoftSpokenGuid
+				and (GetTime() - tSoftSpokenTime) < SOFT_SPOKEN_WINDOW then
+				dprint("SkuMob PTC: name already spoken by soft targeting, left out")
+				tNameOut = ""
+				tNameSecret = false
+				tSoftSpokenGuid = nil
+			elseif Sku.isForever and aUnitId ~= "target" and tUnitGUID then
+				tSoftSpokenGuid, tSoftSpokenTime = tUnitGUID, GetTime()
+			end
 
 		if tUnitName then
 			if hp == 0 then
@@ -905,5 +928,49 @@ function SkuMob:PLAYER_TARGET_CHANGED(event, aUnitId)
 			end
 		end
 
+	end)
+end
+
+-- Forever: Blizzards Kampf-Audiohinweis "Zielname ansagen" (CVar CAASayTargetName, im Spiel standardmaessig an) spricht den
+-- Namen beim Zielwechsel ein zweites Mal neben Skus Ansage. Modus "auto" (Standard): ausserhalb von Instanzen aus, Sku spricht
+-- den Namen selbst; in einer Instanz ist der Name fuer Sku geheim und nur ueber den Sonderweg sprechbar, dort bleibt Blizzards
+-- Ansage als Absicherung an. Modus "unchanged": Sku fasst die Einstellung nicht an, wer Blizzards Sprache draussen nutzen will,
+-- waehlt ihn im Menue. Der urspruengliche Wert wird gemerkt und beim Wechsel auf "unchanged" zurueckgesetzt.
+-- Nicht im Kampf aenderbar; nachgeholt bei Kampfende.
+function SkuMob:ApplyBlizzardTargetName()
+	if not Sku.isForever or InCombatLockdown() then return end
+	local tDb = SkuSettings:Sub("SkuMob")
+	if not tDb or GetCVar("CAASayTargetName") == nil then return end
+	local tMode = (tDb.blizzardTargetNameAuto == false) and "unchanged" or "auto"
+	local tWanted
+	if tMode == "unchanged" then
+		local tOriginal = tDb.blizzardTargetNameOriginal
+		if tOriginal == nil or tOriginal == "" then return end
+		tWanted = tOriginal
+		-- Ein gemerkter Wert "0" kann schon von einer frueheren Abschaltung stammen: dann den Ausgangswert des Spiels nehmen.
+		if tOriginal == "0" then tWanted = tostring(GetCVarDefault("CAASayTargetName") or "1") end
+		tDb.blizzardTargetNameOriginal = ""
+	else
+		if tDb.blizzardTargetNameOriginal == nil or tDb.blizzardTargetNameOriginal == "" then
+			tDb.blizzardTargetNameOriginal = tostring(GetCVar("CAASayTargetName"))
+		end
+		tWanted = IsInInstance() and "1" or "0"
+	end
+	if GetCVar("CAASayTargetName") ~= tWanted then
+		local tOk, tErr = pcall(SetCVar, "CAASayTargetName", tWanted)
+		dprint("CAA target name set", tMode, tWanted, tostring(tOk), tostring(tErr), "readback", tostring(GetCVar("CAASayTargetName")))
+	end
+end
+
+if Sku.isForever then
+	local tFrame = CreateFrame("Frame")
+	tFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+	tFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+	tFrame:SetScript("OnEvent", function(_, aEvent)
+		if aEvent == "PLAYER_ENTERING_WORLD" then
+			C_Timer.After(1, function() SkuMob:ApplyBlizzardTargetName() end)
+		else
+			SkuMob:ApplyBlizzardTargetName()
+		end
 	end)
 end

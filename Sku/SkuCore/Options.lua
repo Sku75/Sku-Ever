@@ -2742,7 +2742,8 @@ function SkuCore:MenuBuilder(aParentEntry)
 			for categoryConst, v in pairsByKeys(tBindings) do
 			--for categoryConst, v in pairs(tBindings) do
 				local tNewMenuEntryCat 
-				if _G[categoryConst] then
+				-- The category constant can name an addon object (Questie): only a text is a usable menu name.
+				if type(_G[categoryConst]) == "string" then
 					tNewMenuEntryCat = SkuOptions:InjectMenuItems(self, {_G[categoryConst]}, SkuGenericMenuItem)
 				else
 					tNewMenuEntryCat = SkuOptions:InjectMenuItems(self, {categoryConst}, SkuGenericMenuItem)

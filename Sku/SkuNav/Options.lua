@@ -498,7 +498,16 @@ function SkuNav.AddEngineEntryPointsForTargets(aParent, aTargets, aMax)
 	local tPlayX, tPlayY = UnitPosition("player")
 	for _, t in ipairs(aTargets or {}) do
 		if t.x and t.y and SkuNav.Engine:PointInZone(t.x, t.y) then
-			tTargets[#tTargets + 1] = {name = t.name, x = t.x, y = t.y, dist = math.floor(math.sqrt((t.x - tPlayX) ^ 2 + (t.y - tPlayY) ^ 2))}
+			local tDist = math.floor(math.sqrt((t.x - tPlayX) ^ 2 + (t.y - tPlayY) ^ 2))
+			-- a target on several floors (WV areas): one entry per floor, like WV's level question
+			local tFl = SkuNav.Engine.TargetFloors and SkuNav.Engine:TargetFloors(t.x, t.y)
+			if tFl then
+				for i, z in ipairs(tFl) do
+					tTargets[#tTargets + 1] = {name = t.name, label = t.name..", "..((Sku.Loc == "deDE") and "Ebene " or "floor ")..i..((Sku.Loc == "deDE") and " von " or " of ")..#tFl, x = t.x, y = t.y, dist = tDist, targetZ = z}
+				end
+			else
+				tTargets[#tTargets + 1] = {name = t.name, x = t.x, y = t.y, dist = tDist}
+			end
 		end
 	end
 	if #tTargets == 0 then return 0 end
@@ -512,10 +521,10 @@ function SkuNav.AddEngineEntryPointsForTargets(aParent, aTargets, aMax)
 			local tFloorZ = self.floorZ
 			for i, t in ipairs(tTargets) do
 				if i > 10 then break end
-				local tLeaf = SkuOptions:InjectMenuItems(self, {t.dist..L[";Meter"].."#"..t.name..((string.sub(t.name, -7) ~= ";Engine") and ";Engine" or "")}, SkuGenericMenuItem)
+				local tLeaf = SkuOptions:InjectMenuItems(self, {t.dist..L[";Meter"].."#"..(t.label or t.name)..((string.sub(t.name, -7) ~= ";Engine") and ";Engine" or "")}, SkuGenericMenuItem)
 				tLeaf.OnEnter = function(self)
 					SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_CloseRoute = nil
-					SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget = {x = t.x, y = t.y, name = t.name, floorZ = tFloorZ}
+					SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_EngineTarget = {x = t.x, y = t.y, name = t.name, floorZ = tFloorZ, targetZ = t.targetZ}
 				end
 			end
 		end
