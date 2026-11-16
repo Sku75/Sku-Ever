@@ -1972,6 +1972,12 @@ end
 -- The float difference is deliberate; the >13000 divergence is legacy and kept
 -- as-is here (behavior-preserving) - a future by-ear pass may unify it.
 function SkuVoice:TokenizeNumberToAudio(aToken, aStrings, aVocalizeAsIs, aMode)
+	-- tonumber() accepts words like "nan"/"inf" (e.g. a name part); they are no numbers, speak as text
+	local tNum = tonumber(aToken)
+	if tNum and (tNum ~= tNum or tNum == math.huge or tNum == -math.huge) then
+		table.insert(aStrings, tostring(aToken))
+		return
+	end
 	if not aVocalizeAsIs then
 		if aMode == "btts" and (string.find(tostring(aToken), "%.") or string.find(tostring(aToken), ",")) then
 			return

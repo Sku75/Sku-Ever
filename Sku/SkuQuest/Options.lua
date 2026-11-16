@@ -8,15 +8,14 @@ local GetQuestLogFrame = Sku.Compat.GetQuestLogFrame
 local tCurrentQuestLogQuestsTable
 local function BuildSortedUniqueRouteWps(tRoutesInRange)
 	local tSortedWaypointList = {}
+	-- [Quest book speed, 16.11.2026] a lookup set instead of scanning the whole list for every entry (same fix as in
+	-- SkuNav/Options.lua of 11.11.2026; this copy was missed and took seconds on the big Forever maps)
+	local tSeen = {}
 	for k, v in SkuSpairs(tRoutesInRange, function(t,a,b) return t[b].nearestWpRange > t[a].nearestWpRange end) do
-		local tFnd = false
-		for tK, tV in pairs(tSortedWaypointList) do
-			if tV == v.nearestWpRange..L[";Meter"].."#"..v.nearestWP then
-				tFnd = true
-			end
-		end
-		if tFnd == false then
-			table.insert(tSortedWaypointList, v.nearestWpRange..L[";Meter"].."#"..v.nearestWP)
+		local tEntry = v.nearestWpRange..L[";Meter"].."#"..v.nearestWP
+		if not tSeen[tEntry] then
+			tSeen[tEntry] = true
+			table.insert(tSortedWaypointList, tEntry)
 		end
 	end
 	return tSortedWaypointList

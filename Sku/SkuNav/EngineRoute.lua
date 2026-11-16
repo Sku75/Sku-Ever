@@ -191,6 +191,21 @@ local function tInGroup(aGroup, x, y, aMap)
 	return false
 end
 
+-- [WV area inside a group, 16.11.2026] A group flagged wv is WV-only everywhere; a group with a wvbox {xmin, ymin, xmax, ymax} (world
+-- yards) is WV-only only inside that box (Dalaran Crater inside the old-world group NB: Sku has no network there, the rest of the group
+-- stays as it was). Every wv decision for a point goes through this function.
+local function tWvAt(aGroup, x, y)
+	if aGroup and aGroup.wv then return true end
+	if type(x) ~= "number" or type(y) ~= "number" then return false end
+	-- the box is looked up over ALL groups: its zone boxes overlap the neighbours' (Silverpine, Hillsbrad), so the group a point
+	-- resolves to need not be the group that owns the wvbox
+	for _, g in ipairs(tGroups()) do
+		local b = g.wvbox
+		if b and x >= b[1] and x <= b[3] and y >= b[2] and y <= b[4] then return true end
+	end
+	return false
+end
+
 -- same group as the player (the engine only routes inside one group)
 local function tInZone(x, y)
 	local px, py = UnitPosition("player")
@@ -224,6 +239,36 @@ end
 -- Is this world point in a zone the engine data covers?
 function Engine:PointInZone(x, y)
 	return self:Available() and type(x) == "number" and type(y) == "number" and tInZone(x, y)
+end
+
+-- Height of the last engine route at the player's position (x, y): the z of the route point nearest in the plane, when it lies within
+-- 8 yd and no other route point of a different height (more than 4 yd) lies about as near (a spiral: ambiguous again). nil otherwise.
+function Engine:RouteHeightAt(x, y)
+	local tLast = self.lastRoute
+	if not (tLast and tLast.pts and tLast.zs) then return nil end
+	local tBestD, tBestZ
+	for i, p in ipairs(tLast.pts) do
+		local z = tLast.zs[i]
+		if z then
+			local d = math.sqrt((p[1] - x) ^ 2 + (p[2] - y) ^ 2)
+			if not tBestD or d < tBestD then tBestD, tBestZ = d, z end
+		end
+	end
+	if not tBestD or tBestD > 8 then return nil end
+	for i, p in ipairs(tLast.pts) do
+		local z = tLast.zs[i]
+		if z and math.abs(z - tBestZ) > 4 and math.sqrt((p[1] - x) ^ 2 + (p[2] - y) ^ 2) <= tBestD + 3 then return nil end
+	end
+	return tBestZ
+end
+
+-- Is the player in a group flagged wv (new Forever areas where the engine takes everything from WV and Sku has no network)?
+function Engine:PlayerInWvGroup()
+	if not self:Available() then return false end
+	local px, py = UnitPosition("player")
+	if type(px) ~= "number" or type(py) ~= "number" then return false end
+	local tGroup = tGroupAt(px, py)
+	return tGroup and tWvAt(tGroup, px, py) or false
 end
 
 -- Is the player in a zone the engine data covers?
@@ -282,6 +327,23 @@ function Engine:PlayerHeight(x, y, aGroup)
 	if #layers == 1 then
 		tLastZ = layers[1]
 		return layers[1], "clear"
+	end
+	-- [WV-only areas, 16.11.2026] as WV does (ReadMe, "Bind the start"): where the height is unknown and floors are stacked, the RUNNING
+	-- ROUTE decides first (the player stands on the floor of the point of the last route nearest to him), then the last known height,
+	-- then the floor question. Only for groups flagged wv.
+	if #layers > 1 and tWvAt(aGroup, x, y) then
+		local tRz = self:RouteHeightAt(x, y)
+		if tRz then
+			local best, bd
+			for _, z in ipairs(layers) do
+				local dz = math.abs(z - tRz)
+				if not bd or dz < bd then best, bd = z, dz end
+			end
+			if bd <= 6 then
+				tLastZ = best
+				return best, "route"
+			end
+		end
 	end
 	if #layers > 1 and tLastZ then
 		local best, bd
@@ -374,11 +436,51 @@ end
 -- that floor (without it the shortest of all floors at (x, y) wins, which is the wrong one where floors lie on top of each other).
 local EXTRA_TARGETS = {}   -- empty: the only entry (warlock summoning circle, Stormwind) was tried in the game on 15.11.2026 and taken out again
 local tExtrasDone = {}
+-- [WV-only areas, 16.11.2026] WV asks for the floor of a TARGET that has no fixed node of its own and lies over several walkable floors
+-- (ReadMe, targets, field l). Here the question is the target list itself: such a target is offered once per floor, "<name>, floor n of N"
+-- ("<name>, Ebene n von N"), with the height of the floor as 8th field (the route ends on that floor). Only for groups flagged wv.
+local function tExpandTargetFloors(aGroup, aList)
+	local N = tNet()
+	local rNew, tSplit = {}, 0
+	for _, t in ipairs(aList) do
+		local tDone = false
+		if not t[8] and tWvAt(aGroup, t[1], t[2]) then
+			local tHasNode = false
+			for _, z in ipairs(aGroup.zones) do
+				local zone = N.zones and N.zones[z]
+				if zone and N.TargetNodeAt and N.TargetNodeAt(zone, t[1], t[2], nil, 3) then tHasNode = true break end
+			end
+			if not tHasNode then
+				local tMids = {}
+				for _, b in ipairs(N.HeightBands(t[1], t[2]) or {}) do tMids[#tMids + 1] = (b.zMin + b.zMax) / 2 end
+				table.sort(tMids)
+				local tLayers = {}
+				for _, z in ipairs(tMids) do
+					if #tLayers > 0 and z - tLayers[#tLayers] <= 2 then tLayers[#tLayers] = (tLayers[#tLayers] + z) / 2 else tLayers[#tLayers + 1] = z end
+				end
+				if #tLayers > 1 then
+					for i, z in ipairs(tLayers) do
+						rNew[#rNew + 1] = {t[1], t[2], t[3]..", Ebene "..i.." von "..#tLayers, t[4]..", floor "..i.." of "..#tLayers, t[5], t[6], t[7], z}
+					end
+					tDone, tSplit = true, tSplit + 1
+				end
+			end
+		end
+		if not tDone then rNew[#rNew + 1] = t end
+	end
+	if tSplit > 0 then
+		for i = #aList, 1, -1 do aList[i] = nil end
+		for i, t in ipairs(rNew) do aList[i] = t end
+	end
+	tLog("targetFloors", "split", tSplit)
+end
+
 local function tEnsureExtras(aGroup)
 	local tList = _G.SkuEngineTargets and _G.SkuEngineTargets[aGroup.key]
 	if not tList or tExtrasDone[tList] then return end
 	tExtrasDone[tList] = true
 	for _, t in ipairs(EXTRA_TARGETS[aGroup.key] or {}) do tList[#tList + 1] = t end
+	if aGroup.wv or aGroup.wvbox then tExpandTargetFloors(aGroup, tList) end
 end
 
 local SNAP_YD = 10
@@ -391,9 +493,19 @@ end
 local function tCatalogTargetFor(aGroup, aTx, aTy, aName)
 	tEnsureExtras(aGroup)
 	local tList = _G.SkuEngineTargets and _G.SkuEngineTargets[aGroup.key] or {}
+	local tFirstMatch
 	for _, t in ipairs(tList) do
-		if math.abs(t[1] - aTx) < 0.5 and math.abs(t[2] - aTy) < 0.5 then return t end
+		if math.abs(t[1] - aTx) < 0.5 and math.abs(t[2] - aTy) < 0.5 then
+			if not tWvAt(aGroup, t[1], t[2]) then return t end
+			-- wv groups: one target may stand once per floor at the same (x, y): the entry of the picked name decides
+			tFirstMatch = tFirstMatch or t
+			if type(aName) == "string" then
+				local tPick = string.match(string.match(aName, "([^#]*)$") or aName, "^([^;]*)")
+				if tPick and (tSnapNorm(tPick) == tSnapNorm(t[3]) or tSnapNorm(tPick) == tSnapNorm(t[4])) then return t end
+			end
+		end
 	end
+	if tFirstMatch then return tFirstMatch end
 	if type(aName) ~= "string" then return nil end
 	local tFirst = string.match(string.match(aName, "([^#]*)$") or aName, "^([^;]*)")
 	if not tFirst or tFirst == "" then return nil end
@@ -502,18 +614,19 @@ function Engine:Route(aTx, aTy, aFloorZ, aName)
 		how = #tAll == 1 and "only floor" or "same start"
 	end
 	if not best then return nil, "no_route" end
-	local pts = {}
+	local pts, zs = {}, {}
 	for _, id in ipairs(best.path) do
-		local x, y = N.Position(id)
+		local x, y, z = N.Position(id)
 		if x and y then
 			local last = pts[#pts]
 			if not last or math.sqrt((last[1] - x) ^ 2 + (last[2] - y) ^ 2) >= 2 then
 				pts[#pts + 1] = {x, y}
+				zs[#pts] = z   -- height of the point (kept apart: Sku reads only x, y of the points)
 			end
 		end
 	end
 	tLog("route", "length", math.floor(best.length), "points", #pts, "height", pz, how)
-	return pts, nil, best.length
+	return pts, nil, best.length, zs
 end
 
 -- Positions of ALL named Sku waypoints (targets) of the engine zones, whatever area or route they belong to. A WV target counts as
@@ -764,7 +877,9 @@ local function tTargetsWithoutSku(aGroup, aGrid, px, py, aMaxDist, aNamed, aMult
 	tEnsureExtras(aGroup)
 	for _, t in ipairs(_G.SkuEngineTargets[aGroup.key] or {}) do
 		local tShow
-		if ALWAYS_OFFER_KINDS[t[5]] then
+		if tWvAt(aGroup, t[1], t[2]) or ALWAYS_OFFER_KINDS[t[5]] then
+			-- [WV-only areas, 16.11.2026] a group flagged wv (new Forever areas where Sku has no routes of its own: the data pack's spawns
+			-- there hang on no network) takes EVERY target from WV: no radius test against Sku waypoints.
 			tShow = true
 		elseif aNamed and (t[7] == 1 or string.sub(t[5], 1, 10) == "Questgeber") then
 			tShow = not tSameNameNear(tNamedByName(aNamed), t)
@@ -820,11 +935,11 @@ function Engine:ListTargets(aReachable)
 	-- walks there. Only when the caller gave the reachable set; a target Sku reaches is never added.
 	-- Sku names every spawn of a unit by its own waypoint ("Name;Role;Area;3;75.6;9.6"): of the spawns of one name only the nearest
 	-- one is offered (as with the catalog targets above), otherwise the list holds thousands of entries.
-	if aReachable then
+	if aReachable and not tGroup.wv then   -- not in WV-only areas: the engine targets above already cover every spawn there
 		local tBest, tOrder = {}, {}
 		for _, w in ipairs(tNamed) do
 			local d = (w[1] - px) ^ 2 + (w[2] - py) ^ 2
-			if not aReachable[w[3]] and not (tMaxDist and d > tMaxDist ^ 2) then
+			if not aReachable[w[3]] and not (tMaxDist and d > tMaxDist ^ 2) and not tWvAt(tGroup, w[1], w[2]) then
 				local tKey = string.gsub(w[3], ";%d+;[%d%.]+;[%d%.]+$", "")
 				local b = tBest[tKey]
 				if not b then
@@ -876,21 +991,23 @@ function Engine:ReverseFollow()
 		if not tBestD or d <= tBestD then tBest, tBestD = i, d end
 	end
 	if not tBest or tBestD > 40 ^ 2 then return false end
-	local rev = {}
-	for i = tBest, 1, -1 do rev[#rev + 1] = {tLast.pts[i][1], tLast.pts[i][2]} end
+	local rev, revZ = {}, {}
+	for i = tBest, 1, -1 do rev[#rev + 1] = {tLast.pts[i][1], tLast.pts[i][2]}; revZ[#rev] = tLast.zs and tLast.zs[i] end
 	if #rev < 2 then return false end
 	tLog("reverse", "points", #rev)
-	SkuNav.RouteFollowOnAction({name = "Engine"}, {engineTarget = {points = rev, x = rev[#rev][1], y = rev[#rev][2], name = "Engine"}}, "Engine")
+	SkuNav.RouteFollowOnAction({name = "Engine"}, {engineTarget = {points = rev, zs = revZ, x = rev[#rev][1], y = rev[#rev][2], name = "Engine"}}, "Engine")
 	return true
 end
 
 function Engine:PrepareFollow(aTarget)
-	local pts, why
+	local pts, why, tZs
 	if aTarget.points then
 		pts = {}   -- the way back: the points are given (reversed route), nothing to compute
 		for i, p in ipairs(aTarget.points) do pts[i] = {p[1], p[2]} end
+		tZs = aTarget.zs
 	else
-		pts, why = self:Route(aTarget.x, aTarget.y, aTarget.floorZ, aTarget.name)
+		local _
+		pts, why, _, tZs = self:Route(aTarget.x, aTarget.y, aTarget.floorZ, aTarget.name)
 	end
 	if not pts then
 		SkuOptions.Voice:OutputStringBTtts(L["Error"], false, true, 0.3, true)
@@ -906,11 +1023,14 @@ function Engine:PrepareFollow(aTarget)
 		return false
 	end
 	-- the last point is the target itself
-	if not aTarget.points then pts[#pts + 1] = {aTarget.x, aTarget.y} end
-	-- kept for "reverse route" (see above)
+	if not aTarget.points then
+		pts[#pts + 1] = {aTarget.x, aTarget.y}
+		if tZs then tZs[#pts] = tZs[#pts - 1] end   -- the target stands on the floor of the last route node
+	end
+	-- kept for "reverse route" (see above); the heights of the points are kept too (floor of the running route, PlayerHeight)
 	local tKeep = {}
 	for i, p in ipairs(pts) do tKeep[i] = {p[1], p[2]} end
-	self.lastRoute = {pts = tKeep}
+	self.lastRoute = {pts = tKeep, zs = tZs}
 	tHookReverse()
 	SkuSettings:Sub("SkuNav").metapathFollowingUnitDbWaypoint = true
 	SkuSettings:Sub("SkuNav").metapathFollowingUnitDbWaypointData = pts

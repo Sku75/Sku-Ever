@@ -827,6 +827,7 @@ function SkuNav.WaypointsCurrentMapBuildChildren(self)
 
 				local tWaypointList = {}
 				local tSkuWpPositions = {}
+				local tWvOnly = SkuNav.Engine and SkuNav.Engine.PlayerInWvGroup and SkuNav.Engine:PlayerInWvGroup()
 				-- unsorted and fetched once: the result is sorted by distance below anyway (before: two sorted calls, 11.11.2026)
 				local tListWPs, tListState, tListInit = SkuNav:ListWaypoints2(false, nil, tCurrentAreaId)
 				if tListWPs then
@@ -835,7 +836,10 @@ function SkuNav.WaypointsCurrentMapBuildChildren(self)
 						local tWayP = SkuNav:GetWaypointData2(v)
 						if tWayP then
 							if tSubAreaIds[tonumber(tWayP.areaId)] then
-								if ssub(v, 1, tAutoLen) ~= L["auto"].." " then
+								-- [WV-only areas, 16.11.2026] where the engine takes everything from WV (new Forever areas) the unit spawns of the
+								-- data pack ("Name;Role;Area;3;75.6;9.6") hang on no Sku network: picking one would start a route Sku cannot walk,
+								-- and the engine entry of the same NPC is in the list anyway
+								if ssub(v, 1, tAutoLen) ~= L["auto"].." " and not (tWvOnly and sfind(v, ";%d+;[%d%.]+;[%d%.]+$")) then
 								--if not sfind(v, L["auto"]..";") then
 								--if not sfind(v, L["Quick waypoint"]) and not sfind(v, "auto;") then
 									local tWpX, tWpY = tWayP.worldX, tWayP.worldY

@@ -2,6 +2,48 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.36 (16.11.2026)
+
+### Kurzfassung
+- Die neuen Forever-Gebiete Zephras, Hyjal, Shen'dralas und Riverglades laufen jetzt komplett über die Engine, so wie bei WowVision (Engine 15 bis 17). Die vier Wegpakete dafür gibt es nicht mehr.
+- Dalaran (der alte Krater im Alteracgebirge) läuft ebenfalls über die Engine und ist mit dem Hügelland verbunden (Engine 17.1). Das Wegpaket Dalaran ist entfernt.
+- Mehrstöckige Orte: Die Engine merkt sich die Ebene der laufenden Route, fragt nur wenn nötig nach der Ebene und bietet Ziele ohne festen Knoten pro Ebene an ("Name, Ebene 2 von 3").
+- Das Questbuch baut seine Routenlisten nicht mehr mit mehreren Sekunden Hänger auf.
+- Namen mit Wortteilen wie "nan" bringen die Sprachausgabe nicht mehr zum Abbruch.
+- Installer 1.4: installiert die vier neuen Engine-Ordner mit.
+
+### Neu: Neue Gebiete komplett über die Engine
+Was: In Zephras, Hyjal, Shen'dralas und Riverglades hat Sku keine eigenen Wege. Dort stehen jetzt alle Ziele aus den WowVision-Daten in F9, Shift-F10 und im Questbuch, ohne dass Ziele wegen eines nahen Sku-Wegpunkts versteckt werden. Die Routen laufen über dieselben Daten wie bei WowVision.
+Wie: Vier neue Engine-Addons (SkuEngineZE, SkuEngineHY, SkuEngineSD, SkuEngineRG) mit dem Merkmal wv in Engine_Index.lua (SkuEngineGroups). In SkuNav/EngineRoute.lua entfällt für solche Gruppen der 30-Yard-Test gegen Sku-Wegpunkte; die Spawn-Wegpunkte des Datenpakets zählen dort nicht als Ziele. Die Wegpakete NavPack_ZephrasIsle, NavPack_MountHyjal, NavPack_Shendralas und NavPack_Riverglades sind aus SkuPacks entfernt (sonst gäbe es jedes Ziel doppelt).
+
+### Neu: Ebenen wie bei WowVision
+Was: Der Client meldet keine Spielerhöhe. Die Engine nimmt jetzt wie WowVision erst die Ebene der laufenden Route (der Routenpunkt, der dir am nächsten ist), dann die zuletzt bekannte Höhe, und fragt erst dann nach der Ebene. Ziele ohne festen Knoten auf mehreren Ebenen stehen pro Ebene in der Liste ("Name, Ebene n von N"). Die Route endet auf der gewählten Ebene.
+Wie: SkuNav/EngineRoute.lua (RouteHeightAt, PlayerHeight, tExpandTargetFloors); gilt nur in den Gebieten mit Merkmal wv.
+
+### Neu: Dalaran über die Engine (Engine 17.1)
+Was: Der Dalaran-Krater gehört zur Gruppe NB (Hillsbrad, Alterac, Arathi, Hinterland), seine Wege sind mit dem Hügelland verbunden. Innerhalb eines Kastens um Dalaran gilt dasselbe Verhalten wie in den neuen Gebieten, im Rest der Gruppe bleibt alles wie bisher. Offline geprüft: 634 von 640 Zielen sind vom Hügelland aus erreichbar (sechs Ziele liegen an Stellen ohne begehbaren Boden), und von jedem begehbaren Punkt in Dalaran gibt es eine Route ins Hügelland.
+Wie: Engine_Index.lua: die Gruppe NB hat ein Feld wvbox. SkuNav/EngineRoute.lua (tWvAt) entscheidet pro Punkt, ob WV-Verhalten gilt; die Suche geht über alle Gruppen, weil sich die Zonenkästen überlappen. SkuNav/Options.lua: F9 blendet im WV-Bereich die Spawn-Wegpunkte des Datenpakets aus. NavPack_Dalaran ist entfernt.
+
+### Verbessert: Questbuch, Routenlisten
+Was: Der Aufbau der Routenlisten im Questbuch brauchte in großen Gebieten mehrere Sekunden.
+Wie: SkuQuest/Options.lua (BuildSortedUniqueRouteWps) prüft doppelte Einträge mit einer Nachschlagetabelle statt die ganze Liste für jeden Eintrag zu durchsuchen.
+
+### Behoben: Sprachausgabe bei "nan"
+Was: Ein Namensteil wie "nan" (zum Beispiel in "Der Verzicht der Shal'nan") wurde als Zahl behandelt und brachte die Sprachausgabe zum Abbruch; der Name wurde nicht vorgelesen.
+Wie: Libs/SkuVoice-1.0 (TokenizeNumberToAudio) spricht Zahlenwerte wie nan oder inf als normalen Text.
+
+### Engine-Nummer
+Engine 17.1. Die Nummer zählt jetzt in Schritten von 0,1.
+
+### Downloads
+- Sku-Ever-Spielordner.zip: Sku, SkuPacks und alle SkuEngine-Ordner (jetzt mit ZE, HY, SD, RG).
+- Sku-Ever-0.36.zip, SkuPacks.zip und je ein Zip pro SkuEngine-Ordner: dieselben Teile einzeln, werden vom Installer benutzt.
+- Installer 1.4: installiert auch die vier neuen Engine-Ordner. Ältere Installer aktualisieren sich selbst. Wer von Hand installiert, kopiert die neuen SkuEngine-Ordner mit und löscht die alten Wegpakete NavPack_Dalaran, NavPack_MountHyjal, NavPack_Riverglades, NavPack_Shendralas und NavPack_ZephrasIsle aus dem Ordner SkuPacks.
+- Sprachausgabe und Beacon-Töne bleiben unverändert bei Version 0.26.
+
+### Hinweis zum Stand
+Die Engine-Routen in den neuen Gebieten und in Dalaran sind offline mit Zufallsrouten geprüft; im Spiel sind sie noch nicht vollständig getestet (Ebenenfrage in Zephras, Dalaran mit Ein- und Ausgang). Der Fix am Questbuch ist im Spiel bestätigt.
+
 ## Sku-Ever 0.35 (15.11.2026)
 
 ### Kurzfassung
