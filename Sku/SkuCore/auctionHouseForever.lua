@@ -118,10 +118,21 @@ local function tNumberTimes(aNum, aMult)
 	return tonumber(tInt) * aMult + tFracCopper / tScale
 end
 
+-- 16.11.2026: the WoW: Forever auction house takes prices in whole silver only, although
+-- C_AuctionHouse.SupportsCopperValues() says true there. A post with copper in the price (tested: 99 and 97 copper)
+-- is dropped by the server without any answer, and the throttled message system then stays busy until the next login,
+-- so every later post and search waits ("please wait a moment"). Posted for 1 silver, the same item went through.
+-- So every price is rounded to whole silver here, at least 1 silver, whatever that function says. (This file only
+-- runs on WoW: Forever.)
+local function tSilverOnly(aCopper)
+	if not aCopper or aCopper <= 0 then return aCopper end
+	return math.max(COPPER_PER_SILVER, math.floor(aCopper / COPPER_PER_SILVER + 0.5) * COPPER_PER_SILVER)
+end
+
 -- Money typed by the player, in copper; nil = not understood. A bare number is gold ("75", "1.5" = 1 gold
 -- 50 silver). Otherwise number+unit groups: "12g 5s 3k", "1,5 g", "2 gold 50 silver". "." and "," are decimal
 -- marks. Refused: a number without its unit ("2g50", "12 gold 5"), a unit given twice, exponents ("1e3"),
--- fractions of a copper, zero. Without copper values on the server the amount is rounded to whole silver.
+-- fractions of a copper, zero. The amount is rounded to whole silver (tSilverOnly).
 local function tParseMoney(aText)
 	local tS = aText:lower():gsub(",", "."):match("^%s*(.-)%s*$")
 	local tTotal
@@ -141,8 +152,7 @@ local function tParseMoney(aText)
 		end
 	end
 	if not tTotal or tTotal <= 0 then return nil end
-	if not C_AuctionHouse.SupportsCopperValues() then tTotal = math.max(100, math.floor(tTotal / 100 + 0.5) * 100) end
-	return tTotal
+	return tSilverOnly(tTotal)
 end
 
 -- A whole number of pieces, at least 1; nil = not understood.
@@ -1552,6 +1562,8 @@ function AHF:PostDraft()
 		tPostNote(gSell.name..": "..L["Confirmed, posting"])
 		return
 	end
+	-- Safety net for drafts made before the rounding at input (see tSilverOnly).
+	gSell.buyout, gSell.bid = tSilverOnly(gSell.buyout), tSilverOnly(gSell.bid)
 	-- Blizzard's CanPostItem: an item needs a starting bid or a buyout, a commodity its unit price (it has no bid).
 	if not gSell.buyout and not gSell.bid then
 		tPostNote(L["Set a price first"])
@@ -1613,12 +1625,12 @@ local function tBuildSellItemChildren(aParent)
 	end)
 	tLeaves.price = tSettingLeaf(aParent, tPriceLabel(), function()
 		tAskSell(L["Enter price, for example 12g 5s 3k"], tParseMoney, L["Price not understood"], function(aCopper)
-			gSell.buyout = aCopper
+			gSell.buyout = tSilverOnly(aCopper)
 		end)
 	end)
 	tLeaves.market = tSettingLeaf(aParent, tMarketLabel(), function()
 		if gSell.marketState == "done" and gSell.marketLowest then
-			gSell.buyout = gSell.marketLowest
+			gSell.buyout = tSilverOnly(gSell.marketLowest)
 			tDraftChanged()
 			return
 		end
@@ -1629,7 +1641,7 @@ local function tBuildSellItemChildren(aParent)
 		tLeaves.total = tSettingLeaf(aParent, tTotalLabel(), function()
 			tAskSell(L["Enter the total price for the chosen quantity, for example 5g"], tParseMoney, L["Price not understood"], function(aTotal)
 				local tPer = math.max(1, math.floor(aTotal / (gSell.quantity or 1) + 0.5))
-				if not C_AuctionHouse.SupportsCopperValues() then tPer = math.max(100, math.floor(tPer / 100 + 0.5) * 100) end
+				tPer = tSilverOnly(tPer)
 				gSell.buyout = tPer
 			end)
 		end)
@@ -1637,7 +1649,7 @@ local function tBuildSellItemChildren(aParent)
 	if not gSell.isCommodity then
 		tLeaves.bid = tSettingLeaf(aParent, tBidLabel(), function()
 			tAskSell(L["Enter starting bid, or 0 to clear"], tParseBid, L["Amount not understood"], function(aCopper)
-				gSell.bid = aCopper > 0 and aCopper or nil
+				gSell.bid = aCopper > 0 and tSilverOnly(aCopper) or nil
 			end)
 		end)
 	end
