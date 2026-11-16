@@ -2,6 +2,23 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.38 (16.11.2026)
+
+### Kurzfassung
+- Verkaufen im Auktionshaus funktioniert wieder. Sku rundet jeden Preis auf ganze Silber, weil das Auktionshaus von WoW: Forever Preise mit Kupfer ohne Antwort verwirft.
+
+### Behoben: Einstellen im Auktionshaus blieb stumm und blockierte das Auktionshaus
+Was: Ein Gegenstand mit einem Preis in Kupfer (zum Beispiel 97 Kupfer) wurde nicht eingestellt. Sku sagte nichts, der Gegenstand blieb in der Tasche, und danach kam bei jedem weiteren Einstellen und bei Suchen nur noch "Bitte kurz warten und nochmal versuchen", bis zum nächsten Einloggen. Mit einem Preis von 1 Silber ging derselbe Gegenstand durch. Jetzt rundet Sku Sofortkaufpreis, Startgebot, den übernommenen Marktpreis und den Preis pro Stück aus dem Gesamtpreis auf das nächste ganze Silber, mindestens 1 Silber. Nach der Eingabe sagt Sku den gerundeten Preis an.
+Wie: Das Verkaufsfenster des Spiels hat auf WoW: Forever kein Kupferfeld, das Auktionshaus nimmt nur ganze Silber an. C_AuctionHouse.SupportsCopperValues() meldet dort aber "ja", und nur dann hatte Sku bisher gerundet. Ein Post mit Kupfer ging deshalb unverändert an den Server, der ihn ohne Antwort verwarf; das Nachrichtensystem des Auktionshauses (IsThrottledMessageSystemReady) blieb danach belegt. In SkuCore/auctionHouseForever.lua rundet die neue Funktion tSilverOnly jetzt immer: bei der Preiseingabe (tParseMoney), beim Startgebot, beim Marktpreis, beim Gesamtpreis und noch einmal unmittelbar vor dem Einstellen (AHF:PostDraft). Gefunden mit vorübergehenden Protokollzeilen im Spiel, die nicht im Release sind.
+
+### Downloads
+- Sku-Ever-Spielordner.zip, Sku-Ever-0.38.zip: mit der Korrektur.
+- Installer (1.6), SkuPacks und die 20 SkuEngine-Gruppen sind unverändert gegenüber 0.37.
+
+### Hinweis zum Stand
+- Getestet im Spiel: Mit einem Preis von 1 Silber ließ sich die Schriftrolle einstellen, mit 97 und 99 Kupfer nicht.
+- Die Rundung selbst ist im Spiel noch nicht getestet.
+
 ## Sku-Ever 0.37 (16.11.2026)
 
 ### Kurzfassung
