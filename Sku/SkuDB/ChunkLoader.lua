@@ -136,7 +136,7 @@ local function SkuDBFail(aFamily, aMsg)
 	if SkuErrorLog and SkuErrorLog.Log then pcall(function() SkuErrorLog:Log("skudbStream", tMsg) end) end
 	if Sku.MetricPoint then Sku:MetricPoint(tMsg) end
 	print("|cffff4040SkuDB|r " .. tMsg)
-	SkuDBSpeak("Sku Datenbank Fehler, Datensatz " .. aFamily)
+	SkuDBSpeak(Sku.deEn("Sku Datenbank Fehler, Datensatz ", "Sku database error, record ", "Erreur de base de données Sku, enregistrement ") .. aFamily)
 end
 
 -- [v42.09 i18n] Trailing locale of a chunk path, e.g.
@@ -924,7 +924,7 @@ SkuDBStreamFrame:SetScript("OnUpdate", function()
 			SkuDBStreamCo = nil
 			SkuDBStreamFrame:Hide()
 			geterrorhandler()("SkuDB stream crashed: " .. tostring(tErr))
-			SkuDBSpeak("Sku Datenbank Fehler")
+			SkuDBSpeak(Sku.deEn("Sku Datenbank Fehler", "Sku database error", "Erreur de base de données Sku"))
 			return
 		end
 		if coroutine.status(SkuDBStreamCo) == "dead" then

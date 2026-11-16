@@ -245,6 +245,8 @@ namespace SkuInstaller
             ["summary.clientFailed"]      = "Failed — {0}: {1}",
             ["summary.unknownError"]      = "unknown error",
             ["summary.reload"]            = "To apply the update now, type /reload in the game. Otherwise just start it normally.",
+            ["summary.restartNew"]        = "A new addon was added. The game only finds new addons when it starts, so close World of Warcraft and start it again from Battle.net. Everything else is already active after /reload.",
+            ["summary.settingsLater"]     = "Required game settings are still to be adjusted. Run the installer again once World of Warcraft is closed.",
             ["summary.battlenet"]         = "Start World of Warcraft from Battle.net to use the new version.",
 
             // ── addon progress (used from AddonInstaller) ────────────────────
@@ -479,6 +481,8 @@ namespace SkuInstaller
             ["summary.clientFailed"]      = "Fehlgeschlagen – {0}: {1}",
             ["summary.unknownError"]      = "unbekannter Fehler",
             ["summary.reload"]            = "Um die Aktualisierung jetzt anzuwenden, gib im Spiel /reload ein. Andernfalls starte es einfach normal.",
+            ["summary.restartNew"]        = "Ein neues AddOn ist dazugekommen. Das Spiel findet neue AddOns nur beim Start, schließe World of Warcraft deshalb und starte es über Battle.net neu. Alles andere ist nach /reload schon aktiv.",
+            ["summary.settingsLater"]     = "Erforderliche Spieleinstellungen müssen noch angepasst werden. Starte den Installer noch einmal, wenn World of Warcraft geschlossen ist.",
             ["summary.battlenet"]         = "Starte World of Warcraft über Battle.net, um die neue Version zu nutzen.",
 
             // ── AddOn-Fortschritt ────────────────────────────────────────────
@@ -719,6 +723,8 @@ namespace SkuInstaller
             ["summary.clientFailed"]      = "Échec — {0} : {1}",
             ["summary.unknownError"]      = "erreur inconnue",
             ["summary.reload"]            = "Pour appliquer la mise à jour tout de suite, tapez /reload dans le jeu. Sinon, lancez-le simplement normalement.",
+            ["summary.restartNew"]        = "Un nouvel addon a été ajouté. Le jeu ne trouve les nouveaux addons qu'au démarrage : fermez World of Warcraft et relancez-le depuis Battle.net. Tout le reste est déjà actif après /reload.",
+            ["summary.settingsLater"]     = "Des réglages du jeu nécessaires restent à ajuster. Relancez l'installateur une fois World of Warcraft fermé.",
             ["summary.battlenet"]         = "Lancez World of Warcraft depuis Battle.net pour utiliser la nouvelle version.",
 
             // ── progression des addons (AddonInstaller) ──────────────────────

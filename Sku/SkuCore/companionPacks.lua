@@ -59,7 +59,9 @@ f:SetScript("OnEvent", function(self)
 		local tBeacon = LibStub("SkuBeacon-1.0", true)
 		local tSets = tBeacon and tBeacon:GetSoundSets()
 		if not tSets or #tSets == 0 then
-			SkuOptions.Voice:OutputStringBTtts("Keine Beacon-Sounds gefunden. Bitte das Addon SkuBeaconSoundsets installieren.", false, true, 0.3)
+			SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Keine Beacon-Sounds gefunden. Bitte das Addon SkuBeaconSoundsets installieren.",
+				"No beacon sounds found. Please install the SkuBeaconSoundsets addon.",
+				"Aucun son de balise trouvé. Veuillez installer l'addon SkuBeaconSoundsets."), false, true, 0.3)
 		end
 	end)
 end)

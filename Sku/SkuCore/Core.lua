@@ -1809,7 +1809,9 @@ function SkuCore:OnEnable()
 
 		if _G["StaticPopup1Button2"] then
 			if _G["StaticPopup1Button2"]:IsShown() == true then
-				if _G["StaticPopup1Button2"]:GetText() == "Ignorieren" then
+				-- 16.11.2026: compare against the game's own button text, so it works in every client language
+				local tBtnText = _G["StaticPopup1Button2"]:GetText()
+				if tBtnText == "Ignorieren" or tBtnText == "Ignore" or (_G.IGNORE_DIALOG and tBtnText == _G.IGNORE_DIALOG) then
 					_G["StaticPopup1Button2"]:Click()
 				end
 			end

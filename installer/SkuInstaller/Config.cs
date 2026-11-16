@@ -239,6 +239,7 @@ namespace SkuInstaller
         {
             // Display names match the Sku GitHub download page verbatim (language-neutral).
             new AddonSpec { FolderName = "SkuAudioData_fast_de", AssetName = "SkuAudioData_fast_de.zip", Tag = CompanionTag, DisplayName = "SkuAudioData German Fast", IsMedia = true },
+            new AddonSpec { FolderName = "SkuAudioData_en",      AssetName = "SkuAudioData_en.zip",      Tag = CompanionTag, DisplayName = "SkuAudioData English",     IsMedia = true },
         };
 
     }

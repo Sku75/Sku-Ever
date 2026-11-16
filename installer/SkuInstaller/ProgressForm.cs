@@ -208,19 +208,10 @@ namespace SkuInstaller
                 ReportText(Loc.Get("status.checking"), true);
                 var results = await Task.Run(() => runner.BuildPlans());
 
-                // One gate for the whole run: ask about closing WoW once, not once
-                // per client.
-                if (InstallRunner.NeedsGameClosed(results))
-                {
-                    while (WowLocator.IsGameRunning() && !cancelled)
-                    {
-                        ScreenReaderAnnouncer.Announce(this, Loc.Get("dlg.closeGame.text"));
-                        var r = MessageBox.Show(this, Loc.Get("dlg.closeGame.text"),
-                            Loc.Get("dlg.closeGame.title"),
-                            MessageBoxButtons.RetryCancel, MessageBoxIcon.Warning);
-                        if (r != DialogResult.Retry) cancelled = true;
-                    }
-                }
+                // Sku-Ever 1.5: no "close WoW" gate any more. With the game running
+                // the runner overwrites files in place, leaves the game settings for
+                // a run with the game closed, and the summary says whether /reload
+                // is enough or a new addon needs a game restart.
 
                 if (!cancelled)
                 {

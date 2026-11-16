@@ -1634,14 +1634,15 @@ function MinimapScanner:SlashActiveSeekings()
          active = t.active
       end
       if active then
-         print("|cff00ff00[Aktiv]|r " .. (name or "?"))
-         SkuOptions.Voice:OutputStringBTtts(name or "unbekannt", false, true, 0.2)
+         print("|cff00ff00[" .. Sku.deEn("Aktiv", "Active", "Actif") .. "]|r " .. (name or "?"))
+         SkuOptions.Voice:OutputStringBTtts(name or Sku.deEn("unbekannt", "unknown", "inconnu"), false, true, 0.2)
          found = true
       end
    end
    if not found then
-      print("Keine Suche aktiv.")
-      SkuOptions.Voice:OutputStringBTtts("Keine Suche aktiv", false, true, 0.2)
+      local tNone = Sku.deEn("Keine Suche aktiv", "No tracking active", "Aucun pistage actif")
+      print(tNone .. ".")
+      SkuOptions.Voice:OutputStringBTtts(tNone, false, true, 0.2)
    end
 end
 

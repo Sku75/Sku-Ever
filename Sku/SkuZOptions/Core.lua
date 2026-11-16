@@ -563,10 +563,10 @@ function SkuOptions:SlashFunc(input, aSilent)
 				end
 				if tWidget:IsShown() then
 					tWidget:Hide()
-					SkuOptions.Voice:OutputStringBTtts("Chat sichtbar", false, true, 0.2, nil, nil, nil, 2)
+					SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Chat sichtbar", "Chat visible", "Chat visible"), false, true, 0.2, nil, nil, nil, 2)
 				else
 					tWidget:Show()
-					SkuOptions.Voice:OutputStringBTtts("Chat verdeckt", false, true, 0.2, nil, nil, nil, 2)
+					SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Chat verdeckt", "Chat covered", "Chat masqué"), false, true, 0.2, nil, nil, nil, 2)
 				end
 			end
 
@@ -4458,12 +4458,35 @@ function SkuOptions:OnInitialize()
 	-- Nur wenn auf diesem WoW-Konto noch gar keine Sku-Einstellungen gespeichert sind;
 	-- beim ersten Einloggen schaltet SkuCore jeden neuen Charakter auf dieses Profil.
 	if SkuOptionsDB == nil and type(SkuEverStartProfile) == "table" then
+		-- 16.11.2026: the profile was saved on a German client. On any other client
+		-- the stored menu texts are swapped for the client's language, and the
+		-- sound path follows the installed voice pack.
+		if GetLocale() ~= "deDE" and type(SkuEverStartProfileLocaleKeys) == "table" then
+			local tKeys = SkuEverStartProfileLocaleKeys
+			local tPack = Sku.AudiodataPath
+			local function tLocalize(aTable, aDepth)
+				if aDepth > 20 then return end
+				for k, v in pairs(aTable) do
+					if type(v) == "table" then
+						tLocalize(v, aDepth + 1)
+					elseif type(v) == "string" then
+						if tKeys[v] then
+							aTable[k] = L[tKeys[v]]
+						elseif tPack and tPack ~= "" and tPack ~= "SkuAudioData_fast_de" and string.find(v, "SkuAudioData_fast_de", 1, true) then
+							aTable[k] = string.gsub(v, "SkuAudioData_fast_de", tPack)
+						end
+					end
+				end
+			end
+			tLocalize(SkuEverStartProfile, 0)
+		end
 		SkuOptionsDB = {
 			profiles = { [L["Standard profil Allgemein"]] = SkuEverStartProfile.profile },
 			global = SkuEverStartProfile.global,
 		}
 	end
 	SkuEverStartProfile = nil
+	SkuEverStartProfileLocaleKeys = nil
 	SkuOptions.db = LibStub("AceDB-3.0"):New("SkuOptionsDB", defaults, true)
 	-- [v43.5] The BTTS cache-buster counters live in the global section so a
 	-- /reload continues them: the client's TTS audio cache survives a reload,

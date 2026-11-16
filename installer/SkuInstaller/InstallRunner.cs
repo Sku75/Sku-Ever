@@ -105,6 +105,9 @@ namespace SkuInstaller
         /// <summary>True when the user stopped the run before it finished.</summary>
         public bool WasCancelled { get; private set; }
 
+        /// <summary>WoW was running when Execute started (Sku-Ever 1.5: updates run live).</summary>
+        public bool GameWasRunning { get; private set; }
+
         public InstallRunner(List<InstallTarget> targets, InstallOptions options,
                              GitHubClient github, Action<ProgressLine> report,
                              CancellationToken cancel = default(CancellationToken))
@@ -178,6 +181,22 @@ namespace SkuInstaller
             return false;
         }
 
+        /// <summary>
+        /// True when the run added an addon folder the running game has not loaded.
+        /// The game only scans the AddOns folder at start, so /reload does not pick
+        /// a new folder up; everything else takes effect with /reload.
+        /// </summary>
+        public static bool AnyNewAddon(List<TargetResult> results)
+        {
+            foreach (var r in results)
+            {
+                if (r.Plan == null) continue;
+                foreach (var item in r.Plan.Items) if (item.FirstInstall) return true;
+                foreach (var m in r.Plan.ManagedItems) if (m.FirstInstall) return true;
+            }
+            return false;
+        }
+
         /// <summary>True when any client failed to plan or to install.</summary>
         public static bool AnyFailed(List<TargetResult> results)
         {
@@ -197,6 +216,7 @@ namespace SkuInstaller
         /// <summary>Background: carry out every plan, then the machine-wide extras.</summary>
         public void Execute(List<TargetResult> results)
         {
+            GameWasRunning = WowLocator.IsGameRunning();
             foreach (var r in results)
             {
                 if (r.Plan == null) continue;   // planning already failed
@@ -238,7 +258,10 @@ namespace SkuInstaller
 
                     if (WasCancelled) break;
 
-                    if (r.Plan.SettingsNeedWriting)
+                    // The game writes its Config.wtf when it closes, so settings
+                    // written while it runs would be lost: they wait for a run with
+                    // the game closed.
+                    if (r.Plan.SettingsNeedWriting && !GameWasRunning)
                     {
                         SayScoped(Loc.Get("status.writingSettings"), true);
                         GameSettings.Apply(r.Target.AddOnsPath, m => SayScoped(m));
@@ -507,7 +530,7 @@ namespace SkuInstaller
                     if (r.Plan.Items.Count == 0 && r.Plan.ManagedItems.Count == 0)
                         lines.Add(Loc.Get("summary.addonsCurrent"));
                     if (r.Plan.SettingsNeedWriting)
-                        lines.Add(Loc.Get("summary.settings"));
+                        lines.Add(Loc.Get(GameWasRunning ? "summary.settingsLater" : "summary.settings"));
                     if (r.Plan.TocInterfaceNeedsSync && !string.IsNullOrEmpty(r.Plan.DesiredInterface))
                         lines.Add(Loc.Format("summary.client", r.Plan.DesiredInterface));
                     if (_options.InstallLoginTool && LoginToolInstaller.IsInstalled(r.Target.AddOnsPath))
@@ -518,8 +541,14 @@ namespace SkuInstaller
             }
 
             if (HasWork(results))
-                blocks.Add(NeedsGameClosed(results) ? Loc.Get("summary.battlenet")
-                                                    : Loc.Get("summary.reload"));
+            {
+                if (!GameWasRunning)
+                    blocks.Add(Loc.Get("summary.battlenet"));
+                else if (AnyNewAddon(results))
+                    blocks.Add(Loc.Get("summary.restartNew"));
+                else
+                    blocks.Add(Loc.Get("summary.reload"));
+            }
 
             return string.Join(Environment.NewLine + Environment.NewLine, blocks);
         }

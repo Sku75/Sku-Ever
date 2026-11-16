@@ -433,7 +433,7 @@ function DungeonBrowser:DoEnroll()
                tSay(L.statusListed, true)
             elseif final then
                announced = true
-               tSayChat(L.enrollFailed .. "kein aktiver Eintrag", "ff8800")
+               tSayChat(L.enrollFailed .. deEn("kein aktiver Eintrag", "no active listing"), "ff8800")
             end
          end
          _G.C_Timer.After(0.7, function() check(false) end)

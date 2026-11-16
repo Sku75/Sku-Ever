@@ -2,6 +2,50 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.37 (16.11.2026)
+
+### Kurzfassung
+- Mit englischem Spiel-Client spricht Sku-Ever durchgehend Englisch. Neu ist dafür das englische Sprachpaket, der Installer 1.5 bietet es an.
+- Eine Erstinstallation auf einem englischen Client bekommt das Startprofil in Englisch, die Rundum-Zielwahl bleibt dabei aus.
+- Sieben Ansagen und Meldungen, die bisher nur Deutsch kannten, gibt es jetzt auch auf Englisch.
+- Der Installer aktualisiert auch, während WoW läuft. Danach reicht /reload im Spiel.
+
+### Neu: Englisches Sprachpaket im Installer 1.5
+Was: Der Installer bietet neben "SkuAudioData German Fast" jetzt "SkuAudioData English" an. Ist der Installer auf Englisch eingestellt, ist das englische Paket vorgewählt. Ein Update behält das Paket, das schon installiert ist. Die Homepage hat einen eigenen Download für die englische Sprachausgabe.
+Wie: Das Paket ist SkuAudioData_en aus dem SkuAddon (Version 12, GPL), mit WoW-Version 16001 in der TOC. Es liegt wie die anderen Begleitpakete im Release v0.26. In installer/SkuInstaller/Config.cs steht es als zweites Sprachpaket, Program.cs wählt die Vorgabe nach der Installer-Sprache. Bisher gab es nur das deutsche Paket. Ein englischer Client fand dann kein passendes Paket: Die Sku-Stimme fiel auf die Windows-Sprachausgabe zurück, und die Aura-Klänge, die nur im Sprachpaket liegen, blieben stumm.
+
+### Neu: Installer aktualisiert bei laufendem Spiel
+Was: Der Installer verlangt nicht mehr, dass World of Warcraft geschlossen ist. Er aktualisiert auch bei laufendem Spiel, danach reicht /reload. Kam ein ganz neues Addon dazu (zum Beispiel eine neue SkuEngine-Gruppe), sagt die Zusammenfassung, dass das Spiel einmal neu gestartet werden muss, weil WoW neue Addon-Ordner nur beim Start findet. Erforderliche Spieleinstellungen schreibt er nur bei geschlossenem Spiel und sagt sonst, dass sie beim nächsten Lauf mit geschlossenem Spiel folgen.
+Wie: In installer/SkuInstaller/ProgressForm.cs entfällt die Abfrage "Bitte World of Warcraft schließen". Bei laufendem Spiel überschreibt der Installer die Dateien an Ort und Stelle (OverwriteInPlace, gab es schon für Code-Updates), jetzt auch für Sprachpakete und neue Ordner. InstallRunner merkt sich, ob das Spiel lief (GameWasRunning), lässt dann GameSettings.Apply aus, weil das Spiel seine Config.wtf beim Beenden überschreibt, und wählt die passende Schlusszeile (neu: summary.restartNew und summary.settingsLater in Loc.cs, deutsch, englisch, französisch).
+
+### Behoben: Startprofil auf einem englischen Client
+Was: Das Startprofil für Erstinstallationen wurde auf einem deutschen Client gespeichert. Auf einem englischen Client schaltete es die Rundum-Zielwahl ein statt aus, der Tastenklang dazu blieb stumm, und Chat-Reiter und Übersichtsseiten hießen deutsch (zum Beispiel "Flüstern", "Allgemeines").
+Wie: Einige Einstellungen speichert Sku als Text der Client-Sprache, etwa "Aus" oder die Namen der Chat-Reiter. Am Ende von Sku/SkuEverStartProfile.lua nennt die Tabelle SkuEverStartProfileLocaleKeys zu jedem dieser deutschen Werte den Schlüssel der Sprachdatei. Beim Anlegen des Profils (SkuOptions:OnInitialize in SkuZOptions/Core.lua) setzt Sku auf jedem nicht deutschen Client den Text der Client-Sprache ein. Der Pfad des Kampfklangs zeigt dabei auf das installierte Sprachpaket. Vorhandene Einstellungen werden wie bisher nie angefasst.
+
+### Behoben: Ansagen nur auf Deutsch
+Was: Diese Ansagen und Chat-Meldungen kamen auch auf einem englischen Client auf Deutsch:
+- Sku Datenbank Fehler (SkuDeferredData.lua, SkuDB/ChunkLoader.lua)
+- Keine Beacon-Sounds gefunden (SkuCore/companionPacks.lua)
+- Aktive Suchen abfragen: "Aktiv", "unbekannt", "Keine Suche aktiv" (SkuCore/minimapScanner.lua)
+- Chat verdecken: "Chat sichtbar", "Chat verdeckt" (SkuZOptions/Core.lua)
+- Dungeonbrowser: "kein aktiver Eintrag" (SkuCore/dungeonBrowser.lua)
+- Navigationsaufgaben: "hoch von", "neigen auf" (SkuNav/specialNavigationTasks.lua)
+Wie: Die Texte laufen jetzt über Sku.deEn mit deutschem, englischem und französischem Text.
+
+### Behoben: Erkennung von Spieltexten
+Was: Der Knopf "Ignorieren" im Spiel-Popup wurde nur auf einem deutschen Client automatisch geklickt. Der Gebietsname "Höhle der Nebel" (vor den Höhlen des Wehklagens) hatte in der englischen Sprachdatei noch den deutschen Text, die Gebietserkennung griff dort auf Englisch nicht.
+Wie: SkuCore/Core.lua vergleicht den Knopftext zusätzlich mit "Ignore" und mit dem Text, den das Spiel selbst dafür verwendet (IGNORE_DIALOG). In locales/enUS.lua steht jetzt der englische Gebietsname "Cavern of Mists".
+
+### Downloads
+- Sku-Ever-Spielordner.zip, Sku-Ever-0.36.zip: mit den Korrekturen.
+- Sku-Ever-Installer.exe, installer-version.txt: Installer 1.5.
+- SkuAudioData_en.zip: neu, im Release v0.26.
+- SkuPacks und die 20 SkuEngine-Gruppen sind unverändert gegenüber 0.36.
+
+### Hinweis zum Stand
+- Mit einer Codeprüfung aller Texte gefunden. Im Spiel mit englischem Client noch nicht getestet, ebenso wenig der Installer 1.5 mit englischem Paket und bei laufendem Spiel.
+- Testbefehle für Entwickler (/skudebug, /skuspec, Datenbankwerkzeuge, Wegpack-Diagnose) sprechen weiter nur Deutsch.
+
 ## Sku-Ever 0.36 (16.11.2026)
 
 ### Kurzfassung

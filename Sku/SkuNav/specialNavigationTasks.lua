@@ -154,15 +154,15 @@ function SkuNav:NavigationModeWoCoordinatesNextStep(aTaskId, aStart, aStop)
 
 		elseif SkuDB.Tasks[tCurrentTask][tCurrentStep].action == "up" then
 			SkuOptions.Voice:OutputString("sound-success1", true, true, 0.1, true)
-			SkuOptions.Voice:OutputStringBTtts(tPrefix..L["schritt "]..tCurrentStep..": hoch von "..SkuDB.Tasks[tCurrentTask][tCurrentStep].value..L[" bis 0"]..". "..tComment, true, true, 0.2, nil, nil, nil, 2, nil, true)						
-			print(tPrefix..L["schritt "]..tCurrentStep..": hoch von "..SkuDB.Tasks[tCurrentTask][tCurrentStep].value..L[" bis 0"]..". "..tComment)
+			SkuOptions.Voice:OutputStringBTtts(tPrefix..L["schritt "]..tCurrentStep..Sku.deEn(": hoch von ", ": up from ", " : monter de ")..SkuDB.Tasks[tCurrentTask][tCurrentStep].value..L[" bis 0"]..". "..tComment, true, true, 0.2, nil, nil, nil, 2, nil, true)						
+			print(tPrefix..L["schritt "]..tCurrentStep..Sku.deEn(": hoch von ", ": up from ", " : monter de ")..SkuDB.Tasks[tCurrentTask][tCurrentStep].value..L[" bis 0"]..". "..tComment)
 			tCurrentMovementLeft = SkuDB.Tasks[tCurrentTask][tCurrentStep].value
 
 		elseif SkuDB.Tasks[tCurrentTask][tCurrentStep].action == "pitch" then
 			SkuOptions.Voice:OutputString("sound-success1", true, true, 0.1, true)
 
-			SkuOptions.Voice:OutputStringBTtts(tPrefix..L["schritt "]..tCurrentStep..": neigen auf "..SkuDB.Tasks[tCurrentTask][tCurrentStep].value..". "..tComment, true, true, 0.2, nil, nil, nil, 2, nil, true)
-			print(tPrefix..L["schritt "]..tCurrentStep..": neigen auf "..SkuDB.Tasks[tCurrentTask][tCurrentStep].value..". "..tComment)
+			SkuOptions.Voice:OutputStringBTtts(tPrefix..L["schritt "]..tCurrentStep..Sku.deEn(": neigen auf ", ": pitch to ", " : incliner à ")..SkuDB.Tasks[tCurrentTask][tCurrentStep].value..". "..tComment, true, true, 0.2, nil, nil, nil, 2, nil, true)
+			print(tPrefix..L["schritt "]..tCurrentStep..Sku.deEn(": neigen auf ", ": pitch to ", " : incliner à ")..SkuDB.Tasks[tCurrentTask][tCurrentStep].value..". "..tComment)
 
 		elseif SkuDB.Tasks[tCurrentTask][tCurrentStep].action == "pitchEndless" then
 			SkuOptions.Voice:OutputString("sound-success1", true, true, 0.1, true)

@@ -82,7 +82,7 @@ function Sku:EnsureData(aKey)
 				print("|cffff4040Sku|r " .. tMsg)
 				pcall(function()
 					if SkuOptions and SkuOptions.Voice and SkuOptions.Voice.OutputStringBTtts then
-						SkuOptions.Voice:OutputStringBTtts("Sku Datenbank Fehler, Datensatz " .. aKey, false, true, 0.2)
+						SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Sku Datenbank Fehler, Datensatz ", "Sku database error, record ", "Erreur de base de données Sku, enregistrement ") .. aKey, false, true, 0.2)
 					end
 				end)
 				return false                   -- stays failed; consumers keep their guards up
@@ -109,7 +109,7 @@ function Sku:EnsureData(aKey)
 		print("|cffff4040Sku|r " .. tMsg)
 		pcall(function()
 			if SkuOptions and SkuOptions.Voice and SkuOptions.Voice.OutputStringBTtts then
-				SkuOptions.Voice:OutputStringBTtts("Sku Datenbank Fehler, Datensatz " .. aKey, false, true, 0.2)
+				SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Sku Datenbank Fehler, Datensatz ", "Sku database error, record ", "Erreur de base de données Sku, enregistrement ") .. aKey, false, true, 0.2)
 			end
 		end)
 		return false

@@ -1,6 +1,11 @@
 -- Sku-Ever Startprofil: Einstellungen fuer eine Erstinstallation.
 -- Wird nur benutzt, wenn auf diesem WoW-Konto noch keine Sku-Einstellungen existieren
 -- (SkuOptionsDB fehlt). Vorhandene Einstellungen werden nie angefasst.
+--
+-- Das Profil wurde auf einem deutschen Client gespeichert. Einige Werte sind Texte
+-- aus der Sprachdatei (Ein/Aus, Namen der Chat-Reiter und Übersichtsseiten). Die
+-- Tabelle SkuEverStartProfileLocaleKeys unten nennt zu jedem den Sprachschlüssel;
+-- SkuZOptions/Core.lua setzt beim Anlegen den Text der Client-Sprache ein.
 SkuEverStartProfile = {
 	["profile"] = {
 		["SkuCore"] = {
@@ -2172,4 +2177,20 @@ SkuEverStartProfile = {
 			},
 		},
 	},
+}
+
+-- Deutscher Wert im Profil -> Schlüssel in der Sprachdatei
+SkuEverStartProfileLocaleKeys = {
+	["Aus"] = "Off",
+	["Bei erster und zweiter Taste"] = "On first and second key",
+	["Allgemeines"] = "Allgemeines",
+	["Ruf"] = "Reputation",
+	["Tier"] = "Pet",
+	["Gruppe"] = "Party",
+	["Fertigkeiten"] = "Skills",
+	["Gilde"] = "Guild",
+	["Standard"] = "Default",
+	["Kommunikation"] = "Communication",
+	["Anderes"] = "Other",
+	["Flüstern"] = "ChatTabWhisper",
 }
