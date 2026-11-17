@@ -2336,6 +2336,22 @@ function SkuOptions:CreateMainFrame()
 						for _, tChild in ipairs(self.children) do tChild.noStepUpAfterSelect = true end
 					end
 
+					-- ============================================================
+					-- 7.3 OPTIONEN AUDIOUNTERSTÜTZUNG (Fernbedienung)
+					-- Blizzards Kampf-Audiohinweise (Optionen, Audiounterstützung)
+					-- über dieselben Setting-Objekte wie das Spieloptionen-Abbild:
+					-- SkuCore.GameOptions:AudioAssistMenuBuilder (gameOptions.lua).
+					-- ============================================================
+					local tAudioAssistEntry = SkuOptions:InjectMenuItems(self, {L["ACC_AudioAssistTitle"]}, SkuGenericMenuItem)
+					tAudioAssistEntry.dynamic = true
+					tAudioAssistEntry.BuildChildren = function(self)
+						if SkuCore and SkuCore.GameOptions and SkuCore.GameOptions.AudioAssistMenuBuilder then
+							SkuCore.GameOptions:AudioAssistMenuBuilder(self)
+						else
+							SkuOptions:InjectMenuItems(self, {L["Empty"]}, SkuGenericMenuItem)
+						end
+					end
+
 					-- 7.3 Kamera: nach Einstellungen -> Kamera verschoben
 					-- (SkuOptions.CameraMenuBuilder, File-Ebene weiter unten).
 
@@ -2352,22 +2368,6 @@ function SkuOptions:CreateMainFrame()
 					end
 					if SkuOptions.options and SkuOptions.options.args and SkuOptions.options.args.softTargeting then
 						SkuOptions:IterateOptionsArgs({ softTargeting = SkuOptions.options.args.softTargeting }, self, SkuSettings:Sub("SkuOptions"), "SkuOptions", "", true)
-					end
-
-					-- ============================================================
-					-- 7.3 OPTIONEN AUDIOUNTERSTÜTZUNG (Fernbedienung)
-					-- Blizzards Kampf-Audiohinweise (Optionen, Audiounterstützung)
-					-- über dieselben Setting-Objekte wie das Spieloptionen-Abbild:
-					-- SkuCore.GameOptions:AudioAssistMenuBuilder (gameOptions.lua).
-					-- ============================================================
-					local tAudioAssistEntry = SkuOptions:InjectMenuItems(self, {L["ACC_AudioAssistTitle"]}, SkuGenericMenuItem)
-					tAudioAssistEntry.dynamic = true
-					tAudioAssistEntry.BuildChildren = function(self)
-						if SkuCore and SkuCore.GameOptions and SkuCore.GameOptions.AudioAssistMenuBuilder then
-							SkuCore.GameOptions:AudioAssistMenuBuilder(self)
-						else
-							SkuOptions:InjectMenuItems(self, {L["Empty"]}, SkuGenericMenuItem)
-						end
 					end
 
 					-- ============================================================
