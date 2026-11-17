@@ -2675,7 +2675,11 @@ function SkuChat:OnInitialize()
 		SkuChat.ChatOpen = true
 		SkuOptions.Voice:StopOutputEmptyQueue()
 		SkuOptions.Voice:OutputString("sound-on3_1", true, true, 0.2, true)
-		if not SkuSettings:Sub("SkuChat").tabs[SkuChat.currentTab] then
+		SkuChat:CreateDefaultTabsIfMissing(true)
+		if not SkuSettings:Sub("SkuChat").tabs or not SkuSettings:Sub("SkuChat").tabs[1] then
+			return
+		end
+		if not SkuChat.currentTab or not SkuSettings:Sub("SkuChat").tabs[SkuChat.currentTab] then
 			SkuChat.currentTab = 1
 		end
 		SkuSettings:Sub("SkuChat").tabs[SkuChat.currentTab].historyCurrentLine = 1
@@ -2766,8 +2770,25 @@ function SkuChat:OnInitialize()
 			end
 		end
 
+		-- A tab without lines (new character, nothing received yet) has no line data.
+		-- Up, down and the line menu then only say "empty"; switching tabs still works.
+		SkuChat:CreateDefaultTabsIfMissing(true)
+		if not SkuSettings:Sub("SkuChat").tabs or not SkuSettings:Sub("SkuChat").tabs[1] then
+			return
+		end
+		if not SkuChat.currentTab or not SkuSettings:Sub("SkuChat").tabs[SkuChat.currentTab] then
+			SkuChat.currentTab = 1
+		end
 		local tLineData = SkuSettings:Sub("SkuChat").tabs[SkuChat.currentTab].history[SkuSettings:Sub("SkuChat").tabs[SkuChat.currentTab].historyCurrentLine]
-		
+		if not tLineData then
+			if self.menuOpen == false and (aKey == "UP" or aKey == "DOWN" or aKey == "CTRL-ENTER") then
+				SkuSettings:Sub("SkuChat").tabs[SkuChat.currentTab].historyCurrentLine = 1
+				SkuChat:ReadLine(SkuChat.currentTab, 1)
+				return
+			end
+			tLineData = {}
+		end
+
 		if tLineData.itemLinks and #tLineData.itemLinks > 0 and self.menuOpen == false then
 			if self.menuOpen == false then
 				for w = 1, #tLineData.itemLinks do
@@ -3382,6 +3403,13 @@ function SkuChat:ReadLine(aTab, aLine, aReadTabName)
 		return
 	end
 	if not SkuSettings:Sub("SkuChat").tabs[aTab].history[aLine] then
+		if not SkuSettings:Sub("SkuChat").tabs[aTab].history[1] then
+			local tEmpty = L["Empty"]
+			if aReadTabName then
+				tEmpty = (SkuSettings:Sub("SkuChat").tabs[aTab].name or "")..", "..tEmpty
+			end
+			SkuOptions.Voice:OutputStringBTtts(tEmpty, true, true, 0.3, nil, nil, nil, 2)
+		end
 		return
 	end
 	
@@ -4326,6 +4354,33 @@ end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
 local SkuChatEditboxHookFlag = false
+-- Creates the four default tabs when the profile has none. Runs on entering the
+-- world and again when the chat is opened (Shift+F2) without any tab, e.g. after
+-- the setup on entering the world stopped with an error.
+function SkuChat:CreateDefaultTabsIfMissing(aFromChatKey)
+	-- the tabs are secure buttons; from a chat key in combat we leave that to the next safe moment
+	if aFromChatKey and InCombatLockdown() and (SkuSettings:Sub("SkuChat").tabs == nil or #SkuSettings:Sub("SkuChat").tabs == 0) then
+		return
+	end
+	if not SkuSettings:Sub("SkuChat").tabs or #SkuSettings:Sub("SkuChat").tabs == 0 then
+		SkuSettings:Sub("SkuChat").tabs = {}
+		SkuChat:NewTab(L["Default"])
+		SkuChat:NewTab(L["Communication"])
+		SkuChat:NewTab(L["Other"])
+		-- Dedicated whisper tab: NewTab/ResetTab pick the message types up from
+		-- SkuChat.ChatFrameDefaultTabs[L["ChatTabWhisper"]] (whispers + Battle.net
+		-- whispers audible, everything else muted). It gets its OWN new-message
+		-- sound instead of the shared "sound-newChatLine" so an incoming whisper is
+		-- recognisable by ear alone; changeable per tab under
+		-- "Audio notification on chat message".
+		local tWhisperTabIndex = SkuChat:NewTab(L["ChatTabWhisper"])
+		if tWhisperTabIndex and SkuSettings:Sub("SkuChat").tabs[tWhisperTabIndex] then
+			SkuSettings:Sub("SkuChat").tabs[tWhisperTabIndex].audioOnNewMessage = "sound-notification3"
+		end
+	end
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------
 function SkuChat:PLAYER_ENTERING_WORLD(...)
 	local event, isInitialLogin, isReloadingUi = ...
 
@@ -4371,22 +4426,7 @@ function SkuChat:PLAYER_ENTERING_WORLD(...)
 	SkuChat.options.args.WowTtsVoice.values = SkuChat.WowTtsVoices
 
 	--create default tabs
-	if not SkuSettings:Sub("SkuChat").tabs or #SkuSettings:Sub("SkuChat").tabs == 0 then
-		SkuSettings:Sub("SkuChat").tabs = {}
-		SkuChat:NewTab(L["Default"])
-		SkuChat:NewTab(L["Communication"])
-		SkuChat:NewTab(L["Other"])
-		-- Dedicated whisper tab: NewTab/ResetTab pick the message types up from
-		-- SkuChat.ChatFrameDefaultTabs[L["ChatTabWhisper"]] (whispers + Battle.net
-		-- whispers audible, everything else muted). It gets its OWN new-message
-		-- sound instead of the shared "sound-newChatLine" so an incoming whisper is
-		-- recognisable by ear alone; changeable per tab under
-		-- "Audio notification on chat message".
-		local tWhisperTabIndex = SkuChat:NewTab(L["ChatTabWhisper"])
-		if tWhisperTabIndex and SkuSettings:Sub("SkuChat").tabs[tWhisperTabIndex] then
-			SkuSettings:Sub("SkuChat").tabs[tWhisperTabIndex].audioOnNewMessage = "sound-notification3"
-		end
-	end
+	SkuChat:CreateDefaultTabsIfMissing()
 
 	--init filters
 	if not SkuSettings:Sub("SkuChat").chatSettings.filter then
