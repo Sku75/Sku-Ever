@@ -799,8 +799,14 @@ SkuEverStartProfile = {
 		},
 		["SkuMob"] = {
 			["InCombatSound"] = "Interface\\AddOns\\SkuAudioData_fast_de\\assets\\audio\\sound-notification17.mp3",
-			["vocalizePlayerNamePlaceholders"] = false,
-			["dontVocalizePlayerReactionAndLevelInCombat"] = false,
+			-- Monitor, Ziel Optionen: nur diese vier sind an (abgenommen 17.11.2026)
+			["dontVocalizePlayerReactionAndLevelInCombat"] = true,
+			["vocalizePlayerNamePlaceholders"] = true,
+			["vocalizePlayerNamePlaceholdersSkuTts"] = true,
+			["blizzardTargetNameAuto"] = true,
+			["vocalizeRaidTargetOnly"] = false,
+			["repeatRaidTargetMarkers"] = false,
+			["autoSetSkuRaidTargetsToInCombatCreatures"] = false,
 		},
 		["SkuChat"] = {
 			["chatSettings"] = {
