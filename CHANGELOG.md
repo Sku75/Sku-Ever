@@ -2,6 +2,33 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.42 (17.11.2026)
+
+### Kurzfassung
+- "Optionen Audiounterstützung" steht im Schnellmenü jetzt an dritter Stelle, direkt nach Sprachausgabe.
+- Neue Installationen starten in den Ziel Optionen mit genau vier eingeschalteten Punkten.
+- Das Installer-Startskript lädt jetzt aus Sku-Ever statt aus dem alten Repository.
+
+### Geändert: Position im Schnellmenü
+Was: Die Reihenfolge im Schnellmenü ist jetzt Lautstärke, Sprachausgabe, Optionen Audiounterstützung, Dial Targeting, Soft Targeting, Sonstiges. In 0.41 standen Dial Targeting und Soft Targeting davor.
+Wie: Der Block 7.3 in SkuZOptions/Core.lua steht jetzt vor dem Einhängen von Dial Targeting und Soft Targeting; die Menüreihenfolge folgt der Einfügereihenfolge.
+
+### Geändert: Startprofil, Ziel Optionen
+Was: Eine Neuinstallation hat unter Monitor, Ziel Optionen nur diese Punkte an: Im Kampf für Spieler nicht Freundlich oder Feindlich und Level ansagen; Freundliche und feindliche Spieler ansagen; Spieler mit generischen Beschreibungen ansagen; Blizzard Zielname Ansage automatisch regeln. Nur Schlachtzugsymbol ansagen, Schlachtzugsymbole wiederholen und Sku-Schlachtzugsymbole automatisch setzen sind aus. Bestehende Einstellungen bleiben unverändert.
+Wie: Abschnitt SkuMob in SkuEverStartProfile.lua setzt alle sieben Schalter ausdrücklich.
+
+### Behoben: alte Verweise auf das frühere Repository
+Was: Das Startskript installer/bootstrap/Install-SkuUpdater.ps1 lud aus Sku75/Sku-WoW-Addon-TBC und suchte SkuInstaller.exe; jetzt lädt es Sku-Ever-Installer.exe aus Sku75/Sku-Ever. Sku/README.md, die Login-Tool-Anleitung, das alte Release-Skript und die Installer-Dokumente zeigen auf Sku-Ever.
+Wie: Textersetzungen; installer/shared/addon-catalog.json nennt jetzt Sku75/Sku-Ever, Sku-Ever-{version}.zip und den Begleitpaket-Tag v0.26 (das nicht angebotene Paket SkuAudioData entfernt), damit test_catalog_parity.py wieder besteht. Der Installer selbst ist unverändert (1.6), er liest diese Felder nicht.
+
+### Behoben: Selbsttest des Installers
+Was: SkuSelfTest selfupdateproof lud die nicht mehr vorhandene Datei SkuInstaller.exe; forevertest prüfte noch Anniversary, Era und die alten Versionsnummern 43/44. Beide laufen jetzt durch.
+Wie: SelfTestProgram.cs nutzt Sku-Ever-Installer.exe, forevertest prüft nur noch Forever und 0.xx-Versionen.
+
+### Downloads
+- Sku-Ever-Spielordner.zip, Sku-Ever-0.42.zip: mit den Änderungen.
+- Installer (1.6), SkuPacks und die 20 SkuEngine-Gruppen sind unverändert gegenüber 0.41.
+
 ## Sku-Ever 0.41 (17.11.2026)
 
 ### Kurzfassung
