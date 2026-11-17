@@ -4,16 +4,16 @@ param()
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
-$base = 'https://github.com/Sku75/Sku-WoW-Addon-TBC/releases/latest/download'
+$base = 'https://github.com/Sku75/Sku-Ever/releases/latest/download'
 $temp = Join-Path ([IO.Path]::GetTempPath()) ('SkuSetup-' + [Guid]::NewGuid().ToString('N'))
 $metadataPath = Join-Path $temp 'installer-version.txt'
-$downloadPath = Join-Path $temp 'SkuInstaller.exe'
+$downloadPath = Join-Path $temp 'Sku-Ever-Installer.exe'
 
 try {
     New-Item -ItemType Directory -Path $temp | Out-Null
-    Write-Host 'Sku Updater fuer Windows wird heruntergeladen.'
+    Write-Host 'Sku-Ever Installer fuer Windows wird heruntergeladen.'
     Invoke-WebRequest "$base/installer-version.txt" -OutFile $metadataPath -UseBasicParsing
-    Invoke-WebRequest "$base/SkuInstaller.exe" -OutFile $downloadPath -UseBasicParsing
+    Invoke-WebRequest "$base/Sku-Ever-Installer.exe" -OutFile $downloadPath -UseBasicParsing
 
     $metadata = Get-Content $metadataPath
     $expected = (($metadata | Where-Object { $_ -match '^sha256=' } | Select-Object -First 1) -replace '^sha256=', '').Trim().ToLowerInvariant()

@@ -33,7 +33,7 @@ If the tool isn't working, please consult the "Common problems when the tool doe
 If you need help, feel free to ask in our Discord: https://discord.gg/FsfKeqxZV4
 
 # Setting up the tool (automatic)
-The Sku installer (https://sku75.github.io/Sku-WoW-Addon-TBC/) sets up
+The Sku installer (https://sku75.github.io/Sku-Ever/) sets up
 everything: the tool, the login-screen textures, the readable font, the
 AutoHotkey runtimes, and a "WoW Login Tool" shortcut on the desktop and in
 the Start menu. If you used it, you are done - skip to "Using the tool".

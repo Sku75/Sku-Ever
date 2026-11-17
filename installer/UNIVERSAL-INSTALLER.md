@@ -21,7 +21,7 @@ werden jedoch aus demselben GitHub Release und ueber dasselbe
 - `addon-catalog.json`
 
 Die beiden kleinen Startprogramme laden nur von
-`Sku75/Sku-WoW-Addon-TBC/releases/latest/download`, pruefen SHA-256 und starten
+`Sku75/Sku-Ever/releases/latest/download`, pruefen SHA-256 und starten
 beziehungsweise installieren danach die native Variante.
 
 ## Eine gepflegte Addon-Definition

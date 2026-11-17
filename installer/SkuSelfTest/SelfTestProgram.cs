@@ -401,7 +401,7 @@ namespace SkuInstaller
         /// </summary>
         private static void RunSelfUpdateProof()
         {
-            string url = GitHubClient.BuildLatestDownloadUrl("SkuInstaller.exe");
+            string url = GitHubClient.BuildLatestDownloadUrl("Sku-Ever-Installer.exe");
             Console.WriteLine("=== Self-update verification proof ===");
             Console.WriteLine($"    published exe : {url}");
 
@@ -723,11 +723,12 @@ namespace SkuInstaller
                 Check("\"wowf\" reads as the Forever product token",
                       Config.NormalizeProduct("wowf") == Config.ForeverFlavor &&
                       Config.NormalizeProduct("wow_anniversary") == Config.AnniversaryFlavor);
-                Check("Anniversary and Era still found",
-                      flavors.Exists(f => f.Product == Config.AnniversaryFlavor) &&
-                      flavors.Exists(f => f.Product == Config.EraFlavor));
+                // Sku-Ever installs into WoW Forever only (WowLocator.SupportedProducts).
+                Check("Anniversary and Era are not offered (Sku-Ever is Forever only)",
+                      !flavors.Exists(f => f.Product == Config.AnniversaryFlavor) &&
+                      !flavors.Exists(f => f.Product == Config.EraFlavor));
                 Check("unsupported client (wow_classic) skipped", !flavors.Exists(f => f.Product == "wow_classic"));
-                Check("Anniversary listed first", flavors.Count > 0 && flavors[0].Product == Config.AnniversaryFlavor);
+                Check("Forever listed first", flavors.Count > 0 && flavors[0].Product == Config.ForeverFlavor);
                 Check("Forever is a supported product, last in the picker",
                       WowLocator.SupportedProducts[WowLocator.SupportedProducts.Length - 1] == Config.ForeverFlavor);
                 Check("labels", WowLocator.ShortLabel(Config.ForeverFlavor) == "Forever" &&
@@ -742,16 +743,17 @@ namespace SkuInstaller
                 string pin = Config.MainVersion;
                 try
                 {
-                    Config.OverrideMainVersion("43.10");
-                    Console.WriteLine($"    43.10: {fwdTarget.StatusLine()}");
-                    Check("43.10 is not installable on Forever", !fwdTarget.Installable && !fwdTarget.UpdateAvailable);
+                    // Sku-Ever numbers its versions 0.xx; below the minimum nothing is installable.
+                    Config.OverrideMainVersion("0.25");
+                    Console.WriteLine($"    0.25: {fwdTarget.StatusLine()}");
+                    Check("0.25 is not installable on Forever", !fwdTarget.Installable && !fwdTarget.UpdateAvailable);
                     Check("43.10 still installable on Anniversary and Era",
                           targets.TrueForAll(t => t.Product == Config.ForeverFlavor || t.Installable));
                     Config.OverrideMainVersion(Config.ForeverMinMainVersion);
                     Console.WriteLine($"    {Config.ForeverMinMainVersion}: {fwdTarget.StatusLine()}");
                     Check(Config.ForeverMinMainVersion + " unlocks Forever", fwdTarget.Installable);
-                    Config.OverrideMainVersion("44.10");
-                    Check("44.10 too (numeric compare, not text)", fwdTarget.Installable);
+                    Config.OverrideMainVersion("0.100");
+                    Check("0.100 too (numeric compare, not text)", fwdTarget.Installable);
                 }
                 finally { Config.OverrideMainVersion(pin); }
 
@@ -768,7 +770,7 @@ namespace SkuInstaller
                 string eraList = WowLocator.InterfaceVersionList(eraAddons);
                 Console.WriteLine($"    Forever: {fwdList}   Anniversary: {annList}   Era: {eraList}");
                 Check("Forever folder -> 16001 only", fwdList == "16001");
-                Check("Anniversary folder -> 20506, 11509 (no Forever, no MoP)", annList == "20506, 11509");
+                Check("every folder gets only the Forever number (Sku-Ever is Forever only)", annList == "16001" && eraList == "16001");
                 Check("Era folder -> same list as Anniversary", eraList == annList);
 
                 Console.WriteLine("=== TOC rewrite on a Forever install ===");
@@ -838,7 +840,7 @@ namespace SkuInstaller
                 Config.OverrideMainVersion(Config.ForeverMinMainVersion);
                 Check("managed addons offered for the Forever target once Sku 44 is out",
                       ManagedAddons.AppliesTo(fwdTarget));
-                Config.OverrideMainVersion("43.10");
+                Config.OverrideMainVersion("0.25");
                 Check("... and not before", !ManagedAddons.AppliesTo(fwdTarget));
                 Config.OverrideMainVersion(pin);
             }

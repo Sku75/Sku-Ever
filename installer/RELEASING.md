@@ -82,7 +82,7 @@ gets.
 The tester link is always the same one, so you can send it once and re-use it
 for every test build:
 
-    https://github.com/Sku75/Sku-WoW-Addon-TBC/releases/download/dev/Sku-dev.zip
+    https://github.com/Sku75/Sku-Ever/releases/download/dev/Sku-dev.zip
 
 Testers close WoW, unpack that zip into `Interface\AddOns` letting it replace
 the existing `Sku` folder, and start the game. To go back to the stable version
@@ -94,7 +94,7 @@ there, which commit it came from, and whether it carried uncommitted work.
 
 Take it down again with:
 
-    gh release delete dev --repo Sku75/Sku-WoW-Addon-TBC --cleanup-tag
+    gh release delete dev --repo Sku75/Sku-Ever --cleanup-tag
 
 Two things worth knowing. It bumps `Sku\Sku.toc` to the given version in place,
 same as a real release does. And it does **not** need a clean working tree — but

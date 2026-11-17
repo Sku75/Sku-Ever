@@ -1,14 +1,14 @@
 {
   "schemaVersion": 2,
-  "repository": "Sku75/Sku-WoW-Addon-TBC",
+  "repository": "Sku75/Sku-Ever",
   "mainAddon": {
     "key": "Sku",
     "displayName": "Sku",
     "provider": "github-latest",
-    "assetPattern": "Sku-{version}.zip",
+    "assetPattern": "Sku-Ever-{version}.zip",
     "rootFolders": ["Sku"]
   },
-  "companionTag": "v41.02.05",
+  "companionTag": "v0.26",
   "companions": [
     {
       "key": "SkuBeaconSoundsets",
@@ -36,7 +36,6 @@
     }
   ],
   "languagePacks": [
-    {"key": "SkuAudioData", "locale": "deDE", "displayName": "Deutsch", "asset": "SkuAudioData.zip", "rootFolders": ["SkuAudioData"], "media": true},
     {"key": "SkuAudioData_fast_de", "locale": "deDE-fast", "displayName": "Deutsch schnell", "asset": "SkuAudioData_fast_de.zip", "rootFolders": ["SkuAudioData_fast_de"], "media": true},
     {"key": "SkuAudioData_en", "locale": "enUS", "displayName": "English", "asset": "SkuAudioData_en.zip", "rootFolders": ["SkuAudioData_en"], "media": true}
   ],

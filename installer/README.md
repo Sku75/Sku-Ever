@@ -63,7 +63,7 @@ to do anything but inform the user.
 
 ## Where things come from (download topology)
 
-Repo: `Sku75/Sku-WoW-Addon-TBC`. Assets are spread across release tags. The
+Repo: `Sku75/Sku-Ever`. Assets are spread across release tags. The
 main addon ships on the newest tag; the bulky companions stay pinned on an
 older tag and rarely change. Every download uses the **direct** github.com
 release-download URL (`.../releases/download/<tag>/<file>`).
@@ -107,7 +107,7 @@ Quick headless check of the discovery (no download):
 **Confirmed — SkuNavData / SkuHealthAssets are NOT Sku companions.** They are
 Sku *derivatives* packaged as companions for the **WowVision** addon, not for
 Sku. The installer must only pull addons from the Sku developer's own repo
-(`Sku75/Sku-WoW-Addon-TBC` releases), which is exactly the list above. The base
+(`Sku75/Sku-Ever` releases), which is exactly the list above. The base
 installer deliberately excludes Nav/Health (and never references them).
 
 ## Versioning model

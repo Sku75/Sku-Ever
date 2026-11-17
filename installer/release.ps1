@@ -34,7 +34,7 @@ elease.ps1 -Dev -Version 43.0
       the installer's update check and the website's download button resolve
       through - so users keep getting the stable version. The tester link is
       constant:
-        https://github.com/Sku75/Sku-WoW-Addon-TBC/releases/download/dev/Sku-dev.zip
+        https://github.com/Sku75/Sku-Ever/releases/download/dev/Sku-dev.zip
       Testers unpack it into Interface\AddOns over the existing Sku folder, and
       get back to stable by re-running the normal installer.
       NOTE it bumps Sku\Sku.toc to the given version in place, same as a real
@@ -124,9 +124,9 @@ try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::S
 
 # --- Paths and constants ----------------------------------------------------
 $Owner    = 'Sku75'
-$Repo     = 'Sku-WoW-Addon-TBC'
+$Repo     = 'Sku-Ever'
 $Slug     = "$Owner/$Repo"
-$SiteUrl  = 'https://sku75.github.io/Sku-WoW-Addon-TBC/'
+$SiteUrl  = 'https://sku75.github.io/Sku-Ever/'
 
 $RepoRoot    = Split-Path $PSScriptRoot -Parent
 $SkuDir      = Join-Path $RepoRoot 'Sku'
