@@ -999,6 +999,115 @@ local function IsAddonsButton(aLabel)
 end
 
 -- ---------------------------------------------------------------------
+-- Schnellmenü -> "Optionen Audiounterstützung": a remote control for the
+-- combat audio alerts on Blizzard's Accessibility "Audio" page. The rows are
+-- the same Setting objects the full game-options mirror drives (BuildInitializer),
+-- so a change here is a change there and the other way round.
+--   Allgemein: master switch, speech rate, combat start/end, target name.
+--   Then one submenu per announcement (own health, own resource(s), target
+--   health): the announcement row itself, followed by every row Blizzard hangs
+--   under it with SetParentInitializer (format, voice, throttle, volume, ...).
+-- Variables per Blizzard_SettingsDefinitions_Frame/AudioAssist.lua.
+-- ---------------------------------------------------------------------
+local CAA_GENERAL = { "CAAEnabled", "PROXY_CAA_SPEED", "CAASayCombatStart", "CAASayCombatEnd", "CAASayTargetName" }
+local CAA_GROUPS = {
+   "CAAPlayerHealthPercent",
+   "PROXY_CAA_PLAYER_RESOURCE_1_PERCENT",
+   "PROXY_CAA_PLAYER_RESOURCE_2_PERCENT",
+   "CAATargetHealthPercent",
+}
+
+local function InitVariable(init)
+   local _, _, setting = InitInfo(init)
+   return setting and tCall(setting, "GetVariable") or nil
+end
+
+local function InitParent(init)
+   return tCall(init, "GetParentInitializer") or (type(init) == "table" and init.parentInitializer) or nil
+end
+
+-- The initializer list of the category that holds the combat audio alerts.
+local function FindCAAInitializers()
+   local tSeen = {}
+   local function Search(aCats, aDepth)
+      for _, cat in ipairs(aCats) do
+         if not tSeen[cat] then
+            tSeen[cat] = true
+            local inits = GetInitializers(cat)
+            for _, init in ipairs(inits) do
+               if InitVariable(init) == "CAAEnabled" then return inits end
+            end
+            if aDepth < 4 then
+               local r = Search(GetSubcategories(cat), aDepth + 1)
+               if r then return r end
+            end
+         end
+      end
+   end
+   local r = Search(GetCategories(), 0)
+   if r then return r end
+   local tList = tCall(_G.SettingsPanel, "GetCategoryList")
+   if type(tList) == "table" and type(tList.groups) == "table" then
+      for _, tGroup in ipairs(tList.groups) do
+         r = Search(tGroup.categories or {}, 0)
+         if r then return r end
+      end
+   end
+end
+
+local function SafeBuild(aSelf, init)
+   local ok, err = pcall(BuildInitializer, aSelf, init)
+   if not ok and dprint then dprint("gameOptions: audio assist row failed", tostring(err)) end
+end
+
+function GameOptions:AudioAssistMenuBuilder(aParentEntry)
+   if not HasSettings() then
+      Inject(aParentEntry, _L.unavailable)
+      return
+   end
+   local inits = FindCAAInitializers()
+   if not inits then
+      Inject(aParentEntry, _L.unavailable)
+      return
+   end
+   local tByVar = {}
+   for _, init in ipairs(inits) do
+      local v = InitVariable(init)
+      if v then tByVar[v] = init end
+   end
+
+   local tGeneral = Inject(aParentEntry, deEn("Allgemein", "General", "Général"))
+   tGeneral.dynamic = true
+   tGeneral.BuildChildren = function(self)
+      local tAny = false
+      for _, v in ipairs(CAA_GENERAL) do
+         if tByVar[v] and IsInitShown(tByVar[v]) then
+            SafeBuild(self, tByVar[v])
+            tAny = true
+         end
+      end
+      if not tAny then Inject(self, _L.empty) end
+   end
+
+   for _, v in ipairs(CAA_GROUPS) do
+      local tTop = tByVar[v]
+      if tTop and IsInitShown(tTop) then
+         local data = InitInfo(tTop)
+         local tName = type(data) == "table" and StripColor(tResolve(data.name) or "") or ""
+         if tName == "" then tName = v end
+         local tEntry = Inject(aParentEntry, tName)
+         tEntry.dynamic = true
+         tEntry.BuildChildren = function(self)
+            SafeBuild(self, tTop)
+            for _, init in ipairs(inits) do
+               if InitParent(init) == tTop then SafeBuild(self, init) end
+            end
+         end
+      end
+   end
+end
+
+-- ---------------------------------------------------------------------
 -- Top-level entry point, hooked from SkuZOptions/SkuMenu.lua.
 -- ---------------------------------------------------------------------
 -- Einstellungen -> Spieleinstellungen. W7: this IS the Blizzard game-settings

@@ -3160,6 +3160,7 @@ L["ACC_Placeholder2"] = "Placeholder speech"
 L["ACC_VolumesTitle"] = "Volume"
 L["ACC_SpeechTitle"] = "Speech output"
 L["ACC_OtherTitle"] = "Other"
+L["ACC_AudioAssistTitle"] = "Audio assist options"
 -- AURA_* — weapon buff auras (41.03)
 L["AURA_WeMH"] = "Your weapon enchant main hand"
 L["AURA_WeMHTip"] = "The weapon enchant on your main hand (poison, oil, sharpening stone, shaman imbue, etc.)"

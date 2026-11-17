@@ -3164,6 +3164,7 @@ L["ACC_Placeholder2"] = "Platzhalter Sprachausgabe"
 L["ACC_VolumesTitle"] = "Lautstärke"
 L["ACC_SpeechTitle"] = "Sprachausgabe"
 L["ACC_OtherTitle"] = "Sonstiges"
+L["ACC_AudioAssistTitle"] = "Optionen Audiounterstützung"
 -- AURA_* — Waffenbuff-Auren (41.03)
 L["AURA_WeMH"] = "Deine Waffenverzauberung Haupthand"
 L["AURA_WeMHTip"] = "Die Waffenverzauberung deiner Haupthand (Gift, Öl, Schärfstein, Schamanen-Verzauberung usw.)"
