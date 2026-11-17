@@ -2,6 +2,22 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.40 (17.11.2026)
+
+### Kurzfassung
+- Der Chat (Shift+F2) lässt sich wieder bedienen, auch wenn ein Reiter noch leer ist. Ein leerer Reiter sagt jetzt seinen Namen und "Leer", der Wechsel zu anderen Reitern funktioniert immer.
+
+### Behoben: Fehler im Chat bei leeren Reitern
+Was: Ein neuer Charakter hat vier Chat-Reiter (Standard, Kommunikation, Anderes, Flüstern), die leer sind, bis die erste passende Nachricht kommt. Öffnete man den Chat mit Shift+F2 auf einem leeren Reiter, blieb Sku stumm. Jede weitere Chat-Taste (Pfeil hoch, Pfeil runter, Strg+Enter und auch Pfeil links und rechts zum Reiterwechsel) erzeugte einen Lua-Fehler, der Chat ließ sich nicht mehr lesen. Jetzt sagt ein leerer Reiter beim Öffnen und beim Wechsel seinen Namen und "Leer". Pfeil hoch, Pfeil runter und Strg+Enter sagen auf einem leeren Reiter nur "Leer". Pfeil links und rechts wechseln immer den Reiter. Fehlen die Reiter ganz, legt Sku sie beim Öffnen des Chats neu an.
+Wie: In SkuChat/Core.lua las der Klick-Handler der Chattasten (OnSkuChatToggle OnClick) die aktuelle Zeile und griff ohne Prüfung auf tLineData.itemLinks zu; bei leerer History war tLineData nil. Jetzt fängt der Handler das ab: Hoch, Runter und Strg+Enter lesen nur "Leer" vor, alle anderen Tasten laufen mit einer leeren Zeile weiter. SkuChat:ReadLine sagt bei leerem Reiter "Leer", beim Reiterwechsel mit dem Reiternamen davor. Das Anlegen der Standardreiter ist aus PLAYER_ENTERING_WORLD in die neue Funktion SkuChat:CreateDefaultTabsIfMissing gezogen; OpenChat und der Klick-Handler rufen sie zusätzlich auf, falls die Einrichtung beim Betreten der Welt mit einem Fehler abgebrochen ist. Im Kampf legt sie von einer Chattaste aus keine Reiter an, weil die Reiter sichere Schaltflächen sind.
+
+### Downloads
+- Sku-Ever-Spielordner.zip, Sku-Ever-0.40.zip: mit der Korrektur.
+- Installer (1.6), SkuPacks und die 20 SkuEngine-Gruppen sind unverändert gegenüber 0.39.
+
+### Hinweis zum Stand
+- Der Fix ist im Spiel noch nicht getestet. Den genauen Fehlertext des Testers kennen wir nicht; die Ursache passt zu seiner Beschreibung.
+
 ## Sku-Ever 0.39 (16.11.2026)
 
 ### Kurzfassung
