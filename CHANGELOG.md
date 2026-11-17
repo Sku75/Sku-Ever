@@ -2,6 +2,27 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.41 (17.11.2026)
+
+### Kurzfassung
+- Im Schnellmenü (unterster Punkt im Sku-Menü) steht als dritter Punkt "Optionen Audiounterstützung". Darin stellst du Blizzards Kampf-Audiohinweise ein, ohne durch das ganze Spielmenü zu gehen: Allgemein, eigene Gesundheit, eigene Ressource und Gesundheit des Ziels.
+
+### Neu: Optionen Audiounterstützung im Schnellmenü
+Was: Neuer Punkt im Schnellmenü zwischen Sprachausgabe und Sonstiges. Er ist eine Fernbedienung für die Kampf-Audiohinweise aus dem Spielmenü (Optionen, Audiounterstützung); jede Änderung gilt auch dort und umgekehrt.
+- Allgemein: Hauptschalter, Sprechgeschwindigkeit, Kampfbeginn ansagen, Kampfende ansagen, Zielnamen ansagen.
+- Eigene Gesundheit ansagen: die Einstellung selbst (Aus oder alle 10 bis 50 Prozent), dann Format, Stimme, Drosselung und Lautstärke.
+- Eigene Ressource ansagen (Name je nach Ressource, zum Beispiel Mana): dieselben Unterpunkte. Zeigt das Spiel eine zweite Ressource an, bekommt sie ein eigenes Untermenü.
+- Gesundheit des Ziels ansagen: die Einstellung selbst, dann Format, Wenn das Ziel stirbt, Stimme, Drosselung und Lautstärke.
+Namen und Werte kommen aus dem Spiel und stehen damit in der Sprache des Clients. Steht eine Ansage auf Aus, sagen ihre Unterpunkte "deaktiviert".
+Wie: Neue Funktion GameOptions:AudioAssistMenuBuilder in SkuCore/gameOptions.lua. Sie sucht in Blizzards Einstellungen die Kategorie mit der Einstellung CAAEnabled, nimmt die Zeilen über ihre Variablen (CAAEnabled, PROXY_CAA_SPEED, CAASayCombatStart, CAASayCombatEnd, CAASayTargetName; CAAPlayerHealthPercent, PROXY_CAA_PLAYER_RESOURCE_1_PERCENT, PROXY_CAA_PLAYER_RESOURCE_2_PERCENT, CAATargetHealthPercent) und hängt unter jede Ansage die Zeilen, die Blizzard ihr per SetParentInitializer zuordnet. Gebaut werden die Einträge mit demselben BuildInitializer wie im Spieloptionen-Abbild. Eingehängt in SkuZOptions/Core.lua (Schnellmenü, Abschnitt 7.3), Menüname ACC_AudioAssistTitle in deDE, enUS und frFR.
+
+### Downloads
+- Sku-Ever-Spielordner.zip, Sku-Ever-0.41.zip: mit dem neuen Menü.
+- Installer (1.6), SkuPacks und die 20 SkuEngine-Gruppen sind unverändert gegenüber 0.40.
+
+### Hinweis zum Stand
+- Im Spiel noch nicht getestet. Die Variablennamen stammen aus Blizzards Classic-Code; weicht WoW: Forever bei einem Namen ab, fehlt das betreffende Untermenü.
+
 ## Sku-Ever 0.40 (17.11.2026)
 
 ### Kurzfassung
