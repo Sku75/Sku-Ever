@@ -141,27 +141,14 @@ local function tSummary(aFrames)
 		tParts[#tParts + 1] = tViewerName .. "=" .. (tViewer and (tViewer:IsShown() and "shown" or "hidden") or "missing")
 			.. (tViewer and (" setting=" .. tostring(tViewer.visibleSetting)) or "")
 	end
-	-- the settings window's data provider, which the viewers ask for their ids: all ordered ids of the active layout,
-	-- those of Tracked Buffs (2) and Tracked Bars (3), and Tracked Buffs again with unlearned entries allowed
-	if CooldownViewerSettings and CooldownViewerSettings.GetDataProvider then
-		local tProv = CooldownViewerSettings:GetDataProvider()
-		if tProv and tProv.GetOrderedCooldownIDs then
-			tParts[#tParts + 1] = "provider all=" .. #tProv:GetOrderedCooldownIDs()
-				.. " buff=" .. #tProv:GetOrderedCooldownIDsForCategory(2)
-				.. " buffUnlearned=" .. #tProv:GetOrderedCooldownIDsForCategory(2, true)
-				.. " bar=" .. #tProv:GetOrderedCooldownIDsForCategory(3)
-		else
-			tParts[#tParts + 1] = "provider none"
-		end
-	else
-		tParts[#tParts + 1] = "settings window missing"
-	end
-	-- inside the viewers: how many tracked ids the viewer has (it makes at least 2 item frames anyway), how many item
-	-- frames its pool holds, and each pool frame as name/cooldownID/shown-or-hidden+Active-or-inactive+unit
+	-- No call into the settings data provider here (GetOrderedCooldownIDs*, nor the viewers' GetCooldownIDs, which
+	-- ask it): those rebuild its cached display data whenever it is dirty, the cache then counts as written by Sku,
+	-- and Blizzard's layout switch on level-up / talent change reads it and gets blocked at
+	-- C_UnitAuras.SetHiddenGroupBuffs (ADDON_ACTION_BLOCKED, Sku-Ever 0.43). Only plain fields are read below.
+	-- inside the viewers: each pool frame as name/cooldownID/shown-or-hidden+Active-or-inactive+unit
 	for _, tViewerName in ipairs(VIEWERS) do
 		local tViewer = _G[tViewerName]
 		if tViewer then
-			local tIds = tViewer.GetCooldownIDs and tViewer:GetCooldownIDs()
 			local tPool = {}
 			if tViewer.itemFramePool then
 				for tFrame in tViewer.itemFramePool:EnumerateActive() do
@@ -170,8 +157,7 @@ local function tSummary(aFrames)
 						.. (tPlain(tFrame.auraDataUnit) and tFrame.auraDataUnit or "")
 				end
 			end
-			tParts[#tParts + 1] = "[" .. tViewerName .. " ids=" .. tostring(type(tIds) == "table" and #tIds or tIds)
-				.. " pool=" .. table.concat(tPool, ",") .. "]"
+			tParts[#tParts + 1] = "[" .. tViewerName .. " pool=" .. table.concat(tPool, ",") .. "]"
 		end
 	end
 	for _, tFrame in ipairs(aFrames) do

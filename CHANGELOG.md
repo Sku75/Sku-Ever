@@ -2,6 +2,19 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.43 (17.11.2026)
+
+### Kurzfassung
+- Beim Levelup kommt keine Fehlermeldung mehr, dass Sku die geschützte Funktion SetHiddenGroupBuffs aufrufen wollte.
+
+### Behoben: Fehlermeldung beim Levelup (SetHiddenGroupBuffs)
+Was: Beim Levelup, und ebenso bei Talent- oder Spezialisierungswechsel, meldete das Spiel ADDON_ACTION_BLOCKED: Sku habe versucht, SetHiddenGroupBuffs aufzurufen, manchmal zusammen mit SetGroupBuffVisualAlerts. Die Meldung kommt nicht mehr.
+Wie: Die Aura-Ende-Ansage (SkuCore/auraEnd.lua) schrieb alle halbe Sekunde eine Diagnosezeile ins Log und fragte dafür den Datenanbieter des Cooldown-Managers (GetOrderedCooldownIDs und die GetCooldownIDs der Anzeigen). Diese Abfrage baut Blizzards Zwischenspeicher neu auf, der dadurch als von Sku geschrieben galt. Beim Levelup liest Blizzards Layoutwechsel diesen Speicher und wird deshalb an SetHiddenGroupBuffs blockiert. Die Diagnosezeile liest jetzt nur noch die Felder der sichtbaren Symbole; die Ansage selbst ist unverändert.
+
+### Downloads
+- Sku-Ever-Spielordner.zip, Sku-Ever-0.43.zip: mit der Änderung.
+- Installer (1.6), SkuPacks und die 20 SkuEngine-Gruppen sind unverändert gegenüber 0.42.
+
 ## Sku-Ever 0.42 (17.11.2026)
 
 ### Kurzfassung
