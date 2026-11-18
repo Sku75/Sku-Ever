@@ -2,6 +2,24 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Installer 1.7 und Login-Tool 4.2 (18.11.2026, im Release 0.45 ausgetauscht)
+
+### Kurzfassung
+- Das Login-Tool bricht unter Forever nicht mehr mit einer Fehlermeldung ab, wenn auf einem Bildschirm ohne Auswahl eine Pfeiltaste gedrückt wird.
+- Charakter erstellen: Nach dem automatischen Erkennen der Spielversion wird die richtige Rasse angeklickt.
+
+### Behoben: Login-Tool, Fehlermeldung "Specifically: t"
+Was: Statt "nichts zum Auswählen auf diesem Bildschirm" erschien ein AutoHotkey-Fehlerfenster. Jetzt kommt wieder die Ansage.
+Wie: In logintool/v2/includes/forever.ahk (FvMove) verdeckte die Schleifenvariable t die Übersetzungsfunktion T(), AutoHotkey unterscheidet Groß- und Kleinschreibung bei Namen nicht. Die Variable heißt jetzt tg.
+
+### Behoben: Login-Tool, falsche Rasse nach Versionserkennung
+Was: Wechselte das Tool nach dem Erkennen der Spielversion etwa von Classic auf TBC, klickte "neuen Charakter erstellen" die Rasse aus der alten Tabelle an (Orc statt Untoter).
+Wie: detect.ahk baut nach dem Wechsel das Menü neu (BuildMainMenu).
+
+### Installer 1.7
+Was: Der Installer bringt das Login-Tool 4.2 auf bestehende Installationen.
+Wie: Config.LoginToolVersion 4.2 (das Login-Tool-Paket im Release login-tool ist ersetzt), Version 1.7 in SkuInstaller.csproj; Sku-Ever-Installer.exe und installer-version.txt im Release 0.45 ausgetauscht.
+
 ## Sku-Ever 0.45 (18.11.2026)
 
 ### Kurzfassung

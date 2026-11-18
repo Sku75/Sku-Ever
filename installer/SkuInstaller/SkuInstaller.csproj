@@ -118,7 +118,7 @@
          optional third target. Login tool 4.1.
          -->
     <!-- Sku-Ever installer 1.0 = Fork des SkuInstaller 5.6 nur fuer WoW Forever und das Repo Sku75/Sku-Ever. -->
-    <Version>1.6</Version>
+    <Version>1.7</Version>
     <!-- File properties (Explorer "Details", and what antivirus reputation
          scoring reads). Left at the SDK defaults every field said just
          "SkuInstaller" and the copyright was blank, which is what throwaway
