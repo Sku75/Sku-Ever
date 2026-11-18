@@ -2,6 +2,28 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.44 (18.11.2026)
+
+### Kurzfassung
+- Schiffe: In Sturmwind kommt man jetzt über die Engine zuverlässig zum Anleger, aufs Schiff und wieder vom Schiff herunter. Dasselbe gilt für Auberdine (Engine 17.3).
+- Neue Wegdaten der Engine für Teldrassil, Dunkelküste (Auberdine), Schlingendorntal, Vorgebirge von Hillsbrad, Brachland, Feralas, Düstermarschen und Tanaris, jeweils mit überarbeiteten Schiffsanlegern.
+- Das Forever-Datenpaket (Quests, NPCs, Objekte, Gegenstände) ist neu aus QuestieDB 1.1.2 gebaut: 8 Quests mehr, 4 NPCs, 2 Objekte, 1 Gegenstand, dazu korrigierte Spawnpositionen.
+
+### Behoben: Schiff in Sturmwind und Auberdine
+Was: Mit den alten Engine-Daten gab es in Sturmwind vom Schiff herunter keine Route ins Gasthaus. Das Ein- und Aussteigen an den Anlegern in Sturmwind und Auberdine klappte nicht zuverlässig. Jetzt gibt es von "Am Schiff" eine Route (39 Punkte), und in Auberdine beginnt die Route am neuen Anleger.
+Wie: Die Anlegerdaten stammen aus den aktualisierten WoW-NavigationData von Broesel33 (Stand 16.11.2026, Anleger auf eigenem Pier-Knoten). Neu gebaut wurden die Engine-Gruppen KD, SV, NB, KR, KA, KT, KS sowie in EK die Stadt Sturmwind (Engine_Data_Stormwind.lua, Engine_Targets_EK.lua). Das Wegpaket Dunkelküste (NavPack_DockDarkshore.lua) hat den neuen Anleger bei 6542.3/928.9. SkuPacks/Engine_Index.lua ist passend zusammengeführt; die Zeile für Das Sumpfland (Menethil) und deren Nähte bleiben unverändert, ebenso alle Wegpunkte und Routen von Sku. Die Engine-Software selbst (NavNetwork, EngineRoute.lua) ist unverändert.
+
+### Aktualisiert: Datenpaket aus QuestieDB 1.1.2
+Was: Das Datenpaket für Forever enthält jetzt 1657 Quests (vorher 1649), 3265 NPCs, 643 Objekte und 8975 Gegenstände. Rund 60 Quests, 54 Objekte, 154 Gegenstände und viele NPC-Spawnpositionen wurden korrigiert. Es ist nichts weggefallen.
+Wie: SkuPacks/DataPack_ForeverQuests.lua wurde neu aus QuestieDB 1.1.2 gebaut (build_dbpack.py, mk_questfill.py) und je Abschnitt auf Syntax geprüft.
+
+### Hinweis
+Die Fahrt Sturmwind nach Auberdine ist im Spiel getestet (Route zum Anleger, Einsteigen, Ausstieg in Auberdine, Route zur Hippogryphenmeisterin). Der Rückweg Auberdine nach Sturmwind ist noch nicht im Spiel getestet.
+
+### Downloads
+- Sku-Ever-Spielordner.zip, SkuPacks.zip und die Gruppen SkuEngineKD, SV, NB, KR, KA, KT, KS, EK: mit der Änderung. Sku-Ever-0.44.zip: nur die neue Versionsnummer.
+- Installer (1.6) und die übrigen 12 SkuEngine-Gruppen sind unverändert gegenüber 0.43.
+
 ## Sku-Ever 0.43 (17.11.2026)
 
 ### Kurzfassung
