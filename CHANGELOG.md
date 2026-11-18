@@ -2,6 +2,19 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.45 (18.11.2026)
+
+### Kurzfassung
+- Behoben: In 0.44 fehlten bei den neu gebauten Engine-Gruppen die Quest-Markierungen. Dadurch konnten Quest-Ziele in den Routenlisten und im Questbuch fehlen (Engine-Ziel nicht angeboten), wenn Sku in der Nähe irgendeinen Wegpunkt hatte. Betroffen waren Teldrassil und Dunkelküste, Schlingendorntal, Vorgebirge von Hillsbrad, Brachland, Feralas und Düstermarschen (Engine 17.4).
+
+### Behoben: fehlende Quest-Markierungen in der Engine
+Was: In den Zieldateien der Gruppen KD, SV, NB, KR, KA und KT stand bei keinem Ziel mehr die Markierung "ist Ziel einer Quest" (0 statt 1930, 2876, 4924, 7079, 4247 und 4268 Markierungen). Ohne sie blendet die Engine ein Ziel schon aus, wenn Sku in der Nähe irgendeinen Wegpunkt hat, mit ihr nur bei einem Wegpunkt gleichen Namens. Quest-Ziele waren deshalb nicht immer als Engine-Ziel wählbar.
+Wie: Die Markierung wurde aus QuestieDB 1.1.2 neu gesetzt (mark_questtargets.py). Die Zahlen stimmen mit dem Stand vor 0.44 überein. Neu ist außerdem eine Pflichtprüfung (markcheck.sh), die vor jedem Einspielen Markierungen und Zeilenzahl der Zieldateien mit dem letzten Stand vergleicht.
+
+### Downloads
+- Sku-Ever-Spielordner.zip, SkuPacks.zip (nur Engine_Index.lua) und die Gruppen SkuEngineKD, SV, NB, KR, KA, KT sowie die Revisionsnummer 17.4 in KS und EK; Sku-Ever-0.45.zip nur mit neuer Versionsnummer.
+- Installer (1.6) und die übrigen 12 SkuEngine-Gruppen sind unverändert gegenüber 0.44.
+
 ## Sku-Ever 0.44 (18.11.2026)
 
 ### Kurzfassung
