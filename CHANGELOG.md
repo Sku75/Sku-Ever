@@ -2,6 +2,29 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.47 (20.11.2026)
+
+### Kurzfassung
+- Behoben (Forever): An der Grenze zweier Engine-Gruppen (zum Beispiel Brachland und Tausend Nadeln, auch auf Flügen und Schiffen) hingen die Routenlisten und das Questbuch teilweise mehrere Sekunden, und es kamen Fehlermeldungen "script ran too long".
+- Passagen jenseits der Reichweite: Die Liste zeigt jetzt bis zu zwölf an die Zone grenzende Passagen (vorher sechs), damit auch weiter entfernte Übergänge wie Eschental nach Brachland erscheinen.
+- Datenpaket aus QuestieDB 1.1.3: 56 Quests, 24 NPCs, 4 Objekte und 11 Gegenstände mehr, Korrekturen an vielen weiteren.
+
+### Behoben: Ruckler und Fehler an Gruppengrenzen
+Was: Die Engine lädt für die Zone, in der du stehst, die Wegedaten. An Grenzen, wo sich die Zonenrahmen zweier Gruppen überlappen, lud sie Zonen der Nachbargruppe nach, entlud sie aber beim nächsten Aufruf sofort wieder. Das wiederholte sich jede Sekunde und dekodierte die Zonen jedes Mal neu. Folge waren lange Listenaufbauten und BugGrabber-Fehler "script ran too long".
+Wie: SkuNav/EngineRoute.lua, tUnloadOtherGroups: Zonen, in deren Rahmen deine Position liegt, bleiben geladen, und eine Gruppe, die in den letzten 90 Sekunden benutzt wurde, wird nicht entladen. Dazu prüft ein kleiner Timer alle 3 Sekunden, ob sich deine Gruppe geändert hat, und wärmt die neue Gruppe im Hintergrund vor (Engine:Preload), auch wenn das Spiel keinen Zonenwechsel meldet. Nur unter Forever aktiv.
+
+### Geändert: mehr Passagen jenseits der Reichweite
+Was: Die Liste hatte nur die sechs nächsten angrenzenden Passagen gezeigt, die Passage Eschental nach Brachland fehlte deshalb. Jetzt sind es bis zu zwölf. Es kommen weiter nur Passagen, die an die Zone grenzen, in der du stehst.
+Wie: SkuNav/Core.lua, GetAllMetaTargetsFromWp5, tPassagesWanted 12. Nur unter Forever aktiv.
+
+### Datenpaket aus QuestieDB 1.1.3
+Was: Das Forever-Datenpaket wurde aus der neuen QuestieDB 1.1.3 neu gebaut: 1713 Quests (+56), 3283 NPCs (+24, 6 entfallen), 647 Objekte (+4), 8977 Gegenstände (+11, 9 entfallen), dazu geänderte Angaben bei 182 Quests, 1252 NPCs, 123 Objekten und 440 Gegenständen.
+Wie: navpack/build_dbpack.py und mk_questfill.py, Datei SkuPacks/DataPack_ForeverQuests.lua.
+
+### Downloads
+- Sku-Ever-0.47.zip, Sku-Ever-Spielordner.zip und SkuPacks.zip sind neu.
+- Installer und alle Engine-Gruppen sind unverändert gegenüber 0.46.
+
 ## Sku-Ever 0.46 (20.11.2026)
 
 ### Kurzfassung

@@ -1901,7 +1901,7 @@ function SkuNav:GetAllMetaTargetsFromWp5(aStartWpName, aMaxDistance, aMaxWPs, aR
 			tExtend = tTargetIndex ~= nil and ssub(WaypointCache[tTargetIndex].name, 1, 8) == "passage;"
 		end
 		local tPushCap = tExtend and math.max(aMaxDistance * 4, 12000) or aMaxDistance
-		local tPassagesWanted, tPassagesFound, tBeyondPops = 6, 0, 0
+		local tPassagesWanted, tPassagesFound, tBeyondPops = 12, 0, 0
 		-- Only passages that border the zone the player is in count: the passage lies in this zone (its area belongs to the zone) or
 		-- its name names this zone ("passage;von;<place>;<zone>;nach;<zone>"). Unknown zone = no passage beyond the limit.
 		local tZoneTopId, tZoneNameLower, tZoneInit

@@ -85,11 +85,28 @@ end
 -- [Unload, 15.11.2026] Only the zones of the PLAYER's group stay decoded: the decoded copy is ~85 % of a zone's memory and is rebuilt from the
 -- raw data in well under a second (raw tables stay, they cannot be reloaded). Zones of other groups are dropped here, when the player's
 -- group is loaded (never in combat). Memory stays at one group instead of growing with every group visited in a session.
+local tGroupSeen = {}
 local function tUnloadOtherGroups(aGroup)
 	local N = tNet()
 	if not (N.zones and N.decoded) then return end
 	local tKeep = {}
 	for _, z in ipairs(aGroup.zones) do tKeep[z] = true end
+	-- [Forever, 20.11.2026] Hysteresis: a group used in the last 90 s stays decoded. Travelling along a border (flight, ship, riding) flips the
+	-- player's group back and forth; unloading and decoding the zones again at every flip made every list/route build take seconds.
+	local tNow = GetTime and GetTime() or 0
+	tGroupSeen[aGroup.key] = tNow
+	for _, g in ipairs(tGroups()) do
+		if g ~= aGroup and tGroupSeen[g.key] and tNow - tGroupSeen[g.key] < 90 then
+			for _, z in ipairs(g.zones) do tKeep[z] = true end
+		end
+	end
+	-- [Forever, 20.11.2026] The zones whose box holds the player's position stay too: the engine loads them itself when it asks for the floors at
+	-- the position (HeightBands), also zones of a NEIGHBOUR group where the boxes overlap. Dropping them here made the next call load and
+	-- decode them again, every second, for as long as the player stood on such a border (seconds per call, "script ran too long").
+	local tPx, tPy = UnitPosition("player")
+	if type(tPx) == "number" and type(tPy) == "number" and N.ZonesForPoint then
+		for _, z in ipairs(N.ZonesForPoint(tPx, tPy) or {}) do tKeep[z] = true end
+	end
 	local tDropped
 	for z in pairs(N.zones) do
 		if not tKeep[z] then tDropped = tDropped or {} tDropped[#tDropped + 1] = z end
@@ -1175,5 +1192,25 @@ if Sku.isForever and CreateFrame and C_Timer then
 			end
 			Engine:Preload()
 		end)
+	end)
+end
+
+-- [Forever, 20.11.2026] Warm-up also when the player's group changes WITHOUT a zone event (zone boxes of neighbouring groups overlap; flights,
+-- ships and riding along a border cross them silently). ZONE_CHANGED_NEW_AREA alone left the new group cold until the first list was opened
+-- (loading and decoding the zones: a second or more). Checked every 3 s with the cheap box test (no addon is loaded for the check); the
+-- warm-up itself is Engine:Preload (idempotent: loaded zones, grid and name cache are kept). Not in combat. Memory stays at the player's group
+-- (plus a group used in the last 90 s, see tUnloadOtherGroups).
+if Sku.isForever and C_Timer and C_Timer.NewTicker then
+	local tLastKey
+	C_Timer.NewTicker(3, function()
+		if InCombatLockdown and InCombatLockdown() then return end
+		if not Engine:Available() then return end
+		local px, py = UnitPosition("player")
+		if type(px) ~= "number" or type(py) ~= "number" then return end
+		local tG = tGroupOf(px, py)
+		local tKey = tG and tG.key or nil
+		if tKey == tLastKey then return end
+		tLastKey = tKey
+		if tKey then C_Timer.After(1, function() Engine:Preload() end) end
 	end)
 end
