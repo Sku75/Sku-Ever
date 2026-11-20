@@ -3442,7 +3442,10 @@ function SkuOptions:CreateMenuFrame()
 		end
 		if aKey == "END" then
 			SkuOptions.currentMenuPosition:OnLast()
-		end		
+		end
+		if aKey == "CTRL-DOWN" then
+			SkuOptions:ToggleOnlySkuView()
+		end
 
 		if aKey == "ENTER" or aKey == "SHIFT-ENTER" then
 			tVocalizeReset = false
@@ -3900,6 +3903,10 @@ function SkuOptions:CreateMenuFrame()
 		SetOverrideBindingClick(self, true, "SHIFT-BACKSPACE", "OnSkuOptionsMainOption1", "SHIFT-BACKSPACE")
 
 		SetOverrideBindingClick(self, true, "CTRL-RIGHT", "OnSkuOptionsMainOption1", "CTRL-RIGHT")
+		if Sku.isForever then
+			-- Forever: "Nur Sku" view of the F9/F10 lists (SkuOptions:ToggleOnlySkuView)
+			SetOverrideBindingClick(self, true, "CTRL-DOWN", "OnSkuOptionsMainOption1", "CTRL-DOWN")
+		end
 		SetOverrideBindingClick(self, true, "HOME", "OnSkuOptionsMainOption1", "HOME")
 		SetOverrideBindingClick(self, true, "END", "OnSkuOptionsMainOption1", "END")
 		SetOverrideBindingClick(self, true, "UP", "OnSkuOptionsMainOption1", "UP")
@@ -4707,6 +4714,8 @@ local function tRestoreUnfilteredChildren()
 	tOldChildren = false
 	tOldChildrenParent = nil
 	tFilteredChildren = nil
+	SkuOptions.onlySkuViewActive = nil
+	SkuOptions.onlySkuPrev = nil
 	return true
 end
 
@@ -4737,6 +4746,96 @@ function SkuOptions:ClearFilter()
 	end
 	SkuOptions.Filterstring = ""
 end
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- [Forever, 20.11.2026] "Nur Sku" view (CTRL-DOWN) for the F9/F10 target lists. The engine entries of those lists carry the
+-- suffix ";Engine" (SkuNav/Options.lua); this key hides them, a second press brings them back. It reuses the snapshot of
+-- the text filter above (same node objects, same re-linking, same undo), so the list is NOT rebuilt, the cursor keeps its
+-- entry when that is a Sku entry, and LEFT/RIGHT/ENTER/typing undo it exactly like a text filter. The normal list is never
+-- changed, it is just not shown while the view is on. Only on Forever, only in a list that really holds ";Engine" entries.
+local function tIsEngineEntry(aNode)
+	return type(aNode.name) == "string" and string.sub(aNode.name, -7) == ";Engine"
+end
+
+function SkuOptions:ToggleOnlySkuView()
+	if not (Sku and Sku.isForever) then return end
+	local tCur = SkuOptions.currentMenuPosition
+	local tParent = tCur and tCur.parent
+	if not tParent or type(tParent.children) ~= "table" then return end
+	local tDe = (Sku.Loc == "deDE")
+
+	-- second press: back to what was shown before (the text-filtered list when a search was active, else the full list)
+	if SkuOptions.onlySkuViewActive == true and tOldChildrenParent == tParent and tParent.children == tFilteredChildren then
+		local tPrev = SkuOptions.onlySkuPrev
+		if tPrev then
+			for x = 1, #tPrev do
+				tPrev[x].next = tPrev[x + 1]
+				tPrev[x].prev = tPrev[x - 1]
+			end
+			tParent.children = tPrev
+			tFilteredChildren = tPrev
+			SkuOptions.onlySkuPrev = nil
+			SkuOptions.onlySkuViewActive = nil
+		else
+			SkuOptions:ClearFilter()
+		end
+		SkuOptions.Voice:OutputStringBTtts(tDe and "Alle Ergebnisse" or "All results", true, true, 0.3, nil, nil, nil, 2)
+		return
+	end
+
+	-- a stale snapshot of another level is dropped; a text filter on THIS level stays and is narrowed down further
+	local tTextFilterHere = (tOldChildren ~= false and tOldChildrenParent == tParent and tParent.children == tFilteredChildren)
+	if tOldChildren ~= false and not tTextFilterHere then
+		SkuOptions:ClearFilter()
+		tParent = SkuOptions.currentMenuPosition and SkuOptions.currentMenuPosition.parent
+		if not tParent or type(tParent.children) ~= "table" then return end
+	end
+
+	local tShown, tSkuOnly = tParent.children, {}
+	local tEngineCount = 0
+	for x = 1, #tShown do
+		if tIsEngineEntry(tShown[x]) then
+			tEngineCount = tEngineCount + 1
+		else
+			tSkuOnly[#tSkuOnly + 1] = tShown[x]
+		end
+	end
+	if tEngineCount == 0 then
+		SkuOptions.Voice:OutputStringBTtts(tDe and "Keine Engine Eintraege in dieser Liste" or "No engine entries in this list", true, true, 0.3, nil, nil, nil, 2)
+		return
+	end
+	-- with a text filter on, element 1 is its header row, which is no result
+	local tHeaderCount = tTextFilterHere and 1 or 0
+	if #tSkuOnly <= tHeaderCount then
+		SkuOptions.Voice:OutputStringBTtts(tDe and "Keine Sku Ergebnisse" or "No Sku results", true, true, 0.3, nil, nil, nil, 2)
+		return
+	end
+
+	for x = 1, #tSkuOnly do
+		tSkuOnly[x].next = tSkuOnly[x + 1]
+		tSkuOnly[x].prev = tSkuOnly[x - 1]
+	end
+	if tTextFilterHere then
+		SkuOptions.onlySkuPrev = tShown   -- tOldChildren keeps the full list underneath
+	else
+		SkuOptions.onlySkuPrev = nil
+		tOldChildrenParent = tParent
+		tOldChildren = tShown
+	end
+	tFilteredChildren = tSkuOnly
+	tParent.children = tSkuOnly
+	SkuOptions.onlySkuViewActive = true
+
+	-- the cursor stays on a Sku entry; one standing on an engine entry (it is no longer in the list) goes to the first result
+	local tCursor = SkuOptions.currentMenuPosition
+	if tIsEngineEntry(tCursor) then
+		tCursor:OnLeave()
+		SkuOptions.currentMenuPosition = tSkuOnly[1 + tHeaderCount]
+		SkuOptions.currentMenuPosition:OnEnter()
+	end
+	SkuOptions.Voice:OutputStringBTtts(tDe and "Nur Sku" or "Sku only", true, true, 0.3, nil, nil, nil, 2)
+end
+
 ---------------------------------------------------------------------------------------------------------------------------------------
 function SkuOptions:ApplyFilter(aFilterstring)
 	--dprint("aFilterstring", aFilterstring, SkuOptions.currentMenuPosition.parent.sorting)

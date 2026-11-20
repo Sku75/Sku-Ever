@@ -2,6 +2,34 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.46 (20.11.2026)
+
+### Kurzfassung
+- Neu (nur Forever): Mit Strg+Pfeil runter blendet man in den Ziellisten (F9/F10 und Shift-F9/F10) alle Engine-Einträge aus und sieht nur Skus eigene Ziele. Ein zweites Strg+Pfeil runter bringt die vorherige Liste zurück. Das funktioniert auch auf einer mit Textfilter gesuchten Liste.
+- Neu (nur Forever): In großen Zonen werden Passagen (Zonenübergänge) auch jenseits der Reichweite von 3000 m angezeigt, aber nur die, die an die Zone grenzen, in der man gerade ist.
+- Wildtierausbildung (Fenster im Zauberbuch mit den Ausbildungspunkten) ist alphabetisch sortiert.
+- Engine 17.6: Sumpfland (Wetlands) und die Anleger von Menethil neu aus den aktuellen Daten von Broesel33.
+
+### Neu: Nur Sku-Ziele mit Strg+Pfeil runter
+Was: In den Zielisten blendet Strg+Pfeil runter alle Einträge mit dem Zusatz Engine aus. Zweiter Druck stellt die Liste wieder her. Links, Rechts, Enter oder Tippen heben die Ansicht auf wie einen Textfilter. Die Questlisten sind nicht betroffen.
+Wie: SkuZOptions/Core.lua, Funktion ToggleOnlySkuView, nutzt dieselben Listen wie der Textfilter, es wird nichts neu gebaut, nur ausgeblendet. Nur unter Forever aktiv.
+
+### Neu: Passagen jenseits der Reichweite
+Was: Ist man in einem Gebiet, das größer ist als die eingestellte Reichweite, fehlten die Passagen am Rand der Zone in der Liste. Jetzt erscheinen bis zu sechs Passagen, die an die aktuelle Zone grenzen, auch wenn sie weiter weg sind. Routen zu ihnen werden ebenfalls berechnet.
+Wie: SkuNav/Core.lua, GetAllMetaTargetsFromWp5: Die Wegsuche läuft über die Grenze hinaus weiter, bis genug angrenzende Passagen gefunden sind (Obergrenze der Suche eingebaut), alle anderen Ergebnisse bleiben bei der Reichweite. Nur unter Forever aktiv.
+
+### Geändert: Wildtierausbildung alphabetisch
+Was: Die Liste im Fenster der Wildtierausbildung ist nach Namen sortiert.
+Wie: SkuCore/trainerForever.lua, Sortierung beim Aufbau der Liste (nur Pet-Ausbildung).
+
+### Engine 17.6: Sumpfland und Menethil
+Was: Die Wegedaten und Ziele für Sumpfland wurden neu aufgebaut (Stand von Broesel33 vom 16.11.2026), dazu Nähte zu Loch Modan und Arathi. Anleger und Schiffe in Menethil liegen auf den neuen Anlegern. Die Engine bietet die Ziele Anleger und Am Schiff Auberdine in Menethil nicht mehr an, weil die Route in den Daten entfernt wurde.
+Wie: SkuEngineZW (Engine_Data_Wetlands.lua, Engine_Targets_ZW.lua), SkuPacks/Engine_Index.lua, Engine-Revision 17.6.
+
+### Downloads
+- Sku-Ever-0.46.zip, Sku-Ever-Spielordner.zip, SkuPacks.zip (nur Engine_Index.lua) und SkuEngineZW.zip sind neu.
+- Installer und die übrigen Engine-Gruppen sind unverändert gegenüber 0.45.
+
 ## Installer 1.7 und Login-Tool 4.2 (18.11.2026, im Release 0.45 ausgetauscht)
 
 ### Kurzfassung

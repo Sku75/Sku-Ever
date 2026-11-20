@@ -1853,6 +1853,7 @@ function SkuNav:GetAllMetaTargetsFromWp5(aStartWpName, aMaxDistance, aMaxWPs, aR
 
 	local tFinalWpDistances = {}
 	tFinalWpDistances[WaypointCacheLookupAll[aStartWpName]] = tDistanceToStartWp
+	local tExtraPassages = {}   -- Forever: passages found beyond aMaxDistance (see below)
 
 	-- Shortest walking distances from the start waypoint, capped at aMaxDistance. Dijkstra with a binary heap: every waypoint is
 	-- expanded once. (The former round-by-round relaxation re-expanded waypoints again and again; with the big Forever packs
@@ -1890,16 +1891,72 @@ function SkuNav:GetAllMetaTargetsFromWp5(aStartWpName, aMaxDistance, aMaxWPs, aR
 			end
 			return tTopDist, tTopId
 		end
+		-- [Forever, 20.11.2026] PASSAGES beyond the distance limit. The zone passages ("passage;...", the waypoints between two areas) must
+		-- stay in the lists and routable even when they are farther away than aMaxDistance (big areas, 3000 m on Forever). The search
+		-- then simply goes on past the limit, but only to find the nearest passages (tPassagesWanted, or the wanted target when
+		-- a route to one is asked for) and within a work budget; nothing else beyond the limit is ever returned.
+		local tExtend = Sku.isForever == true
+		local tTargetIndex = aReturnPathForWp and WaypointCacheLookupAll[aReturnPathForWp] or nil
+		if tExtend and aReturnPathForWp then
+			tExtend = tTargetIndex ~= nil and ssub(WaypointCache[tTargetIndex].name, 1, 8) == "passage;"
+		end
+		local tPushCap = tExtend and math.max(aMaxDistance * 4, 12000) or aMaxDistance
+		local tPassagesWanted, tPassagesFound, tBeyondPops = 6, 0, 0
+		-- Only passages that border the zone the player is in count: the passage lies in this zone (its area belongs to the zone) or
+		-- its name names this zone ("passage;von;<place>;<zone>;nach;<zone>"). Unknown zone = no passage beyond the limit.
+		local tZoneTopId, tZoneNameLower, tZoneInit
+		local function tTopAreaId(aAreaId)
+			local tGuard = 0
+			while tGuard < 6 do
+				local tArea = SkuDB.InternalAreaTable[aAreaId]
+				local tParent = tArea and tArea.ParentAreaID
+				if not tParent or tParent == 0 then break end
+				aAreaId = tParent
+				tGuard = tGuard + 1
+			end
+			return aAreaId
+		end
+		local function tPassageBordersMyZone(aWpIndex)
+			if not tZoneInit then
+				tZoneInit = true
+				local tAreaId = SkuNav:GetCurrentAreaId()
+				if tAreaId then
+					tZoneTopId = tTopAreaId(tAreaId)
+					local tZoneArea = SkuDB.InternalAreaTable[tZoneTopId]
+					local tZoneName = tZoneArea and tZoneArea.AreaName_lang and tZoneArea.AreaName_lang[Sku.Loc]
+					if type(tZoneName) == "string" and tZoneName ~= "" then tZoneNameLower = string.lower(tZoneName) end
+				end
+			end
+			if not tZoneTopId then return false end
+			local tWp = WaypointCache[aWpIndex]
+			if tWp.areaId and tTopAreaId(tWp.areaId) == tZoneTopId then return true end
+			return tZoneNameLower ~= nil and string.find(string.lower(tWp.name), tZoneNameLower, 1, true) ~= nil
+		end
 		tPush(tDistanceToStartWp, WaypointCacheLookupAll[aStartWpName])
 		while tHeapSize > 0 do
 			local tDistance, tWaypointCacheIndex = tPop()
 			if tDistance <= tFinalWpDistances[tWaypointCacheIndex] then
+				if tExtend then
+					if aReturnPathForWp then
+						-- a route to a passage: the way is complete when the passage itself is reached, near or far
+						if tWaypointCacheIndex == tTargetIndex then break end
+					else
+						local tIsPassage = ssub(WaypointCache[tWaypointCacheIndex].name, 1, 8) == "passage;" and tPassageBordersMyZone(tWaypointCacheIndex)
+						if tIsPassage then tPassagesFound = tPassagesFound + 1 end
+						if tDistance >= aMaxDistance then
+							-- beyond the limit: enough passages already (also counting those inside the limit) -> done
+							tBeyondPops = tBeyondPops + 1
+							if tPassagesFound >= tPassagesWanted or tBeyondPops > 60000 then break end
+							if tIsPassage then tExtraPassages[tWaypointCacheIndex] = true end
+						end
+					end
+				end
 				for tLinktWaypointCacheIndex, tLinkDistance in pairs(WaypointCache[tWaypointCacheIndex].links.byId) do
 					local tDisPlusLink = tDistance + tLinkDistance
 					if tLinkDistance == 0 then
 						tDisPlusLink = tDisPlusLink + 0.5
 					end
-					if tDisPlusLink < aMaxDistance then
+					if tDisPlusLink < tPushCap then
 						local tOld = tFinalWpDistances[tLinktWaypointCacheIndex]
 						if tOld == nil or tOld > tDisPlusLink then
 							tFinalWpDistances[tLinktWaypointCacheIndex] = tDisPlusLink
@@ -1918,9 +1975,12 @@ function SkuNav:GetAllMetaTargetsFromWp5(aStartWpName, aMaxDistance, aMaxWPs, aR
 
 	 rMetapathData = {}
 	local tcount = 0
+	local tStartIndex = WaypointCacheLookupAll[aStartWpName]
 	for i, v in pairs(tFinalWpDistances) do
 		local tCurrentWP = WaypointCache[i]
-		if tAuto == "" or ssub(tCurrentWP.name, 1, 4) ~= tAuto or aReturnPathForWp ~= nil then
+		-- what lies beyond the limit is only a passage found by the extended search above (or the start itself)
+		if (v < aMaxDistance or i == tStartIndex or tExtraPassages[i] == true or (aReturnPathForWp ~= nil and i == WaypointCacheLookupAll[aReturnPathForWp]))
+			and (tAuto == "" or ssub(tCurrentWP.name, 1, 4) ~= tAuto or aReturnPathForWp ~= nil) then
 			tcount = tcount + 1
 			local tDist = v
 			if tDist == 0 then

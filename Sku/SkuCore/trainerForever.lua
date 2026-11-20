@@ -342,7 +342,23 @@ function SkuCore:Build_ClassTrainerFrameForever(aParentChilds)
 		end
 	end
 
-	for i = 1, tNum do
+	-- Beast training: the entries are listed alphabetically (same name = Blizzard's order, so the ranks stay ascending).
+	-- Class and profession trainers keep Blizzard's order.
+	local tOrder = {}
+	for i = 1, tNum do tOrder[i] = i end
+	if tIsPet then
+		local tSortName = {}
+		for i = 1, tNum do
+			local tN = GetTrainerServiceInfo(i)
+			tSortName[i] = string.lower(type(tN) == "string" and tN or "")
+		end
+		table.sort(tOrder, function(a, b)
+			if tSortName[a] ~= tSortName[b] then return tSortName[a] < tSortName[b] end
+			return a < b
+		end)
+	end
+
+	for _, i in ipairs(tOrder) do
 		-- Observed on Forever: name, state, ?, ?, rank text
 		local tName, tState, _, _, tRankText = GetTrainerServiceInfo(i)
 		if tName and tName ~= "" and (not tOnlyInView or tServiceInView(i)) then
