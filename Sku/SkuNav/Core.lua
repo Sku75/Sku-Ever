@@ -5028,12 +5028,21 @@ function SkuNav:ClearWaypointsTemporary(aFull)
 
 	if SkuSettings:Sub("SkuNav").WaypointsTemporary then
 		if #SkuSettings:Sub("SkuNav").WaypointsTemporary > 0 then
+			-- [Forever] a single engine target picked in the waypoint list is a temporary waypoint that is selected WITHOUT a route
+			-- being followed; the main loop clears temporary waypoints every 0.1 s in that state, which deleted the selected one
+			-- right away (turn-to-waypoint and the beacon then had no data). The selected waypoint stays until it is deselected
+			-- or another one is picked (then the next clear removes it) (21.11.2026).
+			local tKeep = nil
+			local tSel = SkuSettings:Sub("SkuNav").selectedWaypoint
 			for x = 1, #SkuSettings:Sub("SkuNav").WaypointsTemporary do
-				if SkuNav:DeleteWaypoint(SkuSettings:Sub("SkuNav").WaypointsTemporary[x], true) ~= true then
-					dprint("THIS SHOULD NOT HAPPEN: tmp WP could not be deleted on clear:", SkuSettings:Sub("SkuNav").WaypointsTemporary[x])
+				local tName = SkuSettings:Sub("SkuNav").WaypointsTemporary[x]
+				if Sku.isForever and not aFull and tSel and tSel ~= "" and tName == tSel then
+					tKeep = tName
+				elseif SkuNav:DeleteWaypoint(tName, true) ~= true and tName ~= tKeep then
+					dprint("THIS SHOULD NOT HAPPEN: tmp WP could not be deleted on clear:", tName)
 				end
 			end
-			SkuSettings:Sub("SkuNav").WaypointsTemporary = {}
+			SkuSettings:Sub("SkuNav").WaypointsTemporary = tKeep and {tKeep} or {}
 		end
 	end
 

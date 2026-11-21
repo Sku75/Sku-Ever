@@ -2,6 +2,15 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.49 (21.11.2026)
+
+### Kurzfassung
+- Behoben (Forever): Ein einzeln gewähltes Engine-Ziel (Eintrag mit dem Zusatz "Engine" in der Wegpunktliste) wurde sofort wieder gelöscht. Die Taste zum Drehen zum Wegpunkt tat nichts, der Wegpunkt ließ sich nicht erreichen. Jetzt bleibt der gewählte Wegpunkt bis zum Ankommen oder Abwählen bestehen.
+
+### Behoben: Einzelnes Engine-Ziel (Forever)
+Was: Engine-Ziele sind temporäre Wegpunkte. Die Hauptschleife löscht temporäre Wegpunkte alle 0,1 s, solange keine Route verfolgt wird. Ein einzeln gewähltes Ziel war dadurch in derselben Sekunde wieder weg; Drehen zum Wegpunkt und Signalton hatten keine Daten. Beim Folgen einer Route trat das nicht auf. Jetzt behält ClearWaypointsTemporary den gerade gewählten temporären Wegpunkt; er wird erst entfernt, wenn er abgewählt oder ein anderer gewählt wird.
+Wie: SkuNav/Core.lua, ClearWaypointsTemporary. Nur unter Forever aktiv. Im Spiel bestätigt (Zephras: Ziel gewählt, Drehung auf 0,0 Grad genau, Ziel erreicht).
+
 ## Sku-Ever 0.48 (21.11.2026)
 
 ### Kurzfassung
