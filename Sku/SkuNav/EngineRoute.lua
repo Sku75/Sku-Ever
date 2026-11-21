@@ -782,14 +782,25 @@ local function tNamedContext()
 	return tPG, tPMap or false
 end
 
+-- [21.11.2026] No expiry any more. The list was dropped after 600 s and the next call collected it in ONE piece (1687 ms, 15704 entries,
+-- log 14:48:28 "Cache abgelaufen" = the hang in the game). Now it stays valid until a Sku waypoint is created/deleted (tNamedDirty) or the
+-- group changes, and after 600 s it is only REFRESHED in the background (WarmNamedPositions(true), ~3 ms per frame) while the old list
+-- keeps being served. WowVision works the same way: nothing that searches runs longer than a frame's budget.
+local NAMED_REFRESH_S = 600
 local function tNamedCacheValid(aGroup)
-	return namedCache and namedCacheTime and namedCacheGroup == aGroup.key and GetTime() - namedCacheTime < 600
+	return namedCache and namedCacheTime and namedCacheGroup == aGroup.key
 end
 
 function Engine:SkuNamedPositions()
 	tHookNamed()
 	local tPG, tPMap = tNamedContext()
-	if tPG and tNamedCacheValid(tPG) then return namedCache end
+	if tPG and tNamedCacheValid(tPG) then
+		if GetTime() - namedCacheTime > NAMED_REFRESH_S and not namedWarming then
+			namedRetries = 0
+			C_Timer.After(0, function() Engine:WarmNamedPositions(true) end)   -- background refresh, the old list is served meanwhile
+		end
+		return namedCache
+	end
 	local rPos = {}
 	local tList, tState, tInit = SkuNav:ListWaypoints2(false)
 	if not tList then return rPos end
@@ -805,11 +816,11 @@ end
 
 -- The same collection in the background: a few milliseconds per frame instead of one hang of seconds (used by the warm-up after login /
 -- zone change). The result is dropped if the group changed, a Sku waypoint was created or deleted, or a direct call filled the cache meanwhile.
-function Engine:WarmNamedPositions()
+function Engine:WarmNamedPositions(aRefresh)
 	tHookNamed()
 	if namedWarming then return end
 	local tPG, tPMap = tNamedContext()
-	if not tPG or tNamedCacheValid(tPG) then return end
+	if not tPG or (tNamedCacheValid(tPG) and not aRefresh) then return end
 	if InCombatLockdown and InCombatLockdown() then return end
 	if not tDataReady(tPG) then return end
 	local tList, tState, tInit = SkuNav:ListWaypoints2(false)
@@ -836,8 +847,8 @@ function Engine:WarmNamedPositions()
 		end
 		if tI <= tN then C_Timer.After(0, tStep) return end
 		namedWarming = false
-		if #rPos > 0 and not tNamedCacheValid(tPG) then namedCache, namedCacheTime, namedCacheGroup = rPos, GetTime(), tPG.key end
-		tLog("named positions collected", #rPos)
+		if #rPos > 0 and (aRefresh or not tNamedCacheValid(tPG)) then namedCache, namedCacheTime, namedCacheGroup = rPos, GetTime(), tPG.key end
+		tLog("named positions collected", #rPos, aRefresh and "refresh" or "warm")
 	end
 	C_Timer.After(0, tStep)
 end

@@ -2,6 +2,39 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.48 (21.11.2026)
+
+### Kurzfassung
+- Neu (Forever): Freundschaftsanfragen per Battle.net: im Chat-Flüstermenü und in der Freundesliste ein Schritt mit Strg+Enter. Im Ziel-Menü gibt es den Eintrag "Freundschaftsanfrage senden" (dort noch nicht im Spiel geprüft).
+- Behoben (Forever): Wildtierausbildung. Das Lernen wurde vom Spiel verweigert (Fehler "BuyTrainerService() verboten"). Das Fenster zeigt jetzt nur noch Lernbares; ein Eintrag "Anzeige" schaltet auf "schon gelernt" (nur zum Lesen) um.
+- Behoben: Makros auf der Aktionsleiste wurden mit "Makro unbekannt" angesagt, jetzt mit ihrem Namen.
+- Behoben (Forever): Hänger beim Öffnen der Routenlisten etwa alle 10 Minuten.
+- Engine 17.7: neue Ziele (neue NPCs und Questgeber) in allen Engine-Gruppen, aus QuestieDB 1.1.3 und den WowNav-Daten vom 21.11. In Zephras, Hyjal, Shen'dralas und Riverglades sind jetzt auch die Quest-Markierungen und die Questie-Spawns vollständig, das Datenpaket hat zusätzliche deutsche Namen.
+
+### Neu: Freundschaftsanfrage (Forever)
+Was: Auf Forever ist die alte Charakter-Freundesliste aus, ein Freund ist eine Battle.net-Anfrage. Im Chat-Menü einer Zeile sendet der Eintrag "Absender zur Freundesliste hinzufügen" die Anfrage jetzt direkt mit Strg+Enter und sagt "Freundschaftsanfrage gesendet". In der Freundesliste und im Ziel-Menü (Eintrag "Freundschaftsanfrage senden") ist es ein sicheres Makro auf einem zweiten Enter, damit das Öffnen des Menüs nichts versendet. Im Kampf wird nur der Name vorgemerkt.
+Wie: SkuChat/Core.lua, SkuCore/friends.lua (FriendRequestMacro), SkuMob/Options.lua. Nur unter Forever aktiv. Im Spiel bestätigt: Chat-Flüstermenü und Freundesliste. Das Ziel-Menü ist noch nicht geprüft.
+
+### Behoben: Wildtierausbildung (Forever)
+Was: Beim Wildtierlehrer war das Lernen gesperrt, sobald man im Fenster geblättert hatte. Das Spiel meldet dann ADDON_ACTION_FORBIDDEN für BuyTrainerService, weil die Zeile durch Skus Blättern verändert ist. Jetzt setzt Sku den Filter des Fensters auf "lernbar": Blizzard baut die Liste selbst auf, es wird nicht mehr geblättert. Der Eintrag "Anzeige" am Anfang der Liste schaltet auf "schon gelernt" um (zum Nachlesen, nichts auswählbar). Beim Öffnen steht die Anzeige immer auf "noch lernbar". Die Liste bleibt alphabetisch. Berufs- und Klassenlehrer sind unverändert.
+Wie: SkuCore/trainerForever.lua (tAddViewToggle), SkuCore/Core.lua (ApplyTrainerFilters). Nur unter Forever aktiv. Im Spiel bestätigt (Lernen, Umschalten).
+
+### Behoben: Makro-Ansage
+Was: Ein Makro auf der Leiste wurde als "Makro unbekannt" angesagt, weil die Nummer aus GetActionInfo auf Forever nicht immer ein Makro-Index ist. Jetzt wird zusätzlich der Name über den Platz der Leiste gelesen. Nur wenn die bisherige Abfrage keinen Namen liefert, deshalb ändert sich auf anderen Clients nichts.
+Wie: SkuCore/Options.lua, ButtonContentNameHelper (neuer Parameter aSlot, GetActionText). Im Spiel bestätigt.
+
+### Behoben: Hänger bei Routenlisten
+Was: Die Liste der benannten Positionen wurde nach 600 Sekunden verworfen und beim nächsten Aufruf in einem Stück neu gesammelt (gemessen: 1,7 Sekunden Stillstand). Jetzt bleibt sie gültig, bis sich ein Wegpunkt ändert oder die Gruppe wechselt, und wird nach 600 Sekunden nur im Hintergrund in kleinen Häppchen aufgefrischt.
+Wie: SkuNav/EngineRoute.lua (WarmNamedPositions, NAMED_REFRESH_S). Nur unter Forever aktiv.
+
+### Engine 17.7 und Datenpaket
+Was: Broesels WowNav-Daten (Stand 21.11.) haben neue Zieldaten, die Wegenetze sind unverändert. Alle Engine-Gruppen sind mit QuestieDB 1.1.3 neu gebaut (nur Engine_Targets_*.lua, Wegedaten byte-gleich). Zephras, Hyjal, Shen'dralas und Riverglades hatten bisher kaum Quest-Markierungen und nur wenige Ziele; sie sind jetzt wie Zephras vollständig (Hyjal 162 auf 4041 Ziele, Shen'dralas 154 auf 3763, Riverglades 740 auf 3439, Zephras 8295 auf 8576). Das Datenpaket hat rund 200 geänderte Einträge, vor allem deutsche NPC-Namen und 174 Quest-Korrekturen.
+Wie: SkuEngine*/Engine_Targets_*.lua, SkuPacks/Engine_Index.lua (Revision 17.7), SkuPacks/DataPack_ForeverQuests.lua.
+
+### Downloads
+- Sku-Ever-0.48.zip, Sku-Ever-Spielordner.zip, SkuPacks.zip und alle 20 SkuEngine-ZIPs sind neu.
+- Installer unverändert gegenüber 0.47.
+
 ## Sku-Ever 0.47 (20.11.2026)
 
 ### Kurzfassung

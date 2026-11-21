@@ -409,6 +409,30 @@ local function tBuildTargetMenu(aParent)
 			tSay(n .. L["MOB_Invited"])
 		end, L["MOB_InviteToGroupTip"])
 
+		if Sku.isForever and SkuCore and SkuCore.Friends and SkuCore.Friends.FriendRequestMacro then
+			-- Forever: the old character friend list is off, a friend is a Battle.net request (friends.lua, Friends.FriendRequestMacro).
+			-- The request goes out as a secure macro on a second Enter, so opening the submenu sends nothing.
+			local tAddF = SkuOptions:InjectMenuItems(aParent, {Sku.deEn("Freundschaftsanfrage senden", "send friend request", "envoyer une demande d'ami")}, SkuGenericMenuItem)
+			tAddF.sorting = true
+			tAddF.textFull = Sku.deEn("Schickt dem Ziel eine Freundschaftsanfrage über Battle.net. Die Person muss sie annehmen.", "Sends the target a friend request through Battle.net. They have to accept it.", "Envoie une demande d'ami à la cible par Battle.net. Elle doit l'accepter.")
+			tAddF.dynamic = true
+			tAddF.BuildChildren = function(self)
+				local tN, tRealm = UnitName("target")
+				if type(tN) == "string" and type(tRealm) == "string" and tRealm ~= "" then tN = tN .. "-" .. tRealm end
+				local tOk, tMacro, tClean = pcall(SkuCore.Friends.FriendRequestMacro, tN)
+				if not tOk or not tMacro then
+					SkuOptions:InjectMenuItems(self, {Sku.deEn("Name des Ziels nicht lesbar", "target name not readable", "nom de la cible illisible")}, SkuGenericMenuItem)
+					return
+				end
+				local tYes = SkuOptions:InjectMenuItems(self, {Sku.deEn("Anfrage senden an: ", "send request to: ", "envoyer la demande à : ") .. tClean}, SkuGenericMenuItem)
+				tYes.sorting = true
+				tYes.macrotext = tMacro
+				tYes.secureMacro = true
+				tYes.OnAction = function()
+					tSay(Sku.deEn("Freundschaftsanfrage gesendet", "friend request sent", "demande d'ami envoyée"))
+				end
+			end
+		else
 		tAddAction(aParent, L["MOB_AddFriend"], function()
 			local n = UnitName("target")
 			if not n then return end
@@ -419,6 +443,7 @@ local function tBuildTargetMenu(aParent)
 			end
 			tSay(n .. L["MOB_FriendAdded"])
 		end, L["MOB_AddFriendTip"])
+		end
 
 		tAddAction(aParent, L["MOB_ToggleIgnore"], function()
 			local n = UnitName("target")

@@ -1068,7 +1068,7 @@ local function KeyBindingKeyMenuEntryHelper(self, aValue, aName)
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
-local function ButtonContentNameHelper(aActionType, aId, aSubType, aActionBarName, aButtonId)
+local function ButtonContentNameHelper(aActionType, aId, aSubType, aActionBarName, aButtonId, aSlot)
 	--print("ButtonContentNameHelper", aActionType, aId, aSubType, aActionBarName, aButtonId)
 	local rName = L["Empty"]
 
@@ -1084,7 +1084,9 @@ local function ButtonContentNameHelper(aActionType, aId, aSubType, aActionBarNam
 			rName = itemName
 		elseif aActionType == "macro" then
 			local name, icon, body, isLocal = GetMacroInfo(aId)
-			if name then
+			-- [21.11.2026] Forever: the id from GetActionInfo is not always a macro index (macro showed as "unbekannt"); the action slot knows the name
+			if (not name or name == "") and aSlot and GetActionText then name = GetActionText(aSlot) end
+			if name and name ~= "" then
 				rName = L["Macro"]..";"..name
 			else
 				rName = L["Macro"]..";"..L["Unbekannt"]
@@ -1170,7 +1172,7 @@ local function BindingHelper(aCurrentMenuEntry, aType, aButtonId, aParentEntry, 
 
 			if aType == "player" then
 				local actionType, id, subType = GetActionInfo(self.menuTarget.buttonObj.action)
-				self.menuTarget.name = L["Button"].." "..aButtonId..";"..ButtonContentNameHelper(actionType, id, subType, aActionBarName, aButtonId)
+				self.menuTarget.name = L["Button"].." "..aButtonId..";"..ButtonContentNameHelper(actionType, id, subType, aActionBarName, aButtonId, self.menuTarget.buttonObj.action)
 			elseif aType == "pet" then
 				self.menuTarget.name = L["Button"].." "..aButtonId..";"..ButtonContentNameHelper("pet", aBooktypeOrObjId, subType, aActionBarName, aBooktypeOrObjId)
 			end
@@ -1496,7 +1498,7 @@ local function ActionBarMenuBuilder(aParentEntry, aActionBarName, aBooktype)
 		if tButtonObj then
 			local actionType, id, subType = GetActionInfo(tButtonObj.action)
 			local tButtonName =""
-			tButtonName = ButtonContentNameHelper(actionType, id, subType, aActionBarName, x)
+			tButtonName = ButtonContentNameHelper(actionType, id, subType, aActionBarName, x, tButtonObj.action)
 			
 			local tNewMenuEntry = SkuOptions:InjectMenuItems(aParentEntry, {L["Button"].." "..(x - tNameNumberMod)..(tAdditionalTotemBarNameParts[tActionBarData[aActionBarName].buttonName..x] or "")..";"..tButtonName}, SkuGenericMenuItem)
 			tNewMenuEntry.dynamic = true
@@ -1573,7 +1575,7 @@ local function ActionBarMenuBuilder(aParentEntry, aActionBarName, aBooktype)
 				end
 
 				local actionType, id, subType = GetActionInfo(self.buttonObj.action)
-				self.name = L["Button"].." "..x..";"..ButtonContentNameHelper(actionType, id, subType, aActionBarName, x)
+				self.name = L["Button"].." "..x..";"..ButtonContentNameHelper(actionType, id, subType, aActionBarName, x, self.buttonObj.action)
 
 				self.spellID = nil
 				self.itemID = nil

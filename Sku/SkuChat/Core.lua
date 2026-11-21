@@ -3152,7 +3152,65 @@ function SkuChat:OnInitialize()
 
 
 				--add friend
-				if tLineData.arg2 then
+				if tLineData.arg2 and Sku.isForever and SkuCore and SkuCore.Friends and SkuCore.Friends.FriendRequestMacro then
+					-- Forever: the old character friend list is off, a friend is a Battle.net request (SkuCore/friends.lua,
+					-- Friends.FriendRequestMacro). This line menu runs OnAction itself on CTRL-ENTER (no secure click, so a secure
+					-- macro entry here did nothing, found in the log 20.11.2026): the entry only NOTES the name; the request is
+					-- sent from the friend list (Contacts > Friend List, first entry) where the secure macro works.
+					local tSender = tLineData.arg2
+					local tNewMenuEntry = SkuOptions:InjectMenuItems(SkuOptions.Menu, {L["add sender to friend list"]}, SkuGenericMenuItem)
+					tNewMenuEntry.OnEnter = function(self, aValue, aName)
+						tSkuCurrentLineDatalinktTextFirstLine, tSkuCurrentLineDatalinktTextFull, tSkuCurrentLineDatalinktItemId = "", "", ""
+					end
+					tNewMenuEntry.isSelect = true
+					-- [21.11.2026] One-step send: while this entry has the menu focus, CTRL-ENTER is re-bound to a hidden secure
+					-- button whose macro is the Battle.net request (the plain OnAction below cannot run it). The binding is
+					-- dropped as soon as the focus leaves the entry. OnAction stays as the fallback (e.g. in combat: name noted only).
+					if not InCombatLockdown() then
+						local tMacro = SkuCore.Friends.FriendRequestMacro(tSender)
+						if tMacro then
+							local tBtn = _G["SkuChatFriendReqButton"] or CreateFrame("Button", "SkuChatFriendReqButton", UIParent, "SecureActionButtonTemplate")
+							tBtn:SetAttribute("type", "macro")
+							tBtn:SetAttribute("macrotext", tMacro)
+							tBtn:RegisterForClicks("AnyUp", "AnyDown")
+							local tOwner = _G["SkuChatFriendReqOwner"] or CreateFrame("Frame", "SkuChatFriendReqOwner", UIParent)
+							ClearOverrideBindings(tOwner)
+							local tBound = false
+							local tAge = 0
+							local function tUnbind()
+								if tBound and not InCombatLockdown() then ClearOverrideBindings(tOwner) end
+								tBound = false
+							end
+							tBtn:SetScript("PostClick", function()
+								tUnbind()
+								tOwner:SetScript("OnUpdate", nil)
+								SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Freundschaftsanfrage gesendet", "friend request sent", "demande d'ami envoyée"), true, true, 0.2, nil, nil, nil, 2)
+								C_Timer.After(0.01, function() CloseChatMenuHelper() end)
+							end)
+							tOwner:SetScript("OnUpdate", function(_, aElapsed)
+								tAge = tAge + aElapsed
+								local tFocus = _G["OnSkuChatToggle"].menuOpen == true and SkuOptions.currentMenuPosition == tNewMenuEntry
+								if tFocus and not tBound and not InCombatLockdown() then
+									SetOverrideBindingClick(tOwner, true, "CTRL-ENTER", "SkuChatFriendReqButton")
+									tBound = true
+								elseif (not tFocus) and tBound then
+									tUnbind()
+								end
+								if tAge > 120 then tUnbind(); tOwner:SetScript("OnUpdate", nil) end
+							end)
+						end
+					end
+					tNewMenuEntry.OnAction = function(self)
+						PlaySound(88)
+						local tOk, tQueued = pcall(SkuCore.Friends.QueueFriendRequest, tSender)
+						if tOk and tQueued then
+							SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Name vorgemerkt. Zum Senden: Gesellig, Kontakte, Freundesliste, oberster Eintrag", "name noted. To send: social, contacts, friend list, top entry", "nom noté. Pour envoyer : social, contacts, liste d'amis, première entrée"), true, true, 0.2, nil, nil, nil, 2)
+						else
+							SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Name nicht lesbar", "name not readable", "nom illisible"), true, true, 0.2, nil, nil, nil, 2)
+						end
+						C_Timer.After(0.01, function() CloseChatMenuHelper() end)
+					end
+				elseif tLineData.arg2 then
 					local tNewMenuEntry = SkuOptions:InjectMenuItems(SkuOptions.Menu, {L["add sender to friend list"]}, SkuGenericMenuItem)
 					tNewMenuEntry.OnEnter = function(self, aValue, aName)
 						tSkuCurrentLineDatalinktTextFirstLine, tSkuCurrentLineDatalinktTextFull, tSkuCurrentLineDatalinktItemId = "", "", ""

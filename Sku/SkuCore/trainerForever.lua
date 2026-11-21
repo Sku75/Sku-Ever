@@ -125,6 +125,35 @@ local function tPageList(aDirection)
 	end)
 end
 
+local gAfterSelection   -- the announce/focus-Learn routine behind the ClassTrainer_SetSelection hook (set in tHookSelection)
+-- Beast training: entry that switches the window between "still learnable" and "already learned" (the second list is only for reading)
+local function tAddViewToggle(aParentChilds)
+	local tLearnedView = SkuCore.petTrainerView == "learned"
+	local tLabel = tLearnedView
+		and Sku.deEn("Anzeige: schon gelernt, Enter schaltet auf noch lernbar", "view: already learned, Enter switches to still learnable", "affichage : déjà appris, Entrée passe à encore apprenable")
+		or Sku.deEn("Anzeige: noch lernbar, Enter schaltet auf schon gelernt", "view: still learnable, Enter switches to already learned", "affichage : encore apprenable, Entrée passe à déjà appris")
+	table.insert(aParentChilds, tLabel)
+	aParentChilds[tLabel] = {
+		RoC = "Child",
+		type = "Button",
+		skuIdentity = "petview",
+		textFirstLine = tLabel,
+		textFull = "",
+		childs = {},
+		click = true,
+		quietClick = true,
+		func = function()
+			if InCombatLockdown() then return end
+			SkuCore.petTrainerView = (SkuCore.petTrainerView == "learned") and "learnable" or "learned"
+			SkuCore:ApplyTrainerFilters()   -- sets the filter, Blizzard rebuilds the list, the menu is refreshed 0.3 s later
+			C_Timer.After(0.6, function()
+				tSay(SkuCore.petTrainerView == "learned" and Sku.deEn("schon gelernt", "already learned", "déjà appris")
+					or Sku.deEn("noch lernbar", "still learnable", "encore apprenable"))
+			end)
+		end,
+	}
+end
+
 -- Adds a "page back" / "page forward" entry when Blizzard's list is longer than its window.
 local function tAddPageButton(aParentChilds, aDirection)
 	local tBox = ClassTrainerFrame.ScrollBox
@@ -162,7 +191,7 @@ local tSelectionHooked
 local function tHookSelection()
 	if tSelectionHooked or not ClassTrainer_SetSelection then return end
 	tSelectionHooked = true
-	hooksecurefunc("ClassTrainer_SetSelection", function()
+	gAfterSelection = function()
 		C_Timer.After(0.2, function()
 			if not ClassTrainerFrame:IsVisible() then return end
 			local tIdx = tSelectedIndex()
@@ -196,7 +225,8 @@ local function tHookSelection()
 			end
 			C_Timer.After(0.35, function() tFocusLearn(false) end)
 		end)
-	end)
+	end
+	hooksecurefunc("ClassTrainer_SetSelection", gAfterSelection)
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
@@ -313,9 +343,10 @@ function SkuCore:Build_ClassTrainerFrameForever(aParentChilds)
 		tAddText(aParentChilds,
 			tFreePoints and (L["Training points left"] .. ": " .. tFreePoints) or L["Training points unknown"],
 			"ClassTrainerFramePoints")
+		tAddViewToggle(aParentChilds)
 	end
 
-	tAddPageButton(aParentChilds, -1)
+	if not tIsPet then tAddPageButton(aParentChilds, -1) end
 
 	local tStateNames = {
 		available = L["learnable"],
@@ -336,7 +367,7 @@ function SkuCore:Build_ClassTrainerFrameForever(aParentChilds)
 	-- Only what Blizzard's window shows right now is listed; the rest is reached with the page entries. If no row is
 	-- built yet (window just opened), everything is listed so the menu is never empty.
 	local tOnlyInView = false
-	if tListScrolls() then
+	if not tIsPet and tListScrolls() then
 		for i = 1, tNum do
 			if tServiceInView(i) then tOnlyInView = true break end
 		end
@@ -400,8 +431,14 @@ function SkuCore:Build_ClassTrainerFrameForever(aParentChilds)
 			local tDesc = GetTrainerServiceDescription(i)
 			if type(tDesc) == "string" and tDesc ~= "" then tParts[#tParts + 1] = tDesc end
 
-			local tRow = (tState == "available" and not tKnownSkill) and tRowFor(i) or nil
-			if tState == "available" and not tKnownSkill and not tRow then
+			local tSelectable = tState == "available" and not tKnownSkill
+			local tRow = tSelectable and tRowFor(i) or nil
+			-- beast training: a row that is off screen is not used (the list only shows learnable skills, see ApplyTrainerFilters)
+			-- beast training: no scrolling from Sku (it taints the row, Learn is refused): a skill below the window's edge says so
+			local tViaScroll = false
+			if tIsPet and tSelectable and not tRow then
+				tLabel = tLabel .. ", " .. Sku.deEn("im Fenster nicht sichtbar, erst andere lernen", "not in view, learn others first", "pas visible, apprenez d'abord les autres")
+			elseif tSelectable and not tRow then
 				tLabel = tLabel .. ", " .. L["cannot be selected, reopen the window"]
 				dprint("trainerRow", "keine Zeile", "index", i, "name", tostring(tName), "stufe", tostring(tLevel),
 					"beruf", tostring(tSkillName), tostring(tSkillRank), "zeilenGebaut", tostring(ClassTrainerFrame.ScrollBox ~= nil))
@@ -420,7 +457,7 @@ function SkuCore:Build_ClassTrainerFrameForever(aParentChilds)
 				textFull = table.concat(tParts, "\r\n"),
 				childs = {},
 			}
-			if tRow then
+			if tRow or tViaScroll then
 				-- Choosing = Enter bound straight to Blizzard's row (directClickButton). A secure click would hand
 				-- the row the name of the menu key ("ENTER"), but the row only answers to "LeftButton". The binding
 				-- needs a real named button, a global alias of the unnamed row never receives it, so a named secure
@@ -435,8 +472,16 @@ function SkuCore:Build_ClassTrainerFrameForever(aParentChilds)
 					-- Key down only: with "AnyUp" too, one press clicked the row twice (two selections, two rebuilds).
 					tProxy:RegisterForClicks("AnyDown")
 					tProxy:SetAttribute("type", "click")
+					-- beast training only: bring the row into view on the key press, before the secure click
+					tProxy:SetScript("PreClick", function(self)
+						if not self.skuPetScroll or InCombatLockdown() then return end
+						local tTarget = tRowFor(self.skuSkillIndex)   -- never scrolls
+						self:SetAttribute("clickbutton", tTarget)   -- nil when the row is not built: nothing is clicked (a recycled row would be the wrong skill)
+					end)
 				end
-				if not InCombatLockdown() then
+				tProxy.skuSkillIndex = i
+				tProxy.skuPetScroll = tIsPet or nil
+				if tRow and not InCombatLockdown() then
 					tProxy:SetAttribute("clickbutton", tRow)
 				end
 				tEntry.directClickButton = tAlias
@@ -451,7 +496,7 @@ function SkuCore:Build_ClassTrainerFrameForever(aParentChilds)
 		end
 	end
 
-	tAddPageButton(aParentChilds, 1)
+	if not tIsPet then tAddPageButton(aParentChilds, 1) end
 
 	-- Learn: secure click on Blizzard's own Learn button for the chosen skill.
 	local tTrainButton = ClassTrainerTrainButton

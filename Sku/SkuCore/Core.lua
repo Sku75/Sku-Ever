@@ -1679,16 +1679,25 @@ local SkuCoreOldPetHappiness = nil
 -- Forever shows everything, so that skills the pet already knows stand in the list as learned
 -- and the list does not look empty when nothing new can be learned.
 function SkuCore:ApplyTrainerFilters()
-	local tAll = Sku.isForever == true and C_Trainer.GetTrainerType() == Enum.TrainerType.Pet
-	SetTrainerServiceTypeFilter("available", true)
-	SetTrainerServiceTypeFilter("unavailable", tAll)
-	SetTrainerServiceTypeFilter("used", tAll)
-	if tAll then
-		C_Timer.After(0.3, function()
+	local tPet = Sku.isForever == true and C_Trainer.GetTrainerType() == Enum.TrainerType.Pet
+	-- [21.11.2026] Beast training shows ONLY what can be learned (before: all three states). A row reached by scrolling from Sku's code is
+	-- tainted and BuyTrainerService is then refused for pets (measured 21.11.2026); with the filter Blizzard rebuilds the list securely
+	-- (TRAINER_UPDATE) and the learnable skills are the first rows of the window.
+	-- the menu entry "Anzeige" (trainerForever.lua) switches SkuCore.petTrainerView between "learnable" (default) and "learned" (read-only list)
+	local tLearned = tPet and SkuCore.petTrainerView == "learned"
+	SetTrainerServiceTypeFilter("available", not tLearned)
+	SetTrainerServiceTypeFilter("unavailable", false)
+	SetTrainerServiceTypeFilter("used", tLearned)
+	if tPet then
+		-- the list is rebuilt by Blizzard after TRAINER_UPDATE; refresh the Sku menu at several moments so it never shows the old list
+		local function tRefresh()
 			if _G["ClassTrainerFrame"]:IsVisible() == true then
 				SkuCore:CheckFrames(nil, nil, true)
 			end
-		end)
+		end
+		C_Timer.After(0.3, function() tRefresh() end)
+		C_Timer.After(0.9, function() tRefresh() end)
+		C_Timer.After(1.8, function() tRefresh() end)
 	end
 end
 
@@ -1798,6 +1807,7 @@ function SkuCore:OnEnable()
 				end)
 			end
 			ClassTrainerFrame:HookScript("OnShow", function()
+				SkuCore.petTrainerView = nil   -- every opening starts with "learnable"
 				SkuCore:ApplyTrainerFilters()
 				if _G["ClassTrainerSkill2"] then
 					C_Timer.After(0.1, function()

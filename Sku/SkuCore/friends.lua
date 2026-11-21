@@ -31,8 +31,9 @@ end)
 local gShowHookInstalled = false
 
 -- Forever: C_FriendList.AddFriend, AddOrRemoveFriend and SendWho have HasRestrictions there, an addon's call is
--- refused with ADDON_ACTION_FORBIDDEN. Blizzard's own /friend and /who (SlashCommands.lua) make these calls, so Sku
--- runs them as a secure macro from the menu's ENTER key press. A name or query typed into the edit box first is kept
+-- refused with ADDON_ACTION_FORBIDDEN. Blizzard's own /who (SlashCommands.lua) makes that call, so Sku runs it as a secure
+-- macro from the menu's ENTER key press. /friend does NOTHING on Forever (the old character friend list is off), a new friend
+-- is a Battle.net request: see Friends.FriendRequestMacro below. A name or query typed into the edit box first is kept
 -- here and offered as a confirm entry on top of its list; the macro text is staged when that entry gets focus.
 local gPendingFriendName
 local gPendingWhoQuery
@@ -40,6 +41,39 @@ local gPendingWhoQuery
 -- a line break in macro text would start a second macro command
 local function tMacroArg(aText)
    return (aText:gsub("[\r\n]", ""))
+end
+
+-- [Forever, 20.11.2026] The old character friend list is OFF on Forever (C_FriendList.IsLegacyFriendSystemEnabled() = false; log: numFriends 0,
+-- numBnet 17), so Blizzard's /friend does nothing there. A new friend is a Battle.net friend request: Blizzard's Add Friend window
+-- (Blizzard_AddFriend, AddFriendFrame_Accept) calls BNSendFriendInvite for a BattleTag (name with # or @) and
+-- C_BattleNet.SendTitleFriendInviteByName for a character name. Both are refused to addon code (HasRestrictions), so the call is a secure macro
+-- line, like Sku's other restricted actions (PetAbandon). Returns the macro text and the cleaned name, or nil when there is no name.
+-- UNTESTED in game (written without a test option).
+function Friends.FriendRequestMacro(aName)
+   if type(aName) ~= "string" then return nil end
+   -- the WHOLE name: characters on Forever have a surname ("Susi Sausewind"); cutting at the first space sent "Susi" and the game
+   -- answered "The selected player cannot be found" (log 20.11.2026 21:47:54, which also proved that the macro line gets through)
+   local tName = tMacroArg(aName):match("^%s*(.-)%s*$")
+   if not tName or tName == "" then return nil end
+   local tQuoted = string.format("%q", tName)
+   if string.find(tName, "#", 1, true) or string.find(tName, "@", 1, true) then
+      return "/run BNSendFriendInvite("..tQuoted..", \"\")", tName
+   end
+   return "/run C_BattleNet.SendTitleFriendInviteByName("..tQuoted..")", tName
+end
+
+-- Menus that cannot run a secure macro themselves (the chat line menu calls OnAction directly) only note the name: it shows up as the first
+-- entry of Contacts > Friend List, where the request goes out as a secure macro. True when a name was noted.
+function Friends.QueueFriendRequest(aName)
+   local _, tName = Friends.FriendRequestMacro(aName)
+   if not tName then return false end
+   gPendingFriendName = tName
+   return true
+end
+
+-- spoken after the request went out (a request, not a friend: the other side has to accept)
+local function tRequestSentText()
+   return Sku.deEn("Freundschaftsanfrage gesendet", "friend request sent", "demande d'ami envoyée")
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
@@ -540,19 +574,19 @@ local function tAddWhoResult(aParent, aInfo)
    tNewMenuEntry.textFull = tText
 
    tNewMenuEntry.BuildChildren = function(self)
-      -- /friend toggles: on a name that already is a friend it removes them, so Forever leaves the entry out then
-      if not (Sku.isForever and C_FriendList.GetFriendInfo(tName)) then
+      -- Forever: a friend request (Battle.net), see Friends.FriendRequestMacro
+      do
          local tAdd = SkuOptions:InjectMenuItems(self, {L["add friend"]}, SkuGenericMenuItem)
          tAdd.isSelect = true
          if Sku.isForever then
-            tAdd.macrotext = "/friend "..tMacroArg(tName)
-            tAdd.secureMacro = true
+            tAdd.macrotext = Friends.FriendRequestMacro(tName)
+            tAdd.secureMacro = tAdd.macrotext ~= nil
          end
          tAdd.OnAction = function(self)
             if not Sku.isForever then
                C_FriendList.AddFriend(tName)
             end
-            pcall(function() SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Freund hinzugefügt", "friend added", "ami ajouté"), true, true, 0.1, nil, nil, nil, 1) end)
+            pcall(function() SkuOptions.Voice:OutputStringBTtts(Sku.isForever and tRequestSentText() or Sku.deEn("Freund hinzugefügt", "friend added", "ami ajouté"), true, true, 0.1, nil, nil, nil, 1) end)
          end
       end
 
@@ -701,12 +735,13 @@ function Friends:FriendsMenuBuilder()
       tNewMenuEntryContacts.BuildChildren = function(self)
          if Sku.isForever and gPendingFriendName then
             local tName = gPendingFriendName
-            local tConfirm = SkuOptions:InjectMenuItems(self, {L["Confirm add friend: "]..tName}, SkuGenericMenuItem)
-            tConfirm.macrotext = "/friend "..tName
-            tConfirm.secureMacro = true
+            -- Forever: a Battle.net friend request (the other side has to accept), see Friends.FriendRequestMacro
+            local tConfirm = SkuOptions:InjectMenuItems(self, {Sku.deEn("Freundschaftsanfrage senden an: ", "send friend request to: ", "envoyer une demande d'ami à : ")..tName}, SkuGenericMenuItem)
+            tConfirm.macrotext = Friends.FriendRequestMacro(tName)
+            tConfirm.secureMacro = tConfirm.macrotext ~= nil
             tConfirm.OnAction = function()
                gPendingFriendName = nil
-               SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Freund hinzugefügt", "friend added", "ami ajouté"), true, true, 0.1, nil, nil, nil, 1)
+               SkuOptions.Voice:OutputStringBTtts(tRequestSentText(), true, true, 0.1, nil, nil, nil, 1)
             end
          end
          local tNewMenuEntry = SkuOptions:InjectMenuItems(self, {L["add friend"]}, SkuGenericMenuItem)
@@ -715,8 +750,8 @@ function Friends:FriendsMenuBuilder()
             SkuOptions:EditBoxShow("", function(self)
                local tText = self:GetText()
                if Sku.isForever then
-                  -- /friend reads the first word as the name and the rest as a note
-                  gPendingFriendName = tText and tMacroArg(tText):match("^%s*(%S+)")
+                  -- the whole text is the character name (with surname) or BattleTag
+                  gPendingFriendName = tText and select(2, Friends.FriendRequestMacro(tText))
                   if gPendingFriendName and C_FriendList.GetFriendInfo(gPendingFriendName) then
                      SkuOptions.Voice:OutputStringBTtts(ERR_FRIEND_ALREADY_S:format(gPendingFriendName), true, true, 0.1, nil, nil, nil, 1)
                      gPendingFriendName = nil
