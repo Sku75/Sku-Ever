@@ -2,6 +2,20 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.50 (22.11.2026)
+
+### Kurzfassung
+- Datenpaket aktualisiert auf QuestieDB 1.1.4 (Questie 12.12.0): 1818 Quests (vorher 1713), 3478 NPCs, 802 Objekte, 9090 Gegenstände. Neue und korrigierte Questgeber, Abgaben und Ziele, aktualisierte Quest-XP und Übersetzungen.
+- Behoben (Forever): Fehler "attempt to index field '?' (a nil value)" in SkuNav/Core.lua beim Anlegen temporärer Wegpunkte, zum Beispiel "Einheiten;Route" beim Folgen einer Einheit.
+
+### Datenpaket QuestieDB 1.1.4
+Was: Questie hat Quests, NPCs, Objekte und Gegenstände aktualisiert. Das Datenpaket ist neu aus 1.1.4 gebaut. Gegenüber dem vorigen Stand sind 105 Quests, 504 NPCs, 155 Objekte und 113 Gegenstände neu; 309 NPCs sind entfallen, weil Questie sie aus seiner NPC-Datenbank genommen hat. Es fehlt keine Quest. Die Engine-Zielkataloge bleiben auf Engine 17.7 (QuestieDB 1.1.3).
+Wie: SkuPacks/DataPack_ForeverQuests.lua. Beim Laden im Spiel bestätigt (3478 Kreaturen, 1818 Quests, keine Fehler).
+
+### Behoben: Temporäre Wegpunkte (Forever)
+Was: Wird ein temporärer Wegpunkt gelöscht, bleibt in der Liste eine Lücke. Beim Neuanlegen wurde der letzte Index mit "#" bestimmt, der bei Lücken nicht verlässlich ist; der Zugriff lief dann ins Leere und warf den Fehler. Auch ein bereits gelöschter Eintrag, den der Cache noch kannte, löste ihn beim Aktualisieren aus. Jetzt wird der neue Index aus dem höchsten vorhandenen berechnet, und ein fehlender Eintrag wird beim Aktualisieren neu angelegt.
+Wie: SkuNav/Core.lua, SetWaypoint (Zweig für temporäre Wegpunkte). Die Datei ist syntaktisch geprüft; im Spiel ist der Ablauf noch nicht noch einmal nachgestellt worden.
+
 ## Sku-Ever 0.49 (21.11.2026)
 
 ### Kurzfassung
