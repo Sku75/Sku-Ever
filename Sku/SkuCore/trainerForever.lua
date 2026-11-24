@@ -389,10 +389,20 @@ function SkuCore:Build_ClassTrainerFrameForever(aParentChilds)
 		end)
 	end
 
+	local tPetLearnedView = tIsPet and SkuCore.petTrainerView == "learned"
+	local tListed = 0
 	for _, i in ipairs(tOrder) do
 		-- Observed on Forever: name, state, ?, ?, rank text
 		local tName, tState, _, _, tRankText = GetTrainerServiceInfo(i)
-		if tName and tName ~= "" and (not tOnlyInView or tServiceInView(i)) then
+		-- Beast training: the game reports already known skills as "available" too. Each view lists only its own kind
+		-- (learnable view: not known; learned view: known), so the two lists never mix.
+		local tSkip = false
+		if tIsPet and tName and tName ~= "" then
+			local tIsKnown = (tState == "used") or (tState == "available" and tPetSkillKnown(tName, tRankText))
+			tSkip = (tIsKnown ~= tPetLearnedView)
+		end
+		if tName and tName ~= "" and not tSkip and (not tOnlyInView or tServiceInView(i)) then
+			tListed = tListed + 1
 			local tCost = GetTrainerServiceCost(i)
 			if not (tonumber(tCost) and tCost > 0) then tCost = nil end
 
@@ -545,7 +555,11 @@ function SkuCore:Build_ClassTrainerFrameForever(aParentChilds)
 			}
 		end
 	end
-	if tNum == 0 then
+	if tIsPet and tListed == 0 then
+		tAddText(aParentChilds, tPetLearnedView
+			and Sku.deEn("Noch nichts gelernt", "Nothing learned yet", "Rien appris pour l'instant")
+			or Sku.deEn("Nichts mehr lernbar", "Nothing left to learn", "Plus rien à apprendre"), nil)
+	elseif tNum == 0 then
 		tAddText(aParentChilds, L["Menu empty"], nil)
 	end
 end

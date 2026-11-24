@@ -2639,6 +2639,89 @@ function SkuCore:Build_ReadyCheckFrame(aParentChilds)
 end
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Dungeon finder invitation ("Dein Dungeon ist bereit").
+--
+-- When the queue pops, Blizzard (Blizzard_GroupFinder/Shared/LFGFrame.lua, LFG_PROPOSAL_SHOW) plays the ready-check sound and shows
+-- LFGDungeonReadyPopup via StaticPopupSpecial_Show. That window is none of the StaticPopups and was not in
+-- SkuCore.interactFramesList, so the Sku menu never reacted: only the sound was heard. The popup holds LFGDungeonReadyDialog (two
+-- buttons, enterButton -> AcceptProposal(), leaveButton -> RejectProposal(), both insecure) while the player has not answered, and
+-- LFGDungeonReadyStatus (who has answered) afterwards. Built flat like Build_ReadyCheckFrame so the answer is the first entry.
+---------------------------------------------------------------------------------------------------------------------------------------
+function SkuCore:Build_LFGDungeonReadyPopup(aParentChilds)
+	local tDialog = _G["LFGDungeonReadyDialog"]
+	local tMessage = ""
+	local tOk, tExists, _, _, _, tName, _, tRole, tResponded, _, _, tNumMembers = pcall(GetLFGProposal)
+	if tOk and tExists then
+		local tParts = {}
+		if tDialog and tDialog.label and tDialog.label.GetText and tDialog.label:GetText() and tDialog.label:GetText() ~= "" then
+			tParts[#tParts + 1] = SkuUtil:Unescape(tDialog.label:GetText())
+		end
+		if tName and tName ~= "" then
+			tParts[#tParts + 1] = SkuUtil:Unescape(tName)
+		end
+		if tRole and tRole ~= "" and tRole ~= "NONE" and _G[tRole] then
+			tParts[#tParts + 1] = Sku.deEn("Deine Rolle", "Your role", "Votre rôle") .. ": " .. SkuUtil:Unescape(_G[tRole])
+		end
+		tMessage = table.concat(tParts, ", ")
+		tMessage = string.gsub(tMessage, "\r\n", " ")
+		tMessage = string.gsub(tMessage, "\n", " ")
+	end
+
+	if tDialog and tDialog.IsShown and tDialog:IsShown() then
+		local tButtons = {
+			{obj = tDialog.enterButton, fallback = _G["ENTER_LFG"] or "Enter dungeon"},
+			{obj = tDialog.leaveButton, fallback = _G["LEAVE_QUEUE"] or "Leave queue"},
+		}
+		for x = 1, #tButtons do
+			local tButton = tButtons[x].obj
+			if tButton and tButton.IsVisible and tButton:IsVisible() == true then
+				local tText = tButton:GetText()
+				if not tText or tText == "" then
+					tText = tButtons[x].fallback
+				end
+				tText = SkuUtil:Unescape(tText)
+				table.insert(aParentChilds, tText)
+				aParentChilds[tText] = {
+					frameName = "",
+					RoC = "Child",
+					type = "Button",
+					obj = tButton,
+					textFirstLine = tText,
+					textFull = tMessage,
+					childs = {},
+					directAction = true,
+					func = function()
+						-- the button's own OnClick is the whole answer (AcceptProposal / RejectProposal), insecure
+						pcall(function() tButton:Click("LeftMouse") end)
+					end,
+				}
+			end
+		end
+	else
+		-- already answered: the window stays until everybody has answered; say how far it is
+		local tAccepted, tTotal = 0, tonumber(tNumMembers) or 0
+		for i = 1, tTotal do
+			local tOkM, _, _, _, tRespondedM, tAcceptedM = pcall(GetLFGProposalMember, i)
+			if tOkM and tRespondedM and tAcceptedM then tAccepted = tAccepted + 1 end
+		end
+		local tText = Sku.deEn("Warte auf die anderen Spieler", "Waiting for the other players", "En attente des autres joueurs")
+		if tTotal > 0 then
+			tText = tText .. ", " .. tAccepted .. " " .. Sku.deEn("von", "of", "sur") .. " " .. tTotal .. " " .. Sku.deEn("bereit", "ready", "prêts")
+		end
+		table.insert(aParentChilds, tText)
+		aParentChilds[tText] = {
+			frameName = "",
+			RoC = "Child",
+			type = "Button",
+			obj = _G["LFGDungeonReadyPopup"],
+			textFirstLine = tText,
+			textFull = tMessage,
+			childs = {},
+		}
+	end
+end
+
 function SkuCore:BuildEngravingFrame(aParentChilds)
 	local tFrameName = "EngravingFrame"
 	local tFriendlyName = L["Runes"]

@@ -2,6 +2,30 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.51 (24.11.2026)
+
+### Kurzfassung
+- Neu (Forever): Eine Dungeonfinder-Einladung ("Dungeon bereit") erscheint jetzt als Sku-Menü. Vorher war nur der Ton zu hören, das Fenster blieb unsichtbar. Annehmen und Ablehnen gehen direkt aus dem Menü; nach der Antwort zeigt eine Statuszeile, wie viele Spieler bereit sind.
+- Behoben (Forever): Das Wildtierausbildungs-Fenster (aus dem Zauberbuch) zeigte unter "noch lernbar" auch schon Gelerntes, und "schon gelernt" war leer. Die beiden Listen sind jetzt getrennt.
+- Engine 17.8: Ziele aller 20 Engine-Gruppen neu aus Brösels Navigationsdaten (Stand 23.11., QuestieDB 1.1.5). Mehr Questgeber und Ziele, vor allem in Tanaris, Un'Goro, Silithus, Mount Hyjal, Shen'dralas und Riverglades. Wegenetze und Höhen sind unverändert.
+- Datenpaket aktualisiert auf QuestieDB 1.1.6: 1822 Quests, 3482 NPCs, 803 Objekte, 9090 Gegenstände.
+
+### Neu: Dungeonfinder-Einladung (Forever)
+Was: Wenn der Dungeonfinder eine Gruppe gefunden hat, öffnet Blizzard ein Bestätigungsfenster ("Dungeon bereit"). Sku kannte dieses Fenster nicht, daher gab es nur den Ton. Jetzt springt das Menü hinein: Dungeonname und Rolle werden angesagt, "Annehmen" und "Ablehnen" lassen sich direkt wählen. Nach der Antwort steht eine Zeile "Warte auf die anderen Spieler, x von y bereit".
+Wie: SkuCore/LocalMenu.lua (neuer Aufbau für LFGDungeonReadyPopup), SkuCore/Core.lua (Eintrag in der Fensterliste, Namenstabelle und Aufbau-Tabelle). Im Spiel bestätigt. Die Rollenwahl-Abfrage (LFGRoleCheck) ist noch nicht abgedeckt.
+
+### Behoben: Wildtierausbildung, Listen (Forever)
+Was: Das Spiel meldet bereits gelernte Tierfertigkeiten als "lernbar". Dadurch zeigte die Ansicht "noch lernbar" auch Gelerntes, und "schon gelernt" blieb leer. Jetzt entscheidet Sku selbst, was schon bekannt ist, und trennt die beiden Ansichten. Eine leere Liste sagt "Nichts mehr lernbar" bzw. "Noch nichts gelernt". Höhere Ränge, die außerhalb der sichtbaren Fensterzeilen liegen, bleiben schwer erreichbar (Blizzards Scrollen aus Addon-Code sperrt das Lernen).
+Wie: SkuCore/trainerForever.lua (Trennung nach bekannt/unbekannt), SkuCore/Core.lua (ApplyTrainerFilters). Im Spiel bestätigt.
+
+### Engine 17.8
+Was: Neue Zieldaten für alle Engine-Gruppen (EK, ZW, KD, SV, SS, BS, NA, NB, NC, KR, KA, KF, KM, KT, KS, KZ, ZE, HY, SD, RG) aus Brösels WoW_NavigationData (Stand fcbe940). Wegenetze, Höhen und Engine-Code sind unverändert. Quest-Markierungen sind überall gleich geblieben oder gestiegen; nur in der Brennenden Steppe (3) und bei Teufelswald/Winterquell/Mondlichtung (10) sind einige Ziele nach Änderungen in Questie keine Questziele mehr.
+Wie: SkuEngineXX/Engine_Targets_XX.lua, X-EngineRevision 17.8 in den tocs, SkuEngineRevision 17.8 in SkuPacks/Engine_Index.lua. Im Spiel geprüft (Sturmwind/Elwynn und Zephras: Revision 17.8 geladen, Routen gefunden, keine Fehler); die übrigen Gruppen laden erst beim Besuch.
+
+### Datenpaket QuestieDB 1.1.6
+Was: Questie hat Quests, NPCs, Objekte und Gegenstände aktualisiert (u. a. Quest-XP, Fraktionen einiger NPCs, Übersetzungen). Das Datenpaket ist neu aus 1.1.6 gebaut (vorher 1.1.4: 1818 Quests, 3478 NPCs, 802 Objekte).
+Wie: SkuPacks/DataPack_ForeverQuests.lua. Beim Laden im Spiel bestätigt (3482 Kreaturen, 1822 Quests, keine Fehler).
+
 ## Sku-Ever 0.50 (22.11.2026)
 
 ### Kurzfassung

@@ -363,6 +363,8 @@ SkuCore.interactFramesListManual = {
 	-- generically that wrapper becomes an extra menu level and the Yes/No buttons
 	-- end up one level deeper than every other prompt. See Build_ReadyCheckFrame.
 	["ReadyCheckFrame"] = function(...) SkuCore:Build_ReadyCheckFrame(...) end,
+	-- Dungeon finder invitation ("Dungeon ist bereit"): Blizzard shows LFGDungeonReadyPopup and plays a sound only; see Build_LFGDungeonReadyPopup.
+	["LFGDungeonReadyPopup"] = function(...) SkuCore:Build_LFGDungeonReadyPopup(...) end,
 	-- Dungeon-Browser/LFG: Modul komplett entfernt, wird neu aufgebaut.
 	-- Vorher: ["PVEFrame"]/["LFGParentFrame"] -> Build_LfgFrame
 	-- Item socketing dialog (gem insertion). Manual builder, see
@@ -424,6 +426,7 @@ SkuCore.interactFramesList = {
 	--"MultiBarBottomRight",
 	--"MainMenuBar",
 	"ReadyCheckFrame",
+	"LFGDungeonReadyPopup",
 	"RolePollPopup",
 	-- Guild invitation on Forever: its own window (StaticPopupSpecial_Show), not one of StaticPopup1-3.
 	-- Anniversary and Era never load it (GuildInviteFrame.lua is cata/mists/mainline only); they show the
@@ -1685,7 +1688,9 @@ function SkuCore:ApplyTrainerFilters()
 	-- (TRAINER_UPDATE) and the learnable skills are the first rows of the window.
 	-- the menu entry "Anzeige" (trainerForever.lua) switches SkuCore.petTrainerView between "learnable" (default) and "learned" (read-only list)
 	local tLearned = tPet and SkuCore.petTrainerView == "learned"
-	SetTrainerServiceTypeFilter("available", not tLearned)
+	-- [24.11.2026] Beast training: the game reports skills the pet already knows as "available" (not "used"), so the "used" filter alone
+	-- gave an EMPTY learned list. "available" therefore stays on in both views; trainerForever.lua sorts known / not known itself.
+	SetTrainerServiceTypeFilter("available", true)
 	SetTrainerServiceTypeFilter("unavailable", false)
 	SetTrainerServiceTypeFilter("used", tLearned)
 	if tPet then
@@ -4926,6 +4931,7 @@ local friendlyFrameNames = {
 	["TradeSkillFrame"] = L["Trade skill"],
 	["ProfessionsFrame"] = L["Trade skill"],
 	["ReadyCheckFrame"] = L["Bereitschaft check"],
+	["LFGDungeonReadyPopup"] = Sku.deEn("Dungeon-Einladung", "Dungeon invitation", "Invitation de donjon"),
 	-- Not GUILD_INVITATION: on Forever that is the window's middle line ("lädt Euch in die Gilde ein:"),
 	-- which the frame scrape reads anyway.
 	["GuildInviteFrame"] = L["Guild invitation"],
