@@ -365,6 +365,8 @@ SkuCore.interactFramesListManual = {
 	["ReadyCheckFrame"] = function(...) SkuCore:Build_ReadyCheckFrame(...) end,
 	-- Dungeon finder invitation ("Dungeon ist bereit"): Blizzard shows LFGDungeonReadyPopup and plays a sound only; see Build_LFGDungeonReadyPopup.
 	["LFGDungeonReadyPopup"] = function(...) SkuCore:Build_LFGDungeonReadyPopup(...) end,
+	-- Group invitation with role choice (Forever, invitation out of the group browser): see Build_LFGInvitePopup.
+	["LFGInvitePopup"] = function(...) SkuCore:Build_LFGInvitePopup(...) end,
 	-- Dungeon-Browser/LFG: Modul komplett entfernt, wird neu aufgebaut.
 	-- Vorher: ["PVEFrame"]/["LFGParentFrame"] -> Build_LfgFrame
 	-- Item socketing dialog (gem insertion). Manual builder, see
@@ -427,6 +429,7 @@ SkuCore.interactFramesList = {
 	--"MainMenuBar",
 	"ReadyCheckFrame",
 	"LFGDungeonReadyPopup",
+	"LFGInvitePopup",
 	"RolePollPopup",
 	-- Guild invitation on Forever: its own window (StaticPopupSpecial_Show), not one of StaticPopup1-3.
 	-- Anniversary and Era never load it (GuildInviteFrame.lua is cata/mists/mainline only); they show the
@@ -4932,6 +4935,7 @@ local friendlyFrameNames = {
 	["ProfessionsFrame"] = L["Trade skill"],
 	["ReadyCheckFrame"] = L["Bereitschaft check"],
 	["LFGDungeonReadyPopup"] = Sku.deEn("Dungeon-Einladung", "Dungeon invitation", "Invitation de donjon"),
+	["LFGInvitePopup"] = Sku.deEn("Gruppeneinladung", "Group invite", "Invitation de groupe"),
 	-- Not GUILD_INVITATION: on Forever that is the window's middle line ("lädt Euch in die Gilde ein:"),
 	-- which the frame scrape reads anyway.
 	["GuildInviteFrame"] = L["Guild invitation"],

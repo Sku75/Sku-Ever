@@ -2640,6 +2640,75 @@ end
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------------------
+-- Group invitation with role choice.
+--
+-- An invitation that carries roles (group browser) is not StaticPopup "PARTY_INVITE": Blizzard (Blizzard_Game/Mainline/
+-- EventImplementation.lua, HandlePartyInviteRequest) shows its own window LFGInvitePopup and plays a sound only. Like
+-- Build_RolePollPopup one entry per role: Enter picks the role and accepts. Then "Decline". Everything goes through the
+-- window's own buttons.
+---------------------------------------------------------------------------------------------------------------------------------------
+function SkuCore:Build_LFGInvitePopup(aParentChilds)
+	local tRoles = {
+		{obj = _G["LFGInvitePopupRoleButtonTank"], name = L["ROLE_Tank"]},
+		{obj = _G["LFGInvitePopupRoleButtonHealer"], name = L["ROLE_Healer"]},
+		{obj = _G["LFGInvitePopupRoleButtonDPS"], name = L["ROLE_Damage"]},
+	}
+
+	local tMessage = ""
+	if _G["LFGInvitePopupText"] and _G["LFGInvitePopupText"]:GetText() then
+		tMessage = SkuUtil:Unescape(_G["LFGInvitePopupText"]:GetText())
+		tMessage = string.gsub(tMessage, "\r\n", " ")
+		tMessage = string.gsub(tMessage, "\n", " ")
+	end
+
+	local function tAdd(aName, aObj, aFunc)
+		table.insert(aParentChilds, aName)
+		aParentChilds[aName] = {
+			frameName = "",
+			RoC = "Child",
+			type = "Button",
+			obj = aObj,
+			textFirstLine = aName,
+			textFull = tMessage,
+			childs = {},
+			directAction = true,
+			func = aFunc,
+		}
+	end
+
+	for x = 1, #tRoles do
+		local tCheck = tRoles[x].obj and tRoles[x].obj.checkButton
+		-- a role the class cannot play, or the group does not need, has a disabled check box
+		if tCheck and tCheck:IsEnabled() then
+			local tName = (_G["ACCEPT"] or "Accept") .. " " .. Sku.deEn("als", "as", "en tant que") .. " " .. tRoles[x].name
+			tAdd(tName, tRoles[x].obj, function()
+				-- exactly the picked role: set it, clear the others (the check box's own click updates the Accept button)
+				for y = 1, #tRoles do
+					local tOther = tRoles[y].obj and tRoles[y].obj.checkButton
+					if tOther and tOther:IsEnabled() and (tOther:GetChecked() and true or false) ~= (y == x) then
+						pcall(function() tOther:Click("LeftButton") end)
+					end
+				end
+				local tAccept = _G["LFGInvitePopupAcceptButton"]
+				if tAccept and tAccept:IsEnabled() then
+					pcall(function() tAccept:Click("LeftButton") end)
+				else
+					SkuOptions.Voice:OutputStringBTtts(L["Error"], false, true, 0.3, true)
+				end
+			end)
+		end
+	end
+
+	local tDecline = _G["LFGInvitePopupDeclineButton"]
+	if tDecline then
+		tAdd(_G["DECLINE"] or "Decline", tDecline, function()
+			pcall(function() tDecline:Click("LeftButton") end)
+		end)
+	end
+end
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------
 -- Dungeon finder invitation ("Dein Dungeon ist bereit").
 --
 -- When the queue pops, Blizzard (Blizzard_GroupFinder/Shared/LFGFrame.lua, LFG_PROPOSAL_SHOW) plays the ready-check sound and shows

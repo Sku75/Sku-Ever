@@ -972,8 +972,10 @@ function SkuNav.RouteFollowOnAction(self, aValue, aName)
 			SkuSettings:Sub("SkuNav").metapathFollowingMetapaths[SkuSettings:Sub("SkuNav").metapathFollowingTarget] = {
 				pathWps = {},
 				distance = 0,
+				-- [Engine route reach, Forever 25.11.2026] see SkuNav:IsFollowingEngineRoute (Core.lua)
+				engineRoute = SkuNav.engineWorldPoints == true or nil,
 			}
-				
+
 			--build metaroute table
 			for x = 1, #SkuSettings:Sub("SkuNav").metapathFollowingUnitDbWaypointData do
 				--create tmp wps

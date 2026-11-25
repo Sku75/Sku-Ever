@@ -105,16 +105,23 @@ tReadyCheckFrame:RegisterEvent("READY_CHECK")
 tReadyCheckFrame:RegisterEvent("READY_CHECK_FINISHED")
 tReadyCheckFrame:RegisterEvent("PARTY_INVITE_REQUEST")
 tReadyCheckFrame:RegisterEvent("PARTY_INVITE_CANCEL")
+-- Joined a group: whatever invitation was waiting is answered (the role window LFGInvitePopup sends no event of its own).
+tReadyCheckFrame:RegisterEvent("GROUP_JOINED")
 tReadyCheckFrame:SetScript("OnEvent", function(self, aEvent, ...)
-	if aEvent == "READY_CHECK" then
+	if aEvent == "GROUP_JOINED" then
+		SkuCore.pendingGroupInvite = nil
+	elseif aEvent == "READY_CHECK" then
 		SkuCore.pendingReadyCheckInitiator = (...)
 	elseif aEvent == "READY_CHECK_FINISHED" then
 		SkuCore.pendingReadyCheckInitiator = nil
 	elseif aEvent == "PARTY_INVITE_REQUEST" then
 		-- args: name, tank, healer, damage, isXRealm, allowMultipleRoles, inviterGuid
-		local tName = (...)
-		SkuCore.pendingGroupInvite = { name = tName, expiresAt = GetTime() + tInviteTimeout }
+		local tName, tTank, tHealer, tDamage = ...
+		-- with roles Blizzard shows its role window LFGInvitePopup instead of the "PARTY_INVITE" StaticPopup
+		local tRoleWindow = (tTank or tHealer or tDamage) and _G["LFGInvitePopup"] and true or false
+		SkuCore.pendingGroupInvite = { name = tName, expiresAt = GetTime() + tInviteTimeout, roleWindow = tRoleWindow }
 		SkuCore.EnsureInviteHideHooks()
+		SkuCore.EnsureRoleInviteHooks()
 	elseif aEvent == "PARTY_INVITE_CANCEL" then
 		SkuCore.pendingGroupInvite = nil
 	end
@@ -189,6 +196,19 @@ function SkuCore.EnsureInviteHideHooks()
 	tInviteHooksSet = true
 end
 
+-- Role window: its buttons answer the invitation (accept, decline, and the timeout clicks decline). Hiding the window alone
+-- does not decline, so a hide by the closing Sku menu leaves the invitation waiting.
+local tRoleInviteHooksSet = false
+function SkuCore.EnsureRoleInviteHooks()
+	if tRoleInviteHooksSet then return end
+	local tAccept, tDecline = _G["LFGInvitePopupAcceptButton"], _G["LFGInvitePopupDeclineButton"]
+	if not (tAccept and tDecline and tAccept.HookScript) then return end
+	local function tAnswered() SkuCore.pendingGroupInvite = nil end
+	tAccept:HookScript("OnClick", tAnswered)
+	tDecline:HookScript("OnClick", tAnswered)
+	tRoleInviteHooksSet = true
+end
+
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- Descriptors. `active` = still live per the game's own state; `popups` = dialog keys
 -- that render the same thing (suppress while any is visible); `label` = the spoken
@@ -236,6 +256,8 @@ SkuCore.pendingPrompts = {
 				SkuCore.pendingGroupInvite = nil
 				return false
 			end
+			-- the role window is on screen: it is its own menu entry, no second one here
+			if t.roleWindow and _G["LFGInvitePopup"] and _G["LFGInvitePopup"]:IsShown() then return false end
 			return true
 		end,
 		label = function()
@@ -249,6 +271,11 @@ SkuCore.pendingPrompts = {
 		showDialog = function()
 			local t = SkuCore.pendingGroupInvite
 			if not t or not t.name then return end
+			if t.roleWindow then
+				-- text and roles are still set from the invitation: just put the window back
+				pcall(StaticPopupSpecial_Show, _G["LFGInvitePopup"])
+				return
+			end
 			-- Same text Blizzard builds in TBC/UIParent.lua for PARTY_INVITE_REQUEST.
 			local tText = string.format(_G.INVITATION or "%s", t.name)
 			pcall(StaticPopup_Show, "PARTY_INVITE", tText)

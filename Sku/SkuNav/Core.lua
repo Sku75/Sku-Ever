@@ -2250,6 +2250,17 @@ end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
 SkuNav.CurrentStandardWpReachedRange = 0
+
+-- [Engine route reach, Forever 25.11.2026] Is the route that runs now an engine route? The mark sits on the route data itself, so it
+-- survives a reload and the "put the route back after a menu overwrote it" case.
+function SkuNav:IsFollowingEngineRoute()
+	if not Sku.isForever then return false end
+	local tS = SkuSettings:Sub("SkuNav")
+	if tS.metapathFollowing ~= true or not tS.metapathFollowingTarget or not tS.metapathFollowingMetapaths then return false end
+	local tRoute = tS.metapathFollowingMetapaths[tS.metapathFollowingTarget]
+	return (tRoute and tRoute.engineRoute) == true
+end
+
 function SkuNav:UpdateStandardWpReachedRange(aDistanceToNextWp)
 	dprint("UpdateStandardWpReachedRange", aDistanceToNextWp, SkuSettings:Sub("SkuNav").standardWpReachedRange, SkuNav.CurrentStandardWpReachedRange)
 	if SkuSettings:Sub("SkuNav").standardWpReachedRange == 1 then
@@ -2260,19 +2271,19 @@ function SkuNav:UpdateStandardWpReachedRange(aDistanceToNextWp)
 		SkuNav.CurrentStandardWpReachedRange = 3
 	else
 		if not aDistanceToNextWp then 
-			if SkuNav.CurrentStandardWpReachedRange ~= 0 and SkuSettings:Sub("SkuNav").standardWpReachedRange == 4 then
+			if SkuNav.CurrentStandardWpReachedRange ~= 0 and SkuSettings:Sub("SkuNav").standardWpReachedRange == 4 and not SkuNav:IsFollowingEngineRoute() then
 				SkuOptions.Voice:OutputString(L["nah"], false, true, 0.3, true)
 			end
 			SkuNav.CurrentStandardWpReachedRange = 0
 			return
 		end
 		if aDistanceToNextWp <= 9 then
-			if SkuNav.CurrentStandardWpReachedRange ~= 0 and SkuSettings:Sub("SkuNav").standardWpReachedRange == 4 then
+			if SkuNav.CurrentStandardWpReachedRange ~= 0 and SkuSettings:Sub("SkuNav").standardWpReachedRange == 4 and not SkuNav:IsFollowingEngineRoute() then
 				SkuOptions.Voice:OutputString(L["nah"], false, true, 0.3, true)
 			end
 			SkuNav.CurrentStandardWpReachedRange = 0
 		elseif aDistanceToNextWp > 14 then
-			if SkuNav.CurrentStandardWpReachedRange ~= 3 and SkuSettings:Sub("SkuNav").standardWpReachedRange == 4 then
+			if SkuNav.CurrentStandardWpReachedRange ~= 3 and SkuSettings:Sub("SkuNav").standardWpReachedRange == 4 and not SkuNav:IsFollowingEngineRoute() then
 				SkuOptions.Voice:OutputString(L["weit"], false, true, 0.3, true)
 			end
 			SkuNav.CurrentStandardWpReachedRange = 3
@@ -2966,6 +2977,16 @@ function SkuNav:ProcessCheckReachingWp()
 							dprint("follow state restored after menu overwrite")
 						end
 						SkuNav.followBackup = nil
+					end
+					-- [Engine route reach, Forever 25.11.2026] The points of an engine route lie on corners and in narrow spots (the map
+					-- data ask for 0.5 to 1 yd): they count at 1 yd (size 1, no extra reach), whatever the reach setting says. The last
+					-- point (the target itself) and Sku's own routes keep the setting.
+					if SkuNav:IsFollowingEngineRoute() then
+						local tS = SkuSettings:Sub("SkuNav")
+						local tWps = tS.metapathFollowingMetapaths[tS.metapathFollowingTarget].pathWps
+						if tWps and (tS.metapathFollowingCurrentWp or 1) < #tWps then
+							tDistanceMod = 0
+						end
 					end
 					if ((distance < SkuNavWpSize[SkuNav:GetWaypointData2(SkuSettings:Sub("SkuNav").selectedWaypoint).size] + tDistanceMod) or SkuNav.MoveToWp ~= 0) and SkuSettings:Sub("SkuNav").selectedWaypoint ~= "" then
 						local tNextWPNr
@@ -4904,7 +4925,13 @@ function SkuNav:SetWaypoint(aName, aData, aIsTempWaypoint)
 			end
 		else
 			SkuSettings:Sub("SkuNav", nil, "global").TmpWaypoints = SkuSettings:Sub("SkuNav", nil, "global").TmpWaypoints or {}
-			table.insert(SkuSettings:Sub("SkuNav", nil, "global").TmpWaypoints, {
+			-- Luecken (geloeschte Temp-WPs setzen nil): "#" ist dann kein sicherer
+			-- letzter Index -> eigenen Index ueber den hoechsten Schluessel bilden
+			local tTmpNewIdx = 1
+			for k in pairs(SkuSettings:Sub("SkuNav", nil, "global").TmpWaypoints) do
+				if type(k) == "number" and k >= tTmpNewIdx then tTmpNewIdx = k + 1 end
+			end
+			SkuSettings:Sub("SkuNav", nil, "global").TmpWaypoints[tTmpNewIdx] = {
 				["names"] = {
 					[Sku.Loc] = WaypointCache[tWpIndex].name,
 				},
@@ -4920,9 +4947,9 @@ function SkuNav:SetWaypoint(aName, aData, aIsTempWaypoint)
 					["deDE"] = {},
 					["enUS"] = {},
 				},
-			})
+			}
 
-			WaypointCache[tWpIndex].dbIndex = #SkuSettings:Sub("SkuNav", nil, "global").TmpWaypoints
+			WaypointCache[tWpIndex].dbIndex = tTmpNewIdx
 
 			--WaypointCacheLookupCacheNameForId[aName] = SkuNav:BuildWpIdFromData(1, WaypointCache[tWpIndex].dbIndex, 1, WaypointCache[tWpIndex].areaId)
 
@@ -4945,6 +4972,10 @@ function SkuNav:SetWaypoint(aName, aData, aIsTempWaypoint)
 			SkuDB.SessionRouteData.Waypoints[tWpId]["size"] = WaypointCache[tWpIndex].size
 			SkuDB.SessionRouteData.Waypoints[tWpId]["lComments"] = WaypointCache[tWpIndex].comments
 		else
+			if not SkuSettings:Sub("SkuNav", nil, "global").TmpWaypoints[tWpId] then
+				-- Eintrag wurde geloescht, Cache kennt ihn noch: neu anlegen
+				SkuSettings:Sub("SkuNav", nil, "global").TmpWaypoints[tWpId] = {names = {}, lComments = {deDE = {}, enUS = {}}}
+			end
 			SkuSettings:Sub("SkuNav", nil, "global").TmpWaypoints[tWpId]["names"][Sku.Loc] = WaypointCache[tWpIndex].name
 			SkuSettings:Sub("SkuNav", nil, "global").TmpWaypoints[tWpId]["contintentId"] = WaypointCache[tWpIndex].contintentId 
 			SkuSettings:Sub("SkuNav", nil, "global").TmpWaypoints[tWpId]["areaId"] = WaypointCache[tWpIndex].areaId

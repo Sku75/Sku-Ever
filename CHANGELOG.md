@@ -2,6 +2,21 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.52 (25.11.2026)
+
+### Kurzfassung
+- Behoben (Forever): Wer sich im Dungeonbrowser einträgt und eine Einladung mit Rollenwahl bekommt, hörte nur den Ton. Jetzt gibt es dafür ein Sku-Menü "Gruppeneinladung" mit "Annehmen als <Rolle>" und "Ablehnen".
+- Berichtigung zu 0.51: Das dort beschriebene Menü "Dungeon-Einladung" gilt einem Fenster, das es auf Forever nicht gibt. Es hat nichts bewirkt.
+- Geändert (Forever): Auf Engine-Routen zählt ein Zwischenpunkt erst bei 1 Meter als erreicht. Vorher waren es bei der Einstellung "Auto" bis zu 4 Meter, wodurch Ecken zu früh abgeschnitten wurden. Skus eigene Routen bleiben unverändert.
+
+### Behoben: Gruppeneinladung mit Rollenwahl (Forever)
+Was: Eine Einladung, die Rollen mitbringt, zeigt Blizzard in einem eigenen Fenster (LFGInvitePopup) und nicht in der normalen Einladungsabfrage. Sku kannte das Fenster nicht. Jetzt springt das Menü hinein: je möglicher Rolle ein Eintrag "Annehmen als ...", darunter "Ablehnen". Enter auf einer Rolle wählt genau diese Rolle und nimmt an; mehrere Rollen gleichzeitig lassen sich dort nicht wählen. Wird das Menü ohne Antwort geschlossen, lässt sich die Einladung unter "Lokal" wieder öffnen. Nach der Antwort bleibt kein alter Einladungseintrag zurück.
+Wie: SkuCore/LocalMenu.lua (Build_LFGInvitePopup), SkuCore/Core.lua (Fensterliste, Namens- und Aufbau-Tabelle), SkuCore/pendingPrompts.lua (offene Einladung). Aus Blizzards Oberflächencode abgeleitet und offline geprüft; mit einer echten Einladung noch nicht getestet.
+
+### Geändert: Erreicht-Reichweite auf Engine-Routen (Forever)
+Was: Die Wegpunkte einer Engine-Route liegen an Ecken und Engstellen; die Navigationsdaten sehen dafür meist 0,5 bis 1 Meter vor. Zwischenpunkte zählen jetzt bei 1 Meter, unabhängig von der eingestellten Reichweite. Der letzte Punkt (das Ziel) richtet sich weiter nach der Einstellung. Die Ansagen "nah" und "weit" bleiben auf Engine-Routen stumm.
+Wie: SkuNav/Core.lua (IsFollowingEngineRoute, ProcessCheckReachingWp, UpdateStandardWpReachedRange), SkuNav/Options.lua (Merkmal an der Route). Offline geprüft; im Spiel noch nicht getestet.
+
 ## Sku-Ever 0.51 (24.11.2026)
 
 ### Kurzfassung
