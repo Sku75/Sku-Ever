@@ -777,6 +777,24 @@ function SkuOptions:SpeakOverviewSecretLine(aLine)
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
+-- Forever: characters have a surname ("Skubella Zimperlich"). UnitName gives only the first name; UnitNameUnmodified returns the
+-- surname as its second value (AceDB builds the profile key the same way). The overview reads the whole name for the player, the
+-- group and the raid. aFallback is used when the unit does not exist (e.g. the roster name).
+local function tOverviewFullName(aUnit, aFallback)
+	if aUnit and UnitExists(aUnit) then
+		local tName, tSurname
+		if UnitNameUnmodified then tName, tSurname = UnitNameUnmodified(aUnit) end
+		if not tName then tName = UnitName(aUnit) end
+		if tName then
+			if Sku and Sku.isForever and type(tSurname) == "string" and tSurname ~= "" and not string.find(tName, tSurname, 1, true) then
+				return tName.." "..tSurname
+			end
+			return tName
+		end
+	end
+	return aFallback
+end
+
 function SkuOptions:UpdateOverviewText(aPageId)
 	--SkuSettings:Sub("SkuOptions").overviewPages[aPageId].overviewSections
 	aPageId = aPageId or 1
@@ -808,7 +826,7 @@ function SkuOptions:UpdateOverviewText(aPageId)
 				tsubgroupcounter[subgroup] = tsubgroupcounter[subgroup] or 0
 				tsubgroupcounter[subgroup] = tsubgroupcounter[subgroup] + 1
 				local tRole = UnitGroupRolesAssigned("raid"..x) or "None"
-				tSubgroups[subgroup][tsubgroupcounter[subgroup]] = {level = level, class = class, zone = zone, online = online, isDead = isDead, name = name, role = L[tRole]}
+				tSubgroups[subgroup][tsubgroupcounter[subgroup]] = {level = level, class = class, zone = zone, online = online, isDead = isDead, name = tOverviewFullName("raid"..x, name), role = L[tRole]}
 			end
 		end
 
@@ -847,7 +865,7 @@ function SkuOptions:UpdateOverviewText(aPageId)
 		tPosX, tPosY = C_Map.GetPlayerMapPosition(C_Map.GetBestMapForUnit("player"), "player"):GetXY()
 	end
 	local tRealm = SelectedRealmName()
-	tTmpText = tCount.." "..UnitName("player")..", "..GetMinimapZoneText()..", "..math.floor(tPosX * 100).." "..math.floor(tPosY * 100)..", "..tRealm.."\r\n"
+	tTmpText = tCount.." "..tOverviewFullName("player", UnitName("player"))..", "..GetMinimapZoneText()..", "..math.floor(tPosX * 100).." "..math.floor(tPosY * 100)..", "..tRealm.."\r\n"
 
 	local tPlayersSubgroup 
 	for x = 1, 40 do
@@ -862,7 +880,7 @@ function SkuOptions:UpdateOverviewText(aPageId)
 
 	local tPartyRoles = {}
 	for q = 1, 4 do
-		local tPlayerName = UnitName("party"..q)
+		local tPlayerName = tOverviewFullName("party"..q)
 		if tPlayerName then
 			local tRole = UnitGroupRolesAssigned("party"..q)
 			tPartyRoles[tPlayerName] = L[tRole]
@@ -879,7 +897,7 @@ function SkuOptions:UpdateOverviewText(aPageId)
 	for x = 1, 40 do
 		local name, rank, subgroup, level, class, fileName, zone, online, isDead = GetRaidRosterInfo(x)
 		if name and subgroup == tPlayersSubgroup and name ~= tPlayerName then
-			tAddMember(name, class, level, zone, online, isDead)
+			tAddMember(tOverviewFullName("raid"..x, name), class, level, zone, online, isDead)
 		end
 	end
 
@@ -890,7 +908,7 @@ function SkuOptions:UpdateOverviewText(aPageId)
 			if UnitExists(tUnit) then
 				local tMapID = C_Map.GetBestMapForUnit(tUnit)
 				local tMapInfo = tMapID and C_Map.GetMapInfo(tMapID)
-				tAddMember(UnitName(tUnit), UnitClass(tUnit), UnitLevel(tUnit), tMapInfo and tMapInfo.name, UnitIsConnected(tUnit), UnitIsDeadOrGhost(tUnit))
+				tAddMember(tOverviewFullName(tUnit, UnitName(tUnit)), UnitClass(tUnit), UnitLevel(tUnit), tMapInfo and tMapInfo.name, UnitIsConnected(tUnit), UnitIsDeadOrGhost(tUnit))
 			end
 		end
 	end
