@@ -2317,6 +2317,59 @@ function Aq:MonitorMenuBuilder()
 	--the old "Global" folder is gone: "Unit number first" now lives in the party/raid
 	--debuff menus (per-monitor setting), "Only unit numbers" in the Combat menu
 
+	-- Gesundheit und Ressourcen (Forever): in place of the original SkuAddon's "Gesundheit und Status" (below, not on
+	-- Forever, where the game hides these values from addons in combat). Blizzard's combat audio alerts in Sku's own
+	-- sections (SkuCore.GameOptions, gameOptions.lua) plus Sku's own pet health (petHealth.lua): Blizzard has no
+	-- monitor for the pet.
+	if Sku.isForever then
+		local tHealthRes = SkuOptions:InjectMenuItems(self, {Sku.deEn("Gesundheit und Ressourcen", "Health and resources", "Santé et ressources")}, SkuGenericMenuItem)
+		tHealthRes.dynamic = true
+		tHealthRes.BuildChildren = function(self)
+			local GO = SkuCore.GameOptions
+			local function tSection(aLabel, aBuild)
+				local tEntry = SkuOptions:InjectMenuItems(self, {aLabel}, SkuGenericMenuItem)
+				tEntry.dynamic = true
+				tEntry.BuildChildren = function(s)
+					aBuild(s)
+					if #s.children == 0 then SkuOptions:InjectMenuItems(s, {L["Empty"]}, SkuGenericMenuItem) end
+				end
+			end
+			local function tCAA(aSection)
+				return function(s)
+					if GO and GO.CAASectionMenuBuilder then GO:CAASectionMenuBuilder(s, aSection) end
+				end
+			end
+			tSection(Sku.deEn("Allgemeine Einstellungen", "General settings", "Réglages généraux"), function(s)
+				if GO and GO.CAAGeneralMenuBuilder then GO:CAAGeneralMenuBuilder(s) end
+			end)
+			tSection(Sku.deEn("Eigene Gesundheit Blizzard Monitor", "Own health Blizzard monitor", "Santé personnelle moniteur Blizzard"), tCAA("playerHealth"))
+			tSection(Sku.deEn("Eigene Ressource (Mana/Wut/Energie) Blizzard Monitor", "Own resource (mana/rage/energy) Blizzard monitor", "Ressource personnelle (mana/rage/énergie) moniteur Blizzard"), tCAA("resource1"))
+			tSection(Sku.deEn("Zweite Ressource Blizzard Monitor", "Second resource Blizzard monitor", "Seconde ressource moniteur Blizzard"), tCAA("resource2"))
+			tSection(Sku.deEn("Ziel Gesundheit Blizzard Monitor", "Target health Blizzard monitor", "Santé de la cible moniteur Blizzard"), tCAA("targetHealth"))
+			tSection(Sku.deEn("Begleiter Gesundheit", "Pet health", "Santé du familier"), function(s)
+				-- the key first, then the automatic announcement in combat and its interval, then the hunger notice
+				if SkuCore.InjectSkuKeyEntry then SkuCore:InjectSkuKeyEntry(s, "SKU_KEY_PETHEALTH") end
+				if SkuCore.PetHealthAutoMenuBuilder then SkuCore.PetHealthAutoMenuBuilder(s) end
+				local tHunger = SkuOptions:InjectMenuItems(s, {L["Notice on pet starving"]}, SkuGenericMenuItem)
+				tHunger.sorting = true
+				tHunger.GetCurrentValue = function()
+					if SkuSettings:Sub("SkuCore").classes.hunter.petHappyness == true then return L["Yes"] end
+					return L["No"]
+				end
+				tHunger.OnAction = function(e, aValue, aName)
+					if aName == L["No"] then
+						SkuSettings:Sub("SkuCore").classes.hunter.petHappyness = false
+					elseif aName == L["Yes"] then
+						SkuSettings:Sub("SkuCore").classes.hunter.petHappyness = true
+					end
+				end
+				SkuOptions:MakeInPlaceToggle(tHunger, L["Yes"], L["No"])
+			end)
+			tSection(Sku.deEn("Gruppen Gesundheit Blizzard Monitor", "Party health Blizzard monitor", "Santé du groupe moniteur Blizzard"), tCAA("partyHealth"))
+			tSection(Sku.deEn("Eigene Debuffs Blizzard Monitor", "Own debuffs Blizzard monitor", "Affaiblissements personnels moniteur Blizzard"), tCAA("debuffs"))
+		end
+	end
+
 	--Gesundheit und Status: container for the player/pet/party/raid unit monitors
 	-- Not on Forever: the unit monitors are not armed there (see Aq:OnEnable).
 	if not Sku.isForever then

@@ -999,22 +999,22 @@ local function IsAddonsButton(aLabel)
 end
 
 -- ---------------------------------------------------------------------
--- Schnellmenü -> "Optionen Audiounterstützung": a remote control for the
--- combat audio alerts on Blizzard's Accessibility "Audio" page. The rows are
--- the same Setting objects the full game-options mirror drives (BuildInitializer),
--- so a change here is a change there and the other way round.
---   Allgemein: master switch, speech rate, combat start/end, target name.
---   Then one submenu per announcement (own health, own resource(s), target
---   health): the announcement row itself, followed by every row Blizzard hangs
---   under it with SetParentInitializer (format, voice, throttle, volume, ...).
--- Variables per Blizzard_SettingsDefinitions_Frame/AudioAssist.lua.
+-- Monitor -> "Gesundheit und Ressourcen" (SkuCore/aq.lua Aq:MonitorMenuBuilder): a remote control for the combat
+-- audio alerts on Blizzard's Accessibility "Audio" page, sorted into Sku's own sections. The rows are the same
+-- Setting objects the full game-options mirror drives (BuildInitializer), so a change here is a change there and the
+-- other way round. A section lists its top rows, each followed by every row Blizzard hangs under it with
+-- SetParentInitializer (format, voice, throttle, volume, ...). A row the client does not offer is left out.
+-- Variables per Blizzard_SettingsDefinitions_Frame/AudioAssist.lua. (Until Sku-Ever 0.53 this was the Schnellmenü
+-- entry "Optionen Audiounterstützung". "Zielname ansagen" is left out: Monitor -> Ziel Ansage speaks target names.)
 -- ---------------------------------------------------------------------
-local CAA_GENERAL = { "CAAEnabled", "PROXY_CAA_SPEED", "CAASayCombatStart", "CAASayCombatEnd", "CAASayTargetName" }
-local CAA_GROUPS = {
-   "CAAPlayerHealthPercent",
-   "PROXY_CAA_PLAYER_RESOURCE_1_PERCENT",
-   "PROXY_CAA_PLAYER_RESOURCE_2_PERCENT",
-   "CAATargetHealthPercent",
+local CAA_GENERAL = { "CAAEnabled", "CAAVoice", "PROXY_CAA_SPEED", "PROXY_CAA_VOLUME", "CAASayCombatStart", "CAASayCombatEnd", "PROXY_CAA_SAY_IF_TARGETED" }
+local CAA_SECTIONS = {
+   playerHealth = { "CAAPlayerHealthPercent", "CAAPulsePlayerHealthPercent" },
+   resource1 = { "PROXY_CAA_PLAYER_RESOURCE_1_PERCENT" },
+   resource2 = { "PROXY_CAA_PLAYER_RESOURCE_2_PERCENT" },
+   targetHealth = { "CAATargetHealthPercent" },
+   partyHealth = { "CAAPartyHealthPercent" },
+   debuffs = { "CAASayYourDebuffs", "CAADebuffSelfAlert" },
 }
 
 local function InitVariable(init)
@@ -1060,51 +1060,56 @@ local function SafeBuild(aSelf, init)
    if not ok and dprint then dprint("gameOptions: audio assist row failed", tostring(err)) end
 end
 
-function GameOptions:AudioAssistMenuBuilder(aParentEntry)
-   if not HasSettings() then
-      Inject(aParentEntry, _L.unavailable)
-      return
-   end
+-- The CAA initializers and a map variable -> initializer, or nil (no settings / no audio alerts on this client).
+local function tCAAIndex()
+   if not HasSettings() then return nil end
    local inits = FindCAAInitializers()
-   if not inits then
-      Inject(aParentEntry, _L.unavailable)
-      return
-   end
+   if not inits then return nil end
    local tByVar = {}
    for _, init in ipairs(inits) do
       local v = InitVariable(init)
       if v then tByVar[v] = init end
    end
+   return inits, tByVar
+end
 
-   local tGeneral = Inject(aParentEntry, deEn("Allgemein", "General", "Général"))
-   tGeneral.dynamic = true
-   tGeneral.BuildChildren = function(self)
-      local tAny = false
-      for _, v in ipairs(CAA_GENERAL) do
-         if tByVar[v] and IsInitShown(tByVar[v]) then
-            SafeBuild(self, tByVar[v])
-            tAny = true
-         end
-      end
-      if not tAny then Inject(self, _L.empty) end
+-- "Allgemeine Einstellungen": switch, voice, rate, volume, combat start/end, said when targeted.
+function GameOptions:CAAGeneralMenuBuilder(aParentEntry)
+   local inits, tByVar = tCAAIndex()
+   if not inits then
+      Inject(aParentEntry, _L.unavailable)
+      return
    end
+   local tAny = false
+   for _, v in ipairs(CAA_GENERAL) do
+      if tByVar[v] and IsInitShown(tByVar[v]) then
+         SafeBuild(aParentEntry, tByVar[v])
+         tAny = true
+      end
+   end
+   if not tAny then Inject(aParentEntry, _L.empty) end
+end
 
-   for _, v in ipairs(CAA_GROUPS) do
+-- One section (playerHealth, resource1, resource2, targetHealth, partyHealth, debuffs): its top rows, each with the
+-- rows Blizzard hangs under it.
+function GameOptions:CAASectionMenuBuilder(aParentEntry, aSection)
+   local inits, tByVar = tCAAIndex()
+   if not inits or not CAA_SECTIONS[aSection] then
+      Inject(aParentEntry, _L.unavailable)
+      return
+   end
+   local tAny = false
+   for _, v in ipairs(CAA_SECTIONS[aSection]) do
       local tTop = tByVar[v]
       if tTop and IsInitShown(tTop) then
-         local data = InitInfo(tTop)
-         local tName = type(data) == "table" and StripColor(tResolve(data.name) or "") or ""
-         if tName == "" then tName = v end
-         local tEntry = Inject(aParentEntry, tName)
-         tEntry.dynamic = true
-         tEntry.BuildChildren = function(self)
-            SafeBuild(self, tTop)
-            for _, init in ipairs(inits) do
-               if InitParent(init) == tTop then SafeBuild(self, init) end
-            end
+         SafeBuild(aParentEntry, tTop)
+         for _, init in ipairs(inits) do
+            if InitParent(init) == tTop then SafeBuild(aParentEntry, init) end
          end
+         tAny = true
       end
    end
+   if not tAny then Inject(aParentEntry, _L.empty) end
 end
 
 -- ---------------------------------------------------------------------

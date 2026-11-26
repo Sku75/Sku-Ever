@@ -1042,6 +1042,49 @@ function SkuCore:RebindSkuKey(aMenuEntry, aSecondary)
 	tRebindCaptureKeyBind(aMenuEntry, aSecondary)
 end
 
+-- A key entry for one Sku key, as in Sku Tastenbelegung ("<action> Taste 1: ... Taste 2: ..." with Neu belegen,
+-- Sekundäre Taste neu belegen, Belegung löschen, Sekundäre Belegung löschen), for menus that offer their key in place
+-- (Monitor -> Gesundheit und Ressourcen -> Begleiter Gesundheit).
+function SkuCore:InjectSkuKeyEntry(aParent, aConst)
+	local function tLabel()
+		local tKey1 = SkuOptions:SkuKeyBindsGetBinding(aConst) or ""
+		local tKey2 = SkuOptions:SkuKeyBindsGetBinding2(aConst) or ""
+		local tFriendlyKey1 = (tKey1 ~= "" and tKey1) or L["nichts"]
+		local tFriendlyKey2 = (tKey2 ~= "" and tKey2) or L["nichts"]
+		for kLocKey, vLocKey in pairs(SkuCore.Keys.LocNames) do
+			tFriendlyKey1 = gsub(tFriendlyKey1, kLocKey, vLocKey)
+			tFriendlyKey2 = gsub(tFriendlyKey2, kLocKey, vLocKey)
+		end
+		return L[aConst]..L[" Taste 1: "]..tFriendlyKey1..L[" Taste 2: "]..tFriendlyKey2
+	end
+	local tEntry = SkuOptions:InjectMenuItems(aParent, {tLabel()}, SkuGenericMenuItem)
+	tEntry.isSelect = true
+	tEntry.dynamic = true
+	tEntry.bindingConst = aConst
+	tEntry.OnAction = function(self, aValue, aName)
+		if aName == L["Neu belegen"] then
+			tRebindCaptureKeyBind(self, false)
+		elseif aName == L["Sekundäre Taste neu belegen"] then
+			tRebindCaptureKeyBind(self, true)
+		elseif aName == L["Belegung löschen"] then
+			SkuOptions:SkuKeyBindsDeleteBinding(aConst)
+			self.name = tLabel()
+			SkuOptions.Voice:OutputStringBTtts(L["Belegung gelöscht"], true, true, 0.2)
+		elseif aName == L["Sekundäre Belegung löschen"] then
+			SkuOptions:SkuKeyBindsDeleteBinding2(aConst)
+			self.name = tLabel()
+			SkuOptions.Voice:OutputStringBTtts(L["Sekundäre Belegung gelöscht"], true, true, 0.2)
+		end
+	end
+	tEntry.BuildChildren = function(self)
+		SkuOptions:InjectMenuItems(self, {L["Neu belegen"]}, SkuGenericMenuItem)
+		SkuOptions:InjectMenuItems(self, {L["Sekundäre Taste neu belegen"]}, SkuGenericMenuItem)
+		SkuOptions:InjectMenuItems(self, {L["Belegung löschen"]}, SkuGenericMenuItem)
+		SkuOptions:InjectMenuItems(self, {L["Sekundäre Belegung löschen"]}, SkuGenericMenuItem)
+	end
+	return tEntry
+end
+
 local function KeyBindingKeyMenuEntryHelper(self, aValue, aName)
 	if aName == L["Neu belegen"] then
 		tRebindCaptureCommand(self, false)
@@ -3220,10 +3263,8 @@ function SkuCore:MenuBuilder(aParentEntry)
 				if SkuCore.PitchLockAutoMenuBuilder then
 					SkuCore.PitchLockAutoMenuBuilder(self)
 				end
-				-- Pet health announced automatically in combat (SkuCore/petHealth.lua, Forever only).
-				if SkuCore.PetHealthAutoMenuBuilder then
-					SkuCore.PetHealthAutoMenuBuilder(self)
-				end
+				-- Pet health announced automatically in combat: moved to Monitor -> Gesundheit und Ressourcen ->
+				-- Begleiter Gesundheit (SkuCore/aq.lua), same settings.
 			end },
 		{ kind = "submenu", label = tDeEn("Spieleinstellungen", "Game options"),
 			build = function(self) if SkuCore.GameOptions and SkuCore.GameOptions.GameOptionsMenuBuilder then SkuCore.GameOptions:GameOptionsMenuBuilder(self) end end },
