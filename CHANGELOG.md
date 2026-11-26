@@ -2,6 +2,19 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.55 (26.11.2026)
+
+### Kurzfassung
+- Neu: Im Navigationsmenü schaltet Strg Pfeil runter zwischen Sku Routen und allen Routen um, mit Ansage in Sku-Stimme. Die Wahl bleibt gemerkt.
+
+### Neu: Strg Pfeil runter, Sku Routen oder alle Routen
+Was: Strg Pfeil runter in einer Zielliste mit Engine-Einträgen sagt "Sku Routen" oder "alle" und blendet die Engine-Einträge aus oder wieder ein. Die Wahl gilt für jede Liste und bleibt nach Reload erhalten. Pfeil rechts aus einer Liste mit Engine-Einträgen oder in eine solche sagt den Stand, zum Beispiel vom Einstiegspunkt aus. Besteht eine Liste nur aus Engine-Einträgen, kommt "Sku Routen leer" und die Liste bleibt, wie sie ist. Die Ansage nutzt Skus aufgenommene Wörter und läuft gleichzeitig mit dem Listeneintrag; vorher wurde die Ansage "Nur Sku" vom Listeneintrag abgeschnitten.
+Wie: SkuZOptions/Core.lua: Die Wahl steht im Profil unter SkuNav.onlySkuRoutes. ToggleOnlySkuView schaltet sie um und gibt die Ansage zurück; neu SkuOptions:OnlySkuAfterRight wendet die Wahl nach Pfeil rechts an und prüft beide Ebenen auf Engine-Einträge (auch ausgeblendete). Der Tastenhandler spricht die Ansage nach dem Listeneintrag über SkuOptions.Voice:OutputString.
+
+### Downloads
+- Sku-Ever-Spielordner.zip, Sku-Ever-0.55.zip: mit der Änderung.
+- Installer (1.7), SkuPacks und die 20 SkuEngine-Gruppen sind unverändert gegenüber 0.54.
+
 ## Sku-Ever 0.54 (26.11.2026)
 
 ### Kurzfassung

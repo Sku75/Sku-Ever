@@ -3358,6 +3358,7 @@ function SkuOptions:CreateMenuFrame()
 		-- so we can skip the transient post-action announce regardless of when
 		-- the secure macro opens the confirm window (ordering-independent).
 		local tSuppressBagAnnounce = false
+		local tAnnounceOnlySku = nil
 
 		-- User input IS the settle signal. If the player deliberately navigates
 		-- while a bag post-action window is still open, they have taken manual
@@ -3416,8 +3417,13 @@ function SkuOptions:CreateMenuFrame()
 		end
 		if aKey == "RIGHT" then
 			if #SkuOptions.currentMenuPosition.children > 0 or SkuOptions.currentMenuPosition.dynamic == true then
+				local tFromParent = SkuOptions.currentMenuPosition.parent
 				SkuOptions.currentMenuPosition:OnSelect()
 				SkuOptions:ClearFilter()
+				-- the remembered "Nur Sku Routen" choice (CTRL-DOWN) applies to the level just entered
+				if SkuOptions.OnlySkuAfterRight then
+					tAnnounceOnlySku = SkuOptions:OnlySkuAfterRight(tFromParent)
+				end
 			end
 		end
 		if aKey == "LEFT" then
@@ -3431,7 +3437,7 @@ function SkuOptions:CreateMenuFrame()
 			SkuOptions.currentMenuPosition:OnLast()
 		end
 		if aKey == "CTRL-DOWN" then
-			SkuOptions:ToggleOnlySkuView()
+			tAnnounceOnlySku = SkuOptions:ToggleOnlySkuView()
 		end
 
 		if aKey == "ENTER" or aKey == "SHIFT-ENTER" then
@@ -3534,6 +3540,10 @@ function SkuOptions:CreateMenuFrame()
 			-- ueberfluessig wiederholt (verschlucken). Siehe SkuVoice-1.0,
 			-- mSkuVoiceQueueBTTS_UserAction.
 			SkuOptions:VocalizeCurrentMenuName(tVocalizeReset, nil, true)
+			if tAnnounceOnlySku then
+				-- Sku's own voice, not queued behind the entry: it runs alongside the list entry
+				SkuOptions.Voice:OutputString(tAnnounceOnlySku, false, true, 0.3)
+			end
 			if string.len(SkuOptions.Filterstring) > 1  then
 				--SkuOptions.Voice:OutputStringBTtts("Filter", false, true, 0.3, nil, nil, nil, 2)
 			end
@@ -4744,30 +4754,29 @@ local function tIsEngineEntry(aNode)
 	return type(aNode.name) == "string" and string.sub(aNode.name, -7) == ";Engine"
 end
 
-function SkuOptions:ToggleOnlySkuView()
-	if not (Sku and Sku.isForever) then return end
+-- [Forever, 26.11.2026] The choice is remembered (profile, SkuNav.onlySkuRoutes): CTRL-DOWN switches it and says what is on now
+-- ("Sku Routen" / "alle"); while it is on, every list entered with RIGHT opens without engine entries. RIGHT from or into a list
+-- with engine entries says the status (SkuOptions:OnlySkuAfterRight).
+-- Spoken with Sku's own voice (recorded words), so it runs alongside the list entry that Blizzard's voice reads.
+local function tOnlySkuText(aKey)
+	local tDe = (Sku.Loc == "deDE")
+	if aKey == "on" then return tDe and "sku;routen" or "sku;routes" end
+	if aKey == "off" then return tDe and "alle" or "all" end
+	if aKey == "none" then return tDe and "sku;routen;leer" or "sku;routes;empty" end
+end
+
+function SkuOptions:OnlySkuRoutesOn()
+	return Sku and Sku.isForever and SkuSettings:Sub("SkuNav").onlySkuRoutes == true
+end
+
+-- Hides the engine entries of the current level. Returns "shown" (view is on now), "noengine" (the list has none) or
+-- "nosku" (the list has nothing but engine entries).
+local function tShowOnlySku()
 	local tCur = SkuOptions.currentMenuPosition
 	local tParent = tCur and tCur.parent
-	if not tParent or type(tParent.children) ~= "table" then return end
-	local tDe = (Sku.Loc == "deDE")
-
-	-- second press: back to what was shown before (the text-filtered list when a search was active, else the full list)
+	if not tParent or type(tParent.children) ~= "table" then return "noengine" end
 	if SkuOptions.onlySkuViewActive == true and tOldChildrenParent == tParent and tParent.children == tFilteredChildren then
-		local tPrev = SkuOptions.onlySkuPrev
-		if tPrev then
-			for x = 1, #tPrev do
-				tPrev[x].next = tPrev[x + 1]
-				tPrev[x].prev = tPrev[x - 1]
-			end
-			tParent.children = tPrev
-			tFilteredChildren = tPrev
-			SkuOptions.onlySkuPrev = nil
-			SkuOptions.onlySkuViewActive = nil
-		else
-			SkuOptions:ClearFilter()
-		end
-		SkuOptions.Voice:OutputStringBTtts(tDe and "Alle Ergebnisse" or "All results", true, true, 0.3, nil, nil, nil, 2)
-		return
+		return "shown"
 	end
 
 	-- a stale snapshot of another level is dropped; a text filter on THIS level stays and is narrowed down further
@@ -4775,7 +4784,7 @@ function SkuOptions:ToggleOnlySkuView()
 	if tOldChildren ~= false and not tTextFilterHere then
 		SkuOptions:ClearFilter()
 		tParent = SkuOptions.currentMenuPosition and SkuOptions.currentMenuPosition.parent
-		if not tParent or type(tParent.children) ~= "table" then return end
+		if not tParent or type(tParent.children) ~= "table" then return "noengine" end
 	end
 
 	local tShown, tSkuOnly = tParent.children, {}
@@ -4787,16 +4796,10 @@ function SkuOptions:ToggleOnlySkuView()
 			tSkuOnly[#tSkuOnly + 1] = tShown[x]
 		end
 	end
-	if tEngineCount == 0 then
-		SkuOptions.Voice:OutputStringBTtts(tDe and "Keine Engine Eintraege in dieser Liste" or "No engine entries in this list", true, true, 0.3, nil, nil, nil, 2)
-		return
-	end
+	if tEngineCount == 0 then return "noengine" end
 	-- with a text filter on, element 1 is its header row, which is no result
 	local tHeaderCount = tTextFilterHere and 1 or 0
-	if #tSkuOnly <= tHeaderCount then
-		SkuOptions.Voice:OutputStringBTtts(tDe and "Keine Sku Ergebnisse" or "No Sku results", true, true, 0.3, nil, nil, nil, 2)
-		return
-	end
+	if #tSkuOnly <= tHeaderCount then return "nosku" end
 
 	for x = 1, #tSkuOnly do
 		tSkuOnly[x].next = tSkuOnly[x + 1]
@@ -4820,7 +4823,69 @@ function SkuOptions:ToggleOnlySkuView()
 		SkuOptions.currentMenuPosition = tSkuOnly[1 + tHeaderCount]
 		SkuOptions.currentMenuPosition:OnEnter()
 	end
-	SkuOptions.Voice:OutputStringBTtts(tDe and "Nur Sku" or "Sku only", true, true, 0.3, nil, nil, nil, 2)
+	return "shown"
+end
+
+-- Brings the engine entries of the current level back (the text-filtered list when a search was active, else the full list).
+local function tShowAll()
+	local tCur = SkuOptions.currentMenuPosition
+	local tParent = tCur and tCur.parent
+	if not (SkuOptions.onlySkuViewActive == true and tParent and tOldChildrenParent == tParent and tParent.children == tFilteredChildren) then
+		return
+	end
+	local tPrev = SkuOptions.onlySkuPrev
+	if tPrev then
+		for x = 1, #tPrev do
+			tPrev[x].next = tPrev[x + 1]
+			tPrev[x].prev = tPrev[x - 1]
+		end
+		tParent.children = tPrev
+		tFilteredChildren = tPrev
+		SkuOptions.onlySkuPrev = nil
+		SkuOptions.onlySkuViewActive = nil
+	else
+		SkuOptions:ClearFilter()
+	end
+end
+
+-- Switches the remembered choice and returns the status words; the key handler speaks them after the list entry.
+function SkuOptions:ToggleOnlySkuView()
+	if not (Sku and Sku.isForever) then return end
+	local tS = SkuSettings:Sub("SkuNav")
+	if tS.onlySkuRoutes == true then
+		tS.onlySkuRoutes = nil
+		tShowAll()
+		return tOnlySkuText("off")
+	end
+	tS.onlySkuRoutes = true
+	if tShowOnlySku() == "nosku" then return tOnlySkuText("none") end
+	return tOnlySkuText("on")
+end
+
+-- Does this level hold engine entries (also ones the view hides right now)?
+local function tLevelHasEngine(aParent)
+	if not aParent or type(aParent.children) ~= "table" then return false end
+	local tList = aParent.children
+	if tOldChildren ~= false and tOldChildrenParent == aParent and type(tOldChildren) == "table" then tList = tOldChildren end
+	for x = 1, #tList do
+		if tIsEngineEntry(tList[x]) then return true end
+	end
+	return false
+end
+
+-- RIGHT: aFromParent is the level the cursor came from. With the choice on, the engine entries of the level just entered are
+-- hidden. Returns the status words ("sku;routen" / "alle") when either level holds engine entries, so the user hears which routes
+-- are shown; else nil.
+function SkuOptions:OnlySkuAfterRight(aFromParent)
+	if not (Sku and Sku.isForever) then return nil end
+	local tCur = SkuOptions.currentMenuPosition
+	local tHere = tCur and tCur.parent
+	local tRelevant = tLevelHasEngine(aFromParent) or tLevelHasEngine(tHere)
+	if SkuOptions:OnlySkuRoutesOn() then
+		tShowOnlySku()
+		return tRelevant and tOnlySkuText("on") or nil
+	end
+	return tRelevant and tOnlySkuText("off") or nil
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 ﻿## Interface: 20506, 11508, 11509, 16001
-## Title: Sku-Ever 0.54
+## Title: Sku-Ever 0.55
 ## SavedVariables: SkuOptionsDB, SkuTranslatedData, SkuErrorLog, SkuDebugLog
-## Version: 0.54
+## Version: 0.55
 
 SkuPerfFileStamp.lua
 SkuEverStartProfile.lua
