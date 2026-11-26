@@ -942,9 +942,17 @@ local function aqCombatCreateControlFrame()
                            local isTanking, status, scaledPercentage, rawPercentage, threatValue = UnitDetailedThreatSituation(tPartyUnitToTest, tTargetUnitIdToTest)
                            -- Forever returns these as secret values in combat. Only the fact "this unit has a
                            -- threat entry" is kept; without the numbers the threat warnings stay silent.
+                           -- tThreatHidden: the numbers of this reading are unknown, which is not the same as "not
+                           -- tanking". The same mob is read through several unit slots per tick (target, pettarget,
+                           -- targettarget, nameplates ...), and Forever hides the values on some of them and not on
+                           -- others; treating a hidden reading as "not tanking" flipped wasTanking on every slot and
+                           -- spammed "Ziel verloren / Ziel gewonnen" for the whole fight. A hidden reading now neither
+                           -- warns nor overwrites the last known values.
+                           local tThreatHidden = false
                            if Sku.IsSecret(isTanking) or Sku.IsSecret(status) or Sku.IsSecret(scaledPercentage) or Sku.IsSecret(rawPercentage) or Sku.IsSecret(threatValue) then
                               if Sku.IsSecret(status) then status = true end
                               isTanking, scaledPercentage, rawPercentage, threatValue = nil, nil, nil, nil
+                              tThreatHidden = true
                            end
                            -- the party member's GUID is the threat table key: no readable GUID, no entry
                            local tPartyGuid = status and Sku.SafeGUID(tPartyUnitToTest)
@@ -957,7 +965,7 @@ local function aqCombatCreateControlFrame()
                                  aqCombat:aqCombat_CREATURE_ADDED_TO_COMBAT(tCreatureGUID, tTargetUnitIdToTest, UnitName(tTargetUnitIdToTest), tPartyGuid, tPartyUnitToTest, UnitName(tPartyUnitToTest))
 
                                  local tPlayerGUID = Sku.SafeGUID("player")
-                                 if tCreatureGUID == Sku.SafeGUID("target") and tPartyGuid == tPlayerGUID then
+                                 if not tThreatHidden and tCreatureGUID == Sku.SafeGUID("target") and tPartyGuid == tPlayerGUID then
                                     if SkuCore.threatTable[tCreatureGUID] then
                                        if SkuCore.threatTable[tCreatureGUID][tPartyGuid] then
                                           if SkuCore.threatTable[tCreatureGUID][tPartyGuid].isTanking == true and SkuCore.threatTable[tCreatureGUID][tPartyGuid].wasTanking ~= true then
@@ -985,11 +993,13 @@ local function aqCombatCreateControlFrame()
                                  SkuCore.threatTable[tCreatureGUID].lastUpdate = GetTimePreciseSec()
                                  SkuCore.threatTable[tCreatureGUID][tPartyGuid] = SkuCore.threatTable[tCreatureGUID][tPartyGuid] or {}
                                  SkuCore.threatTable[tCreatureGUID][tPartyGuid].lastUpdate = GetTimePreciseSec()
-                                 SkuCore.threatTable[tCreatureGUID][tPartyGuid].isTanking = isTanking
                                  SkuCore.threatTable[tCreatureGUID][tPartyGuid].status = status
+                                 if not tThreatHidden then
+                                 SkuCore.threatTable[tCreatureGUID][tPartyGuid].isTanking = isTanking
                                  SkuCore.threatTable[tCreatureGUID][tPartyGuid].scaledPercentage = scaledPercentage
                                  SkuCore.threatTable[tCreatureGUID][tPartyGuid].rawPercentage = rawPercentage
                                  SkuCore.threatTable[tCreatureGUID][tPartyGuid].threatValue = threatValue
+                                 end
                                  end
                               end
                            end
