@@ -2570,11 +2570,11 @@ function SkuAuras:EvaluateAllAuras(tEventData, tSpecificAuraToTestIndex, aRequir
 			-- [v43.0] Stamp the frame time per unit: the membership-diff drain uses
 			-- it to skip its extra evaluation when an _AURA_ combat-log pass already
 			-- ran for that unit this same frame (see tLastAuraCleuEvalTime).
-			if tDestGuid == Sku.SafeGUID("player") then
+			if Sku.SameGUID(tDestGuid, Sku.SafeGUID("player")) then
 				SkuAuras:InvalidateAuraListCache("player")
 				tLastAuraCleuEvalTime.player = GetTime()
 			end
-			if tDestGuid == Sku.SafeGUID("target") then
+			if Sku.SameGUID(tDestGuid, Sku.SafeGUID("target")) then
 				SkuAuras:InvalidateAuraListCache("target")
 				tLastAuraCleuEvalTime.target = GetTime()
 			end

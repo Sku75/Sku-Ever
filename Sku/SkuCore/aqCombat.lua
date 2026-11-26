@@ -328,10 +328,10 @@ end
 -- MAX_RAID_MEMBERS slots are scanned, so slots 26-40 are announced too. The
 -- same spoken token serves every friendly announcement via tSpokenGroupUnit.
 local function tDeathUnitToken(aUnitGUID)
-   if aUnitGUID == Sku.SafeGUID("player") then
+   if Sku.SameGUID(aUnitGUID, Sku.SafeGUID("player")) then
       return "player", "player"
    end
-   if aUnitGUID == Sku.SafeGUID("pet") then
+   if Sku.SameGUID(aUnitGUID, Sku.SafeGUID("pet")) then
       return "pet", "pet"
    end
 
@@ -965,7 +965,7 @@ local function aqCombatCreateControlFrame()
                                  aqCombat:aqCombat_CREATURE_ADDED_TO_COMBAT(tCreatureGUID, tTargetUnitIdToTest, UnitName(tTargetUnitIdToTest), tPartyGuid, tPartyUnitToTest, UnitName(tPartyUnitToTest))
 
                                  local tPlayerGUID = Sku.SafeGUID("player")
-                                 if not tThreatHidden and tCreatureGUID == Sku.SafeGUID("target") and tPartyGuid == tPlayerGUID then
+                                 if not tThreatHidden and Sku.SameGUID(tCreatureGUID, Sku.SafeGUID("target")) and Sku.SameGUID(tPartyGuid, tPlayerGUID) then
                                     if SkuCore.threatTable[tCreatureGUID] then
                                        if SkuCore.threatTable[tCreatureGUID][tPartyGuid] then
                                           if SkuCore.threatTable[tCreatureGUID][tPartyGuid].isTanking == true and SkuCore.threatTable[tCreatureGUID][tPartyGuid].wasTanking ~= true then
@@ -1688,13 +1688,16 @@ function aqCombat:aqCombatPLAYER_TARGET_CHANGED(aEvent, a, b, c, d)
       if tCurrentSettings.combat.hostile.threatOutputTot.value > 1 then
          if UnitExists("playertargettarget") then
             local tOutput = tCurrentSettings.combat.hostile.threatOutputTot.voiceOutput
+            -- Asked from the game (Sku.SameUnit) instead of comparing GUIDs: in a Forever instance the GUID of the
+            -- target's target can be hidden, and a hidden GUID (nil) matched every empty group slot. The elite check
+            -- gets the unit token as well, so it still answers when the GUID is hidden.
             for x = 1, #tAllPartyRaidUnits do
-               if Sku.SafeGUID(tAllPartyRaidUnits[x]) == Sku.SafeGUID("playertargettarget") then
-                  if aqCombatCheckElite(Sku.SafeGUID("playertargettarget")) == true then
+               if UnitExists(tAllPartyRaidUnits[x]) and Sku.SameUnit(tAllPartyRaidUnits[x], "playertargettarget") then
+                  if aqCombatCheckElite(Sku.SafeGUID("playertarget"), "playertarget") == true then
                      if tCurrentSettings.combat.hostile.threatOutputTot.value == 2 then
                         SkuCoreAqCombatOutput(tOutput, {unit1 = tSpokenGroupUnit(tAllPartyRaidUnits[x]),}, {wait = true, overwrite = false, instant = true, doNotOverwrite = true}, tCurrentSettings.combat.hostile.threatOutputTot)
                      elseif tCurrentSettings.combat.hostile.threatOutputTot.value == 3 then
-                        if Sku.SafeGUID(tAllPartyRaidUnits[x]) ~= Sku.SafeGUID("player") then
+                        if not Sku.SameUnit(tAllPartyRaidUnits[x], "player") then
                            SkuCoreAqCombatOutput(tOutput, {unit1 = tSpokenGroupUnit(tAllPartyRaidUnits[x]),}, {wait = true, overwrite = false, instant = true, doNotOverwrite = true}, tCurrentSettings.combat.hostile.threatOutputTot)
                         end
                      end
@@ -2098,7 +2101,7 @@ function aqCombat:aqCombat_SKU_UNIT_DIED(aEvent, aUnitGUID, aUnitName)
                tCurrentSettings.combat.friendly.ignoreDeadPartyPets == true and
                sfind(tRealUnitId, "pet") == nil and
                UnitIsOtherPlayersPet(tRealUnitId) == false and
-               aUnitGUID ~= Sku.SafeGUID("pet")
+               not Sku.SameGUID(aUnitGUID, Sku.SafeGUID("pet"))
             )
          then
             if tRealUnitId == "" or UnitIsDeadOrGhost(tRealUnitId) == true then

@@ -50,6 +50,18 @@ end
 if not _G.issecretvalue then
 	Sku.SafeGUID = UnitGUID
 end
+-- Comparing units on WoW Forever. A hidden GUID comes back from SafeGUID as nil, and nil == nil would make two units
+-- the game hides from addons "the same unit". The rule: equal only when both sides are known.
+--   Sku.SameGUID(a, b): two GUIDs, true only when both are readable and equal.
+--   Sku.SameUnit(u1, u2): two unit tokens, asked from the game (UnitIsUnit); a hidden answer counts as "not the same".
+function Sku.SameGUID(aGuid1, aGuid2)
+	return aGuid1 ~= nil and aGuid2 ~= nil and aGuid1 == aGuid2
+end
+function Sku.SameUnit(aUnit1, aUnit2)
+	local tSame = UnitIsUnit(aUnit1, aUnit2)
+	if tSame == nil or Sku.IsSecret(tSame) then return false end
+	return tSame == true
+end
 function Sku.SafeName(aUnit)
 	local tName = UnitName(aUnit)
 	if tName ~= nil and Sku.IsSecret(tName) then return nil end

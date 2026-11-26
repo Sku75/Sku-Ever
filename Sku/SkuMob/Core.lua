@@ -388,7 +388,8 @@ function SkuMob:PLAYER_SOFT_ENEMY_CHANGED(arg1, arg2, arg3)
 		return
 	end
 
-	if Sku.SafeGUID("softenemy") ~= Sku.SafeGUID("target") then
+	-- not the hard target already: asked from the game, two hidden GUIDs (Forever instance) are not "the same unit"
+	if not Sku.SameUnit("softenemy", "target") then
 		if SkuOptions.db.profile["SkuOptions"].softTargeting.enemy.forPlayers == false and (UnitIsPlayer("softenemy") == true and UnitIsEnemy("player", "softenemy") == true) then
 			return
 		end
@@ -413,11 +414,12 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------
 function SkuMob:PLAYER_SOFT_FRIEND_CHANGED(aEvent, aGuid, aNewGuid)
 	tSoftTrace("friend", "softfriend", aGuid, aNewGuid)
-	if not Sku.SafeGUID("softfriend") then
+	-- UnitExists, not the GUID: a GUID Forever hides is nil too, and that is not "no soft friend"
+	if not UnitExists("softfriend") then
 		return
 	end
 
-	if Sku.SafeGUID("softfriend") ~= Sku.SafeGUID("target") then
+	if not Sku.SameUnit("softfriend", "target") then
 		if SkuOptions.db.profile["SkuOptions"].softTargeting.friend.forPlayers == false and (UnitIsPlayer("softfriend") == true and UnitIsFriend("player", "softfriend") == true) then
 			return
 		end
