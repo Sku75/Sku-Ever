@@ -4428,14 +4428,13 @@ function Aq:MonitorMenuBuilder()
 		}, self, SkuSettings:Sub("SkuQuest"), "SkuQuest")
 	end
 
-	-- Ziel Optionen (SkuMob's target options): relocated here from Einstellungen -> Kampf.
-	-- Same args/db -> saved values preserved.
-	if SkuMob and SkuMob.options and SkuMob.options.args then
-		local tTargetOpts = SkuOptions:InjectMenuItems(self, {Sku.deEn("Ziel Optionen", "Target options", "Options de cible")}, SkuGenericMenuItem)
+	-- Ziel Ansage (SkuMob.TA:MenuBuilder, SkuMob/Options.lua): what a target announcement says, per kind of unit, in and
+	-- out of combat and on the key "Ziel ansagen"; under it the former Ziel Optionen as "Weitere Zieloptionen".
+	if SkuMob and SkuMob.TA and SkuMob.TA.MenuBuilder then
+		local tTargetOpts = SkuOptions:InjectMenuItems(self, {Sku.deEn("Ziel Ansage", "Target announcement", "Annonce de cible")}, SkuGenericMenuItem)
 		tTargetOpts.dynamic = true
-		tTargetOpts.sorting = true
 		tTargetOpts.BuildChildren = function(self)
-			SkuOptions:IterateOptionsArgs(SkuMob.options.args, self, SkuSettings:Sub("SkuMob"), "SkuMob")
+			SkuMob.TA:MenuBuilder(self)
 		end
 	end
 

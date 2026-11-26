@@ -15,58 +15,36 @@ SkuMob.options = {
 	-- The menu reads/writes via SkuSettings:Get/Set("SkuMob", key); scope/type/
 	-- default come from the SkuSettings:Register schema below. Re-add get/set on a
 	-- node ONLY if it needs a side effect (it then uses the inline handler again).
+	-- Monitor, Ziel Ansage, Weitere Zieloptionen (SkuMob.TA:MenuBuilder below), in this order. What a target announcement
+	-- says (name, level, class ...) is no longer set here but per kind of unit in SkuMob.TA.
 	args = {
-		vocalizeRaidTargetOnly = {
-			name = L["Only raid icon for targets with icon"],
+		InCombatSound={
+			name = L["Sound if target is in combat"],
+			order = 1,
 			desc = "",
-			type = "toggle",
+			type = "select",
+			values = SkuMob.InCombatSounds,
 		},
-		dontVocalizePlayerReactionAndLevelInCombat  = {
-			name = L["Don't vocalize reaction and level for players in combat"],
+		autoSetSkuRaidTargetsToInCombatCreatures = {
+			name = L["Auto set private Sku raid targets on in combat targets without a raid target"],
 			order = 2,
 			desc = "",
 			type = "toggle",
 		},
-		vocalizePlayerNamePlaceholders  = {
-			name = L["Announce friendly and hostile players"],
-			desc = "",
-			type = "toggle",
-		},
-		vocalizePlayerNamePlaceholdersSkuTts = {
-			name = L["Announce player controled units with generic descriptions"],
+		vocalizeRaidTargetOnly = {
+			name = L["Only raid icon for targets with icon"],
+			order = 3,
 			desc = "",
 			type = "toggle",
 		},
 		repeatRaidTargetMarkers = {
 			name = L["Repeat raid target markers on units"],
+			order = 4,
 			desc = "",
 			type = "toggle",
-		},
-		autoSetSkuRaidTargetsToInCombatCreatures = {
-			name = L["Auto set private Sku raid targets on in combat targets without a raid target"],
-			order = 6,
-			desc = "",
-			type = "toggle",
-		},
-		InCombatSound={
-			name = L["Sound if target is in combat"],
-			order = 7,
-			desc = "",
-			type = "select",
-			values = SkuMob.InCombatSounds,
 		},
 	}
 }
--- Forever: Blizzards Zielname-Ansage automatisch regeln (Monitor -> Ziel Optionen). Logik: SkuMob:ApplyBlizzardTargetName (Core.lua).
-if Sku.isForever then
-	SkuMob.options.args.blizzardTargetNameAuto = {
-		name = L["Blizzard Zielname automatisch regeln"],
-		order = 8,
-		desc = "",
-		type = "toggle",
-		OnAction = function() if SkuMob.ApplyBlizzardTargetName then SkuMob:ApplyBlizzardTargetName() end end,
-	}
-end
 ---------------------------------------------------------------------------------------------------------------------------------------
 SkuMob.defaults = {
 	enable = true,
@@ -75,7 +53,7 @@ SkuMob.defaults = {
 	vocalizePlayerNamePlaceholders = true,
 	vocalizePlayerNamePlaceholdersSkuTts = false,
 	repeatRaidTargetMarkers = true,
-	autoSetSkuRaidTargetsToInCombatCreatures = false,
+	autoSetSkuRaidTargetsToInCombatCreatures = true,
 	InCombatSound = "Interface\\AddOns\\Sku\\SkuMob\\assets\\Target_in_combat_low.mp3",	
 }
 
@@ -90,7 +68,7 @@ SkuSettings:Register("SkuMob", {
 	["vocalizePlayerNamePlaceholders"]             = { scope = "profile", default = true,  type = "boolean" },
 	["vocalizePlayerNamePlaceholdersSkuTts"]       = { scope = "profile", default = false, type = "boolean" },
 	["repeatRaidTargetMarkers"]                    = { scope = "profile", default = true,  type = "boolean" },
-	["autoSetSkuRaidTargetsToInCombatCreatures"]   = { scope = "profile", default = false, type = "boolean" },
+	["autoSetSkuRaidTargetsToInCombatCreatures"]   = { scope = "profile", default = true , type = "boolean" },
 	["InCombatSound"]                              = { scope = "profile", default = "Interface\\AddOns\\Sku\\SkuMob\\assets\\Target_in_combat_low.mp3", type = "string" },
 	["enemyCombatStatusMode"]                      = { scope = "profile", default = "beep", type = "string" },
 	["blizzardTargetNameAuto"]                    = { scope = "profile", default = true,  type = "boolean" },
@@ -709,4 +687,278 @@ function SkuMob:MenuBuilder(aParentEntry)
 	-- Sonstiges (built from SkuCore:MenuBuilder). The target menu itself is a
 	-- dynamic API list rebuilt on each open against the current target/status.
 	tBuildTargetMenu(aParentEntry)
+end
+
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Ziel Ansage (Monitor -> Ziel Ansage). What a target announcement says, chosen per kind of unit and per situation:
+-- "inCombat"/"outOfCombat" for every target change (and the soft target announcements), "queryInCombat"/
+-- "queryOutOfCombat" for the key "Ziel ansagen" (SKU_KEY_OUTPUTHARDTARGET). Which one applies is decided at the
+-- moment of the change or the key press. The parts are read and spoken in SkuMob/Core.lua (tTAReaders); this block
+-- holds the list of parts, their defaults, the stored choices and the menu. Replaces the old player switches
+-- (vocalizePlayerNamePlaceholders, ...SkuTts, dontVocalizePlayerReactionAndLevelInCombat) and Blizzard's own target
+-- name announcement, which Sku switches off (Core.lua).
+-- Idea and the default values: WowVision (Targeting, Names), rebuilt in Sku's own way; no code taken over.
+---------------------------------------------------------------------------------------------------------------------------------------
+SkuMob.TA = {}
+local TA = SkuMob.TA
+local TA_VERSION = 1
+
+TA.CATEGORIES = { "player", "npc", "mob", "pet", "totem" }
+TA.SETS = { "inCombat", "outOfCombat", "queryInCombat", "queryOutOfCombat" }
+
+function TA:CategoryLabel(aCat)
+	if aCat == "player" then return Sku.deEn("Spieler", "Players", "Joueurs") end
+	if aCat == "npc" then return Sku.deEn("Freundliche NPCs", "Friendly NPCs", "PNJ amicaux") end
+	if aCat == "mob" then return Sku.deEn("Gegner", "Enemies", "Ennemis") end
+	if aCat == "pet" then return Sku.deEn("Begleiter", "Pets", "Familiers") end
+	return Sku.deEn("Totems", "Totems", "Totems")
+end
+
+-- key -> label. One list for all kinds; TA.ORDER says which kind offers which part, in speaking order.
+local tPartLabels = {
+	dead = { "Tot", "Dead", "Mort" },
+	name = { "Name", "Name", "Nom" },
+	title = { "Titel", "Title", "Titre" },
+	realm = { "Realm", "Realm", "Royaume" },
+	guild = { "Gilde", "Guild", "Guilde" },
+	level = { "Stufe", "Level", "Niveau" },
+	classification = { "Selten, Elite oder Boss", "Rare, elite or boss", "Rare, élite ou boss" },
+	race = { "Rasse", "Race", "Race" },
+	class = { "Klasse", "Class", "Classe" },
+	gender = { "Geschlecht", "Gender", "Sexe" },
+	faction = { "Fraktion", "Faction", "Faction" },
+	role = { "Gruppenrolle", "Group role", "Rôle de groupe" },
+	pvp = { "PvP-Status", "PvP status", "Statut JcJ" },
+	afk = { "Abwesend", "Away", "Absent" },
+	dnd = { "Nicht stören", "Do not disturb", "Ne pas déranger" },
+	charmed = { "Beherrscht", "Charmed", "Charmé" },
+	reaction = { "Reaktion", "Reaction", "Réaction" },
+	creatureType = { "Kreaturentyp", "Creature type", "Type de créature" },
+	creatureFamily = { "Kreaturenfamilie", "Creature family", "Famille de créature" },
+	questBoss = { "Quest-Boss", "Quest boss", "Boss de quête" },
+	questTarget = { "Questziel", "Quest target", "Cible de quête" },
+	tapped = { "Von anderen beansprucht", "Tapped by others", "Pris par un autre" },
+	passive = { "Passiv", "Passive", "Passif" },
+	owner = { "Besitzer", "Owner", "Propriétaire" },
+	combat = { "Ziel im Kampf", "Target in combat", "Cible en combat" },
+}
+function TA:PartLabel(aKey)
+	local t = tPartLabels[aKey]
+	if not t then return aKey end
+	return Sku.deEn(t[1], t[2], t[3])
+end
+
+TA.ORDER = {
+	player = { "dead", "name", "title", "realm", "guild", "level", "race", "class", "gender", "faction", "role", "pvp", "afk", "dnd", "charmed", "reaction", "combat" },
+	npc = { "dead", "name", "title", "level", "classification", "creatureType", "creatureFamily", "reaction", "questBoss", "questTarget", "combat" },
+	mob = { "dead", "name", "title", "level", "classification", "creatureType", "creatureFamily", "reaction", "passive", "questBoss", "questTarget", "tapped", "charmed", "combat" },
+	pet = { "dead", "name", "owner", "level", "creatureType", "creatureFamily", "reaction", "combat" },
+	totem = { "name", "owner", "reaction" },
+}
+
+-- Defaults { in combat, out of combat } per kind and part; a part not listed is off in both.
+local tDefaults = {
+	player = { dead = { true, true }, name = { true, true }, title = { false, true }, guild = { false, true }, level = { false, true },
+		race = { false, true }, class = { true, true }, charmed = { true, false } },
+	npc = { dead = { true, true }, name = { true, true }, title = { false, true }, level = { false, true }, classification = { false, true },
+		questTarget = { false, true } },
+	mob = { dead = { true, true }, name = { true, true }, title = { false, true }, level = { true, true }, classification = { true, true },
+		creatureType = { false, true }, reaction = { false, true }, passive = { true, true }, questBoss = { false, true },
+		questTarget = { false, true }, tapped = { false, true } },
+	pet = { dead = { true, true }, name = { true, true }, owner = { true, true }, level = { false, true }, creatureFamily = { false, true } },
+	totem = { name = { true, true }, owner = { true, true } },
+}
+
+local function tDefaultSet(aSet)
+	local tSet = {}
+	for _, tCat in ipairs(TA.CATEGORIES) do
+		tSet[tCat] = {}
+		for _, tKey in ipairs(TA.ORDER[tCat]) do
+			local d = tDefaults[tCat][tKey]
+			local tValue
+			if aSet == "queryOutOfCombat" then
+				-- the key is the request for detail: everything the unit has
+				tValue = true
+			elseif aSet == "inCombat" then
+				tValue = (d and d[1]) == true
+			else
+				-- outOfCombat, and queryInCombat (the middle version)
+				tValue = (d and d[2]) == true
+			end
+			tSet[tCat][tKey] = tValue
+		end
+	end
+	return tSet
+end
+
+-- The stored choices of the current profile. Set once per profile on first use (the defaults, plus the Sku colour
+-- markers on and the old placeholder voice off), afterwards only the player changes them.
+function TA:Data()
+	local tDb = SkuSettings:Sub("SkuMob")
+	if type(tDb.targetAnnounce) ~= "table" or tDb.targetAnnounce.v ~= TA_VERSION or type(tDb.targetAnnounce.sets) ~= "table" then
+		tDb.targetAnnounce = { v = TA_VERSION, sets = {} }
+		for _, tSet in ipairs(TA.SETS) do
+			tDb.targetAnnounce.sets[tSet] = tDefaultSet(tSet)
+		end
+		tDb.autoSetSkuRaidTargetsToInCombatCreatures = true
+		tDb.vocalizePlayerNamePlaceholdersSkuTts = false
+		dprint("SkuMob TA: Ziel Ansage set to its defaults for this profile")
+	end
+	return tDb.targetAnnounce
+end
+
+function TA:ResetAll()
+	local tData = self:Data()
+	for _, tSet in ipairs(TA.SETS) do
+		tData.sets[tSet] = tDefaultSet(tSet)
+	end
+end
+
+function TA:IsOn(aSet, aCat, aKey)
+	local tSets = self:Data().sets
+	if type(tSets[aSet]) ~= "table" then tSets[aSet] = tDefaultSet(aSet) end
+	local tSet = tSets[aSet]
+	if type(tSet[aCat]) ~= "table" then tSet[aCat] = tDefaultSet(aSet)[aCat] or {} end
+	if tSet[aCat][aKey] == nil then
+		local tDef = tDefaultSet(aSet)[aCat]
+		tSet[aCat][aKey] = (tDef and tDef[aKey]) == true
+	end
+	return tSet[aCat][aKey] == true
+end
+
+function TA:SetOn(aSet, aCat, aKey, aValue)
+	self:IsOn(aSet, aCat, aKey)
+	self:Data().sets[aSet][aCat][aKey] = aValue == true
+end
+
+-- Which set applies now: the key press asks for the query sets.
+function TA:SetFor(aIsQuery)
+	local tInCombat = InCombatLockdown() == true
+	if SkuState and SkuState.IsInCombat then
+		tInCombat = SkuState:IsInCombat() == true
+	end
+	if aIsQuery then
+		return tInCombat and "queryInCombat" or "queryOutOfCombat"
+	end
+	return tInCombat and "inCombat" or "outOfCombat"
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------
+-- Menu
+local function tAddCategoryLevels(aParent, aSet)
+	for _, tCat in ipairs(TA.CATEGORIES) do
+		local tCatEntry = SkuOptions:InjectMenuItems(aParent, { TA:CategoryLabel(tCat) }, SkuGenericMenuItem)
+		tCatEntry.dynamic = true
+		tCatEntry.BuildChildren = function(self)
+			for _, tKey in ipairs(TA.ORDER[tCat]) do
+				local tEntry = SkuOptions:InjectMenuItems(self, { TA:PartLabel(tKey) }, SkuGenericMenuItem)
+				SkuOptions:MakeToggleNode(tEntry, {
+					label = TA:PartLabel(tKey),
+					get = function() return TA:IsOn(aSet, tCat, tKey) end,
+					set = function(_, aNewValue) TA:SetOn(aSet, tCat, tKey, aNewValue) end,
+				})
+			end
+		end
+	end
+end
+
+local function tKeyBindLabel()
+	local tConst = "SKU_KEY_OUTPUTHARDTARGET"
+	local tKey1 = SkuOptions:SkuKeyBindsGetBinding(tConst) or ""
+	local tKey2 = SkuOptions:SkuKeyBindsGetBinding2(tConst) or ""
+	local tFriendlyKey1 = (tKey1 ~= "" and tKey1) or L["nichts"]
+	local tFriendlyKey2 = (tKey2 ~= "" and tKey2) or L["nichts"]
+	if SkuCore.Keys and SkuCore.Keys.LocNames then
+		for kLocKey, vLocKey in pairs(SkuCore.Keys.LocNames) do
+			tFriendlyKey1 = gsub(tFriendlyKey1, kLocKey, vLocKey)
+			tFriendlyKey2 = gsub(tFriendlyKey2, kLocKey, vLocKey)
+		end
+	end
+	return L[tConst]..L[" Taste 1: "]..tFriendlyKey1..L[" Taste 2: "]..tFriendlyKey2
+end
+
+function TA:MenuBuilder(aParent)
+	-- 1. back to the defaults (all four sets)
+	local tReset = SkuOptions:InjectMenuItems(aParent, { Sku.deEn("Auf Standard zurücksetzen", "Reset to defaults", "Rétablir les valeurs par défaut") }, SkuGenericMenuItem)
+	tReset.OnAction = function()
+		TA:ResetAll()
+		SkuOptions.Voice:OutputStringBTtts(Sku.deEn("Standardwerte wiederhergestellt", "Defaults restored", "Valeurs par défaut rétablies"), true, true, 0.2, nil, nil, nil, 2)
+	end
+
+	-- 2. and 3. every target change
+	local tIn = SkuOptions:InjectMenuItems(aParent, { Sku.deEn("Zielansage im Kampf", "Target announcement in combat", "Annonce de cible en combat") }, SkuGenericMenuItem)
+	tIn.dynamic = true
+	tIn.BuildChildren = function(self) tAddCategoryLevels(self, "inCombat") end
+	local tOut = SkuOptions:InjectMenuItems(aParent, { Sku.deEn("Zielansage nicht im Kampf", "Target announcement out of combat", "Annonce de cible hors combat") }, SkuGenericMenuItem)
+	tOut.dynamic = true
+	tOut.BuildChildren = function(self) tAddCategoryLevels(self, "outOfCombat") end
+
+	-- 4. the key "Ziel ansagen"
+	local tQuery = SkuOptions:InjectMenuItems(aParent, { Sku.deEn("Ziel auf Abfrage", "Target on request", "Cible sur demande") }, SkuGenericMenuItem)
+	tQuery.dynamic = true
+	tQuery.BuildChildren = function(self)
+		local tKeyEntry = SkuOptions:InjectMenuItems(self, { tKeyBindLabel() }, SkuGenericMenuItem)
+		tKeyEntry.isSelect = true
+		tKeyEntry.dynamic = true
+		tKeyEntry.bindingConst = "SKU_KEY_OUTPUTHARDTARGET"
+		tKeyEntry.OnAction = function(s, aValue, aName)
+			if aName == L["Neu belegen"] then
+				if SkuCore.RebindSkuKey then SkuCore:RebindSkuKey(s, false) end
+			elseif aName == L["Sekundäre Taste neu belegen"] then
+				if SkuCore.RebindSkuKey then SkuCore:RebindSkuKey(s, true) end
+			elseif aName == L["Belegung löschen"] then
+				SkuOptions:SkuKeyBindsDeleteBinding(s.bindingConst)
+				s.name = tKeyBindLabel()
+				SkuOptions.Voice:OutputStringBTtts(L["Belegung gelöscht"], true, true, 0.2)
+			elseif aName == L["Sekundäre Belegung löschen"] then
+				SkuOptions:SkuKeyBindsDeleteBinding2(s.bindingConst)
+				s.name = tKeyBindLabel()
+				SkuOptions.Voice:OutputStringBTtts(L["Sekundäre Belegung gelöscht"], true, true, 0.2)
+			end
+		end
+		tKeyEntry.BuildChildren = function(s)
+			SkuOptions:InjectMenuItems(s, { L["Neu belegen"] }, SkuGenericMenuItem)
+			SkuOptions:InjectMenuItems(s, { L["Sekundäre Taste neu belegen"] }, SkuGenericMenuItem)
+			SkuOptions:InjectMenuItems(s, { L["Belegung löschen"] }, SkuGenericMenuItem)
+			SkuOptions:InjectMenuItems(s, { L["Sekundäre Belegung löschen"] }, SkuGenericMenuItem)
+		end
+		local tQIn = SkuOptions:InjectMenuItems(self, { Sku.deEn("Im Kampf", "In combat", "En combat") }, SkuGenericMenuItem)
+		tQIn.dynamic = true
+		tQIn.BuildChildren = function(s) tAddCategoryLevels(s, "queryInCombat") end
+		local tQOut = SkuOptions:InjectMenuItems(self, { Sku.deEn("Außerhalb des Kampfes", "Out of combat", "Hors combat") }, SkuGenericMenuItem)
+		tQOut.dynamic = true
+		tQOut.BuildChildren = function(s) tAddCategoryLevels(s, "queryOutOfCombat") end
+	end
+
+	-- 5. the former "Ziel Optionen", plus the combat status of an enemy (same value as under Barrierefreiheit)
+	local tMore = SkuOptions:InjectMenuItems(aParent, { Sku.deEn("Weitere Zieloptionen", "More target options", "Autres options de cible") }, SkuGenericMenuItem)
+	tMore.dynamic = true
+	tMore.BuildChildren = function(self)
+		SkuOptions:IterateOptionsArgs(SkuMob.options.args, self, SkuSettings:Sub("SkuMob"), "SkuMob")
+		local tStatus = SkuOptions:InjectMenuItems(self, { L["Gegnerstatus Kampf"] }, SkuGenericMenuItem)
+		tStatus.dynamic = true
+		tStatus.isSelect = true
+		tStatus.GetCurrentValue = function()
+			local m = SkuSettings:Sub("SkuMob").enemyCombatStatusMode or "beep"
+			if m == "off" then return L["aus"] elseif m == "announce" then return L["Ansage"] end
+			return L["Beep"]
+		end
+		tStatus.OnAction = function(s, aValue, aName)
+			local p = SkuSettings:Sub("SkuMob")
+			if aName == L["aus"] then
+				p.enemyCombatStatusMode = "off"
+			elseif aName == L["Ansage"] then
+				p.enemyCombatStatusMode = "announce"
+			else
+				p.enemyCombatStatusMode = "beep"
+			end
+		end
+		tStatus.BuildChildren = function(s)
+			SkuOptions:InjectMenuItems(s, { L["aus"] }, SkuGenericMenuItem)
+			SkuOptions:InjectMenuItems(s, { L["Beep"] }, SkuGenericMenuItem)
+			SkuOptions:InjectMenuItems(s, { L["Ansage"] }, SkuGenericMenuItem)
+		end
+		for _, tChild in ipairs(self.children) do tChild.noStepUpAfterSelect = true end
+	end
 end

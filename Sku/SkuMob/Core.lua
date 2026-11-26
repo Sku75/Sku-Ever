@@ -523,10 +523,210 @@ function SkuMob:PLAYER_SOFT_INTERACT_CHANGED(aEvent, aGuid, aNewGuid)
 end
 
 ---------------------------------------------------------------------------------------------------------------------------------------
+-- Ziel Ansage: the readers behind the parts of SkuMob.TA (SkuMob/Options.lua). Each returns a token, a list of tokens or
+-- nil. A token is { text = plain or secret string, fmt = format for a secret ("%s", "Gilde %s", "%d"), audio = true
+-- when Sku's recorded voice has the words }. A secret value (Forever instance, combat) is never compared or measured:
+-- a secret string or number is handed on to SpeakSecretText, a secret flag is skipped.
+local function tTAPlain(aValue)
+	return aValue ~= nil and not Sku.IsSecret(aValue)
+end
+local function tTAFlag(aValue)
+	return tTAPlain(aValue) and aValue == true
+end
+local function tTATok(aText, aAudio, aFmt)
+	if aText == nil then return nil end
+	if Sku.IsSecret(aText) then
+		return { text = aText, fmt = aFmt or "%s" }
+	end
+	if type(aText) ~= "string" or aText == "" then return nil end
+	if aFmt then aText = string.format(aFmt, aText) end
+	return { text = aText, audio = aAudio == true }
+end
+
+local function tTAClassification(aUnitId)
+	local c = UnitClassification(aUnitId)
+	if not tTAPlain(c) then return nil end
+	if c == "worldboss" then return L["world boss"] end
+	if c == "rareelite" then return L["Rare Elite"] end
+	if c == "elite" then return L["Elite"] end
+	if c == "rare" then return L["Rare"] end
+	return nil
+end
+
+-- Tooltip line 2 (title of an NPC such as "Gastwirt", owner of a pet), as before only when readable and not the level line.
+local function tTATooltipLine2(aUnitId)
+	local tText
+	pcall(function()
+		GameTooltip_SetDefaultAnchor(GameTooltip, UIParent)
+		GameTooltip:SetUnit(aUnitId)
+		GameTooltip:Show()
+		local tLeft = _G["GameTooltipTextLeft2"]
+		if tLeft then tText = tLeft:GetText() end
+	end)
+	if not tTAPlain(tText) or tText == "" then return nil end
+	if string.find(tText, L["level"], 1, true) then return nil end
+	return tText
+end
+
+-- Which kind of unit: only reads the game never makes secret (UnitIsPlayer, UnitPlayerControlled, UnitCanAttack).
+local function tTAClassify(aUnitId)
+	if not UnitExists(aUnitId) then return nil end
+	if tTAFlag(UnitIsPlayer(aUnitId)) then return "player" end
+	if tTAFlag(UnitPlayerControlled(aUnitId)) then
+		local tTypeName, tTypeId = UnitCreatureType(aUnitId)
+		if (tTAPlain(tTypeId) and tTypeId == 11) or (tTAPlain(tTypeName) and tTypeName == "Totem") then
+			return "totem"
+		end
+		return "pet"
+	end
+	if tTAFlag(UnitCanAttack("player", aUnitId)) then return "mob" end
+	return "npc"
+end
+
+local tTAReaders = {
+	dead = function(u, c)
+		if c.hp == 0 or tTAFlag(UnitIsDead(u)) or tTAFlag(UnitIsGhost(u)) then
+			if tTAFlag(UnitIsGhost(u)) then
+				return tTATok(Sku.deEn("Geist", "Ghost", "Fantôme"))
+			end
+			return tTATok(L["dead"], true)
+		end
+	end,
+	name = function(u, c)
+		if c.name == nil then return nil end
+		-- a player's title goes in front of the name when Titel is on as well (UnitPVPName carries both)
+		if c.cat == "player" and c.isOn("title") and not c.nameReplaced and UnitPVPName then
+			local tPvp = UnitPVPName(u)
+			if tPvp ~= nil then return tTATok(tPvp) end
+		end
+		return tTATok(c.name, true)
+	end,
+	title = function(u, c)
+		if c.cat == "player" then
+			if c.isOn("name") or not UnitPVPName then return nil end
+			local tPvp, tName = UnitPVPName(u), UnitName(u)
+			if not tTAPlain(tPvp) or not tTAPlain(tName) or tPvp == tName then return nil end
+			local tTitle = string.gsub(tPvp, tName, "", 1)
+			tTitle = string.gsub(tTitle, "^[%s,]+", "")
+			tTitle = string.gsub(tTitle, "[%s,]+$", "")
+			return tTATok(tTitle)
+		end
+		return tTATok(tTATooltipLine2(u), true)
+	end,
+	realm = function(u)
+		local _, tRealm = UnitName(u)
+		return tTATok(tRealm, false, Sku.deEn("Realm %s", "Realm %s", "Royaume %s"))
+	end,
+	guild = function(u)
+		if not GetGuildInfo then return nil end
+		return tTATok((GetGuildInfo(u)), false, Sku.deEn("Gilde %s", "Guild %s", "Guilde %s"))
+	end,
+	level = function(u)
+		local tLevel = UnitLevel(u)
+		if not tTAPlain(tLevel) then return nil end
+		if tLevel == -1 then
+			return tTATok(L["level"].." "..L["Unknown"], true)
+		end
+		return tTATok(L["level"].." "..string.format("%02d", tLevel), true)
+	end,
+	classification = function(u)
+		return tTATok(tTAClassification(u), true)
+	end,
+	race = function(u)
+		return tTATok((UnitRace(u)))
+	end,
+	class = function(u)
+		return tTATok((UnitClass(u)))
+	end,
+	gender = function(u)
+		local s = UnitSex(u)
+		if not tTAPlain(s) then return nil end
+		if s == 2 then return tTATok(Sku.deEn("männlich", "male", "masculin")) end
+		if s == 3 then return tTATok(Sku.deEn("weiblich", "female", "féminin")) end
+	end,
+	faction = function(u)
+		local _, tFaction = UnitFactionGroup(u)
+		return tTATok(tFaction)
+	end,
+	role = function(u)
+		if not UnitGroupRolesAssigned then return nil end
+		local r = UnitGroupRolesAssigned(u)
+		if not tTAPlain(r) then return nil end
+		if r == "TANK" then return tTATok(Sku.deEn("Tank", "Tank", "Tank")) end
+		if r == "HEALER" then return tTATok(Sku.deEn("Heiler", "Healer", "Soigneur")) end
+		if r == "DAMAGER" then return tTATok(Sku.deEn("Schadensausteiler", "Damage dealer", "Dégâts")) end
+	end,
+	pvp = function(u)
+		if UnitIsPVPFreeForAll and tTAFlag(UnitIsPVPFreeForAll(u)) then
+			return tTATok(Sku.deEn("Jeder gegen jeden PvP", "Free for all PvP", "JcJ chacun pour soi"))
+		end
+		if tTAFlag(UnitIsPVP(u)) then return tTATok("PvP") end
+	end,
+	afk = function(u)
+		if tTAFlag(UnitIsAFK(u)) then return tTATok("AFK") end
+	end,
+	dnd = function(u)
+		if tTAFlag(UnitIsDND(u)) then return tTATok(Sku.deEn("Nicht stören", "Do not disturb", "Ne pas déranger")) end
+	end,
+	charmed = function(u)
+		if tTAFlag(UnitIsCharmed(u)) then return tTATok(Sku.deEn("beherrscht", "charmed", "charmé")) end
+	end,
+	reaction = function(u, c)
+		if c.cat == "player" then
+			if tTAFlag(UnitIsFriend("player", u)) then return tTATok(L["freundlicher spieler"], true) end
+			return tTATok(L["feindlicher spieler"], true)
+		end
+		local r = UnitReaction(u, "player")
+		if not tTAPlain(r) then return nil end
+		if r <= 3 then return tTATok(Sku.deEn("feindselig", "hostile", "hostile")) end
+		if r == 4 then return tTATok(Sku.deEn("neutral", "neutral", "neutre")) end
+		return tTATok(Sku.deEn("freundlich", "friendly", "amical"))
+	end,
+	creatureType = function(u)
+		return tTATok((UnitCreatureType(u)))
+	end,
+	creatureFamily = function(u)
+		return tTATok((UnitCreatureFamily(u)))
+	end,
+	questBoss = function(u)
+		if UnitIsQuestBoss and tTAFlag(UnitIsQuestBoss(u)) then
+			return tTATok(Sku.deEn("Quest-Boss", "Quest boss", "Boss de quête"))
+		end
+	end,
+	questTarget = function(u)
+		if C_QuestLog and C_QuestLog.UnitIsRelatedToActiveQuest and tTAFlag(C_QuestLog.UnitIsRelatedToActiveQuest(u)) then
+			return tTATok(Sku.deEn("Questziel", "Quest target", "Cible de quête"))
+		end
+	end,
+	tapped = function(u)
+		if UnitIsTapDenied and tTAFlag(UnitIsTapDenied(u)) then
+			return tTATok(Sku.deEn("von anderen beansprucht", "tapped by others", "pris par un autre"))
+		end
+	end,
+	-- the yellow name background of the target frame: attackable but not aggressive (only known for the hard target)
+	passive = function(u)
+		if u ~= "target" or not TargetFrameNameBackground then return nil end
+		local r, g, b = TargetFrameNameBackground:GetVertexColor()
+		if tTAPlain(r) and tTAPlain(g) and tTAPlain(b) and r > 0.99 and g > 0.99 and b == 0 then
+			return tTATok(L["passive"], true)
+		end
+	end,
+	owner = function(u)
+		if UnitIsUnit(u, "pet") then return tTATok(Sku.deEn("von dir", "yours", "à toi")) end
+		return tTATok(tTATooltipLine2(u))
+	end,
+	combat = function(u)
+		if tTAFlag(UnitAffectingCombat(u)) then return tTATok(L["im kampf"], true) end
+	end,
+}
+
+---------------------------------------------------------------------------------------------------------------------------------------
 function SkuMob:PLAYER_TARGET_CHANGED(event, aUnitId)
 	C_Timer.After(0.01, function() --this delay is to provide the combat monitor an option to first send output to the tts queue
 
 		aUnitId = aUnitId or "target"
+		-- the key "Ziel ansagen" (SKU_KEY_OUTPUTHARDTARGET) asks with event "QUERY": the query sets of Ziel Ansage apply
+		local tIsQuery = (event == "QUERY")
 
 		dprint("SkuMob PLAYER_TARGET_CHANGED(event, ", event, aUnitId)
 
@@ -542,58 +742,19 @@ function SkuMob:PLAYER_TARGET_CHANGED(event, aUnitId)
 
 		if not UnitExists(aUnitId) and aUnitId ~= "softinteract" then
 			dprint("SkuMob PTC: silent - unit does not exist", aUnitId)
+			if tIsQuery then
+				SkuOptions.Voice:OutputStringBTtts(L["No target"], true, true, 0.3, nil, nil, nil, 1)
+			end
 			return
 		end
 
 		local tUnitName = GetUnitName(aUnitId, false)
-		local tUnitLevel = UnitLevel(aUnitId)
-		local tClassification = UnitClassification(aUnitId)
 
-		local noSubText
-
+		-- Players, their pets, totems, you: steered by a player -> no combat beep and no Sku colour. What is SAID about
+		-- them is chosen in Ziel Ansage (the old player switches and the placeholder names are gone).
 		local tIsPlayerControled = false
-		if UnitIsPlayer(aUnitId) then
-			if SkuSettings:Sub("SkuMob").vocalizePlayerNamePlaceholders == true then
-				if UnitIsFriend("player", aUnitId) then
-					if SkuSettings:Sub("SkuMob").dontVocalizePlayerReactionAndLevelInCombat == true and SkuState:IsInCombat() == true then
-						tUnitName = SkuMob:GetTtsAwareUnitName(aUnitId)
-					else
-						tUnitName = SkuMob:GetTtsAwareUnitName(aUnitId)..", "..L["freundlicher spieler"]
-					end
-						tIsPlayerControled = true
-				else
-					if SkuSettings:Sub("SkuMob").dontVocalizePlayerReactionAndLevelInCombat == true and SkuState:IsInCombat() == true then
-						tUnitName = SkuMob:GetTtsAwareUnitName(aUnitId)
-					else
-						tUnitName = SkuMob:GetTtsAwareUnitName(aUnitId)..", "..L["feindlicher spieler"]
-					end
-					tIsPlayerControled = true
-				end
-				noSubText = true
-			else
-				dprint("SkuMob PTC: silent - player target and vocalizePlayerNamePlaceholders is off")
-				return
-			end
-		end
-		if UnitPlayerControlled(aUnitId) == true and UnitIsPlayer(aUnitId) == false then
-			if SkuSettings:Sub("SkuMob").dontVocalizePlayerReactionAndLevelInCombat == true and SkuState:IsInCombat() == true then
-				tUnitName = SkuMob:GetTtsAwareUnitName(aUnitId)
-			else
-				tUnitName = SkuMob:GetTtsAwareUnitName(aUnitId)..", "..L["fremder begleiter"]
-			end
+		if UnitPlayerControlled(aUnitId) == true or UnitIsUnit("pet", aUnitId) or UnitIsUnit("player", aUnitId) then
 			tIsPlayerControled = true
-			noSubText = true
-		end
-		-- UnitIsUnit instead of comparing names: an enemy's name is a secret value in a Forever instance.
-		if UnitIsUnit("pet", aUnitId) then
-			tUnitName = SkuMob:GetTtsAwareUnitName(aUnitId)--L["dein begleiter"]
-			tIsPlayerControled = true
-			noSubText = true
-		end
-		if UnitIsUnit("player", aUnitId) then
-			tUnitName = SkuMob:GetTtsAwareUnitName(aUnitId)--L["du selbst"]
-			tIsPlayerControled = true
-			noSubText = true
 		end
 
 			--[[
@@ -709,257 +870,168 @@ function SkuMob:PLAYER_TARGET_CHANGED(event, aUnitId)
 		end
 
 		--raidtarget
+		-- Readable marker: its name ("Totenkopf"). Secret marker (Forever instance, combat): its number, spoken through
+		-- SpeakSecretText ("8"); it cannot be turned into a name (no table lookup, no comparison). No marker: the Sku colour
+		-- of this unit, handed out on the first sight in combat when "Sku-Symbole automatisch setzen" is on.
 		local tRaidtarget = GetRaidTargetIndex(aUnitId)
-		-- In a Forever instance the marker index (skull, cross ...) can be a secret value: it cannot be used as a table key
-		-- or compared, so it is skipped (no marker spoken, and no Sku marker handed out for this unit either).
 		local tRaidtargetSecret = Sku.IsSecret(tRaidtarget)
 		local tRaidtargetRaw = tRaidtarget
 		if tRaidtargetSecret then tRaidtarget = nil end
-		local tRaidTargetString = ""
-		-- A secret marker cannot be turned into its name (no table lookup); it is spoken as "Symbol <number>" at the end
-		-- through SpeakSecretText, "\2" stands in for it (1 star, 2 circle, 3 diamond, 4 triangle, 5 moon, 6 square, 7 cross, 8 skull).
-		if tRaidtargetSecret then
-			tRaidTargetString = (SkuSettings:Sub("SkuMob").repeatRaidTargetMarkers == true) and "\2;\2;" or "\2;"
-		end
-		if tRaidtarget then
-			if SkuCore.RaidTargetValues[tRaidtarget] then
-				if SkuSettings:Sub("SkuMob").repeatRaidTargetMarkers == true then
-					tRaidTargetString = SkuCore.RaidTargetValues[tRaidtarget].name..";"..SkuCore.RaidTargetValues[tRaidtarget].name..";"
-				else
-					tRaidTargetString = SkuCore.RaidTargetValues[tRaidtarget].name..";"
-				end
-			end
-		end
-		
 		local tUnitGUID = Sku.SafeGUID(aUnitId)
-		--sku raid target
-		if (tRaidtarget == nil or tRaidtarget == "") and not tRaidtargetSecret then
-			if SkuCore.aqCombat:aqCombatGetSkuRaidTarget(tUnitGUID) ~= nil then
-				tRaidTargetString = SkuCore.RaidTargetValues[SkuCore.aqCombat:aqCombatGetSkuRaidTarget(tUnitGUID)].color..";"
-			else
-				if UnitCanAttack("player", aUnitId) and tIsPlayerControled == false and status then
-					if SkuSettings:Sub("SkuMob").autoSetSkuRaidTargetsToInCombatCreatures == true then
-						local tNewRaidTargetId = SkuCore.aqCombat:aqCombatSetSkuRaidTarget(tUnitGUID, 0)
-						if tNewRaidTargetId then
-							tRaidTargetString = SkuCore.RaidTargetValues[tNewRaidTargetId].color..";"
-						end
-					end
-				end
+		local tMarkerToken
+		if tRaidtargetSecret then
+			tMarkerToken = { text = tRaidtargetRaw, fmt = "%d" }
+		elseif tRaidtarget and SkuCore.RaidTargetValues[tRaidtarget] then
+			tMarkerToken = { text = SkuCore.RaidTargetValues[tRaidtarget].name, audio = true }
+		elseif tRaidtarget == nil or tRaidtarget == "" or tRaidtarget == 0 then
+			local tSkuId = SkuCore.aqCombat:aqCombatGetSkuRaidTarget(tUnitGUID)
+			if tSkuId == nil and UnitCanAttack("player", aUnitId) and tIsPlayerControled == false and status
+				and SkuSettings:Sub("SkuMob").autoSetSkuRaidTargetsToInCombatCreatures == true then
+				tSkuId = SkuCore.aqCombat:aqCombatSetSkuRaidTarget(tUnitGUID, 0)
 			end
-			if SkuSettings:Sub("SkuMob").repeatRaidTargetMarkers == true then
-				tRaidTargetString = tRaidTargetString..tRaidTargetString
+			if tSkuId and SkuCore.RaidTargetValues[tSkuId] then
+				tMarkerToken = { text = SkuCore.RaidTargetValues[tSkuId].color, audio = true }
 			end
 		end
 
-		--for passive but attackable targets
-		local tReactionText = ""
-		-- [41.05] gesprochener Kampfstatus "im kampf", nur im Announce-Modus.
-		local tCombatText = ""
-		if status and tIsPlayerControled == false and tCombatStatusMode == "announce" then
-			tCombatText = L["im kampf"]..";"
-		end
-		if UnitCanAttack("player", aUnitId) then
-			if TargetFrameNameBackground then
-				local r, g, b, a = TargetFrameNameBackground:GetVertexColor()
-				if r > 0.99 and g > 0.99 and b == 0 then
-					tReactionText = L["passive"]..";"
-				end
-			end
-		end
+		-- [41.05] spoken combat status "im Kampf", only in the announce mode of Gegnerstatus Kampf
+		local tCombatAnnounce = status and tIsPlayerControled == false and tCombatStatusMode == "announce"
 
 		local hp = Sku.UnitHealthPercent(aUnitId) or (UnitIsDead(aUnitId) and 0 or nil)
 
 		if aUnitId == "softinteract" then
 			if UnitExists("softinteract") == false then
-				noSubText = true
-				tIsPlayerControled = false
-				tUnitLevel = -1
 				hp = 100
-				tReactionText = ""
 			end
 			tUnitName = UnitName("softinteract")
 		end
 
-		local tOutputString = ""
-		local tOutputStringB = ""
+		-- the name as it is spoken: you and your pet by their role, a secret name as it is (SpeakSecretText)
+		local tNameOut = tUnitName
+		local tNameReplaced = false
+		if UnitIsUnit("player", aUnitId) then
+			tNameOut, tNameReplaced = L["du selbst"], true
+		elseif UnitIsUnit("pet", aUnitId) then
+			tNameOut, tNameReplaced = L["dein begleiter"], true
+		end
+		-- Forever: soft targeting spoke this unit's name moments ago -> do not say it again as hard target (not on request).
+		if Sku.isForever and aUnitId == "target" and not tIsQuery and tUnitGUID and tUnitGUID == tSoftSpokenGuid
+			and (GetTime() - tSoftSpokenTime) < SOFT_SPOKEN_WINDOW then
+			dprint("SkuMob PTC: name already spoken by soft targeting, left out")
+			tNameOut = nil
+			tSoftSpokenGuid = nil
+		elseif Sku.isForever and aUnitId ~= "target" and tUnitGUID then
+			tSoftSpokenGuid, tSoftSpokenTime = tUnitGUID, GetTime()
+		end
 
-		-- An enemy's name is a secret value in a Forever instance. It cannot go into the recorded-words path, so the
-		-- line is built with a marker in its place and spoken at the end through SkuVoice:SpeakSecretText.
-		local tNameSecret = tUnitName ~= nil and Sku.IsSecret(tUnitName)
-		local tNameOut = tNameSecret and "\1" or tUnitName
-			-- Forever: soft targeting spoke this unit's name moments ago -> do not say it again as hard target.
-			if Sku.isForever and aUnitId == "target" and tUnitGUID and tUnitGUID == tSoftSpokenGuid
-				and (GetTime() - tSoftSpokenTime) < SOFT_SPOKEN_WINDOW then
-				dprint("SkuMob PTC: name already spoken by soft targeting, left out")
-				tNameOut = ""
-				tNameSecret = false
-				tSoftSpokenGuid = nil
-			elseif Sku.isForever and aUnitId ~= "target" and tUnitGUID then
-				tSoftSpokenGuid, tSoftSpokenTime = tUnitGUID, GetTime()
+		-- Ziel Ansage: the parts chosen for this kind of unit and this situation (SkuMob.TA, SkuMob/Options.lua)
+		local tTA = SkuMob.TA
+		local tSetKey = tTA:SetFor(tIsQuery)
+		local tCat = tTAClassify(aUnitId)
+		local tTokens = {}
+		local tSeen = {}
+		local function tAdd(aToken)
+			if aToken == nil then return end
+			if aToken.text == nil then
+				for _, t in ipairs(aToken) do tAdd(t) end
+				return
 			end
+			if not aToken.fmt then
+				if tSeen[aToken.text] then return end
+				tSeen[aToken.text] = true
+			end
+			tTokens[#tTokens + 1] = aToken
+		end
 
-		if tUnitName then
-			if hp == 0 then
-				if tIsPlayerControled == false or SkuSettings:Sub("SkuMob").vocalizePlayerNamePlaceholdersSkuTts == true then
-					tOutputString = tRaidTargetString.." "..L["dead"].." "..tNameOut
-				else
-					tOutputStringB = tRaidTargetString.." "..L["dead"].." "..tNameOut
-				end
-			else
-				if tRaidTargetString ~= "" and SkuSettings:Sub("SkuMob").vocalizeRaidTargetOnly == true then
-					if tIsPlayerControled == false  or SkuSettings:Sub("SkuMob").vocalizePlayerNamePlaceholdersSkuTts == true then
-						tOutputString = tOutputString.." "..tRaidTargetString
-					else
-						tOutputStringB = tOutputStringB.." "..tRaidTargetString
-					end
-				else
-					if tIsPlayerControled == false  or SkuSettings:Sub("SkuMob").vocalizePlayerNamePlaceholdersSkuTts == true then
-						tOutputString = tOutputString.." "..tRaidTargetString..tReactionText..tCombatText..tNameOut
-					else
-						tOutputStringB = tOutputStringB.." "..tRaidTargetString..tReactionText..tCombatText..tNameOut
-					end
-				end
+		if tMarkerToken then
+			tTokens[#tTokens + 1] = tMarkerToken
+			if SkuSettings:Sub("SkuMob").repeatRaidTargetMarkers == true then
+				tTokens[#tTokens + 1] = tMarkerToken
 			end
 		end
-		
-		local tClassification = UnitClassification(aUnitId) or ""
-		local tClassifications = {
-			["worldboss"] = L["world boss"] , 
-			["rareelite"] = L["Rare Elite"], 
-			["elite"] = L["Elite"], 
-			["rare"] = L["Rare"], 
-			["normal"] = "", 
-			["trivial"] = "", 
-			["minus"] = "",
-		}
-
-		if tRaidTargetString == "" or SkuSettings:Sub("SkuMob").vocalizeRaidTargetOnly == false then
-			if tUnitLevel then
-				if tUnitLevel ~= -1 then
-					if tIsPlayerControled == false or SkuSettings:Sub("SkuMob").vocalizePlayerNamePlaceholdersSkuTts == true then
-						if tIsPlayerControled ~= true or (SkuSettings:Sub("SkuMob").dontVocalizePlayerReactionAndLevelInCombat ~= true or SkuState:IsInCombat() == false) then
-							tOutputString = tOutputString.." "..L["level"]
-							tOutputString = tOutputString.." "..string.format("%02d", tUnitLevel).." "..tClassifications[tClassification]
-						end
-					else
-						if tIsPlayerControled ~= true or (SkuSettings:Sub("SkuMob").dontVocalizePlayerReactionAndLevelInCombat ~= true  or SkuState:IsInCombat() == false) then
-							tOutputStringB = tOutputStringB.." "..L["level"].." "..string.format("%02d", tUnitLevel)
-						end
-					end
-				else
-					if aUnitId ~= "softinteract" then
-						if tIsPlayerControled == false or SkuSettings:Sub("SkuMob").vocalizePlayerNamePlaceholdersSkuTts == true then
-							if tIsPlayerControled ~= true or (SkuSettings:Sub("SkuMob").dontVocalizePlayerReactionAndLevelInCombat ~= true  or SkuState:IsInCombat() == false) then
-								tOutputString = tOutputString.." "..L["level"]
-								tOutputString = tOutputString.." "..L["Unknown"]
-							end
+		local tMarkerOnly = tMarkerToken ~= nil and SkuSettings:Sub("SkuMob").vocalizeRaidTargetOnly == true and hp ~= 0
+		if not tMarkerOnly then
+			if tCombatAnnounce then
+				tAdd({ text = L["im kampf"], audio = true })
+			end
+			if tCat then
+				local tCtx = {
+					cat = tCat,
+					hp = hp,
+					name = tNameOut,
+					nameReplaced = tNameReplaced,
+					isOn = function(aKey) return tTA:IsOn(tSetKey, tCat, aKey) end,
+				}
+				for _, tKey in ipairs(tTA.ORDER[tCat]) do
+					if tTA:IsOn(tSetKey, tCat, tKey) and tTAReaders[tKey] then
+						local tOk, tResult = pcall(tTAReaders[tKey], aUnitId, tCtx)
+						if tOk then
+							tAdd(tResult)
 						else
-							if tIsPlayerControled ~= true or (SkuSettings:Sub("SkuMob").dontVocalizePlayerReactionAndLevelInCombat ~= true  or SkuState:IsInCombat() == false) then
-								tOutputStringB = tOutputStringB.." "..L["level"].." "..L["Unknown"]
-							end
+							dprint("SkuMob TA part failed", tKey, tostring(tResult))
 						end
 					end
 				end
+			else
+				-- not a unit (a game object for the soft interaction): its name
+				tAdd(tTATok(tNameOut, true))
 			end
-
-			if noSubText ~= true then
-				GameTooltip_SetDefaultAnchor(GameTooltip, UIParent)
-				GameTooltip:SetUnit(aUnitId)
-				GameTooltip:Show()
-				local left = _G["GameTooltipTextLeft" .. 2]
-				if left then
-					local tLineTwoText = left:GetText()
-					-- An enemy's tooltip text is a secret value in a Forever instance: it cannot be compared or searched.
-					if tLineTwoText and Sku.IsSecret(tLineTwoText) then
-						dprint("SkuMob PTC: tooltip line two is secret, not spoken")
-					elseif tLineTwoText then
-						if tLineTwoText ~= "" then
-							if not string.find(tLineTwoText, L["level"]) then
-								--SkuOptions.Voice:OutputString(tLineTwoText, false, true, 0.3)
-								tOutputString = tOutputString.." "..tLineTwoText
-							end
-						end
-					end
-				end
-			end
-			
-			-- [v42.13] --layer info-- removed. GetNonAutoLevel's aForTarget branch
-			-- could never return a level (see the comment at that branch in
-			-- SkuNav/Core.lua), so this only ever appended an empty string -- while
-			-- forcing a SECOND range check per target change on top of the one at
-			-- the head of this function. Nothing spoken is lost.
-
 		end
 
-		-- [v43.0] Log the FINAL spoken string and which voice path takes it, so a
-		-- "target announce was silent" report can be checked against the ring:
-		-- entry logged but nothing audible -> voice/queue layer; no entry at all ->
-		-- the event never fired (e.g. key press on the already-current target).
-		-- A line with the secret-name marker is plain text around it; the secret name only meets it inside
-		-- string.format. Either line can carry it, so both voice paths check (a raid-marker-only line has none).
-		local function tSpeakSecretLine(aLine)
-			local tFormat = string.gsub(aLine, "%%", "%%%%")
-			local tArgs = {}
-			for tMark in string.gmatch(aLine, "[\1\2]") do
-				tArgs[#tArgs + 1] = (tMark == "\1") and tUnitName or tRaidtargetRaw
+		-- Speak. A secret part -> one line through SpeakSecretText. Only words Sku's recorded voice has, on an NPC or an
+		-- enemy -> Sku's voice, as before. Everything else -> Blizzard's voice.
+		if #tTokens == 0 then
+			dprint("SkuMob PTC: nothing chosen to say", tostring(tCat), tSetKey)
+			return
+		end
+		local tHasSecret = false
+		local tAllAudio = (tCat == "npc" or tCat == "mob" or tCat == nil)
+		for _, t in ipairs(tTokens) do
+			if t.fmt then tHasSecret = true end
+			if not t.audio then tAllAudio = false end
+		end
+		if tHasSecret then
+			local tParts, tArgs = {}, {}
+			for _, t in ipairs(tTokens) do
+				if t.fmt then
+					tParts[#tParts + 1] = t.fmt
+					tArgs[#tArgs + 1] = t.text
+				else
+					tParts[#tParts + 1] = (string.gsub(t.text, "%%", "%%%%"))
+				end
 			end
-			tFormat = string.gsub(tFormat, "\1", "%%s")
-			tFormat = string.gsub(tFormat, "\2", Sku.deEn("Symbol", "Marker", "Marqueur").." %%d")
-			dprint("SkuMob PTC speak (secret name/marker):", tFormat)
+			local tFormat = table.concat(tParts, ", ")
+			dprint("SkuMob PTC speak (secret parts):", tSetKey, tostring(tCat), tFormat)
 			SkuOptions.Voice:SpeakSecretText(tFormat, unpack(tArgs))
-		end
-		local function tHasSecretPart(aLine)
-			return (tNameSecret and string.find(aLine, "\1", 1, true) ~= nil)
-				or (tRaidtargetSecret and string.find(aLine, "\2", 1, true) ~= nil)
-		end
-		if tIsPlayerControled == false or SkuSettings:Sub("SkuMob").vocalizePlayerNamePlaceholdersSkuTts == true then
-			if tHasSecretPart(tOutputString) then
-				tSpeakSecretLine(tOutputString)
-			else
-				dprint("SkuMob PTC speak (audio):", tOutputString)
-				SkuOptions.Voice:OutputString(tOutputString, true, true, 0.3)
-			end
 		else
-			if tHasSecretPart(tOutputStringB) then
-				tSpeakSecretLine(tOutputStringB)
+			local tTexts = {}
+			for _, t in ipairs(tTokens) do tTexts[#tTexts + 1] = t.text end
+			if tAllAudio then
+				local tLine = table.concat(tTexts, ";")
+				dprint("SkuMob PTC speak (audio):", tSetKey, tostring(tCat), tLine)
+				SkuOptions.Voice:OutputString(tLine, true, true, 0.3)
 			else
-				dprint("SkuMob PTC speak (btts):", tOutputStringB)
-				SkuOptions.Voice:OutputStringBTtts(tOutputStringB, true, true, 0.3, nil, nil, nil, 1)
+				local tLine = table.concat(tTexts, ", ")
+				dprint("SkuMob PTC speak (btts):", tSetKey, tostring(tCat), tLine)
+				SkuOptions.Voice:OutputStringBTtts(tLine, true, true, 0.3, nil, nil, nil, 1)
 			end
 		end
 
 	end)
 end
 
--- Forever: Blizzards Kampf-Audiohinweis "Zielname ansagen" (CVar CAASayTargetName, im Spiel standardmaessig an) spricht den
--- Namen beim Zielwechsel ein zweites Mal neben Skus Ansage. Modus "auto" (Standard): ausserhalb von Instanzen aus, Sku spricht
--- den Namen selbst; in einer Instanz ist der Name fuer Sku geheim und nur ueber den Sonderweg sprechbar, dort bleibt Blizzards
--- Ansage als Absicherung an. Modus "unchanged": Sku fasst die Einstellung nicht an, wer Blizzards Sprache draussen nutzen will,
--- waehlt ihn im Menue. Der urspruengliche Wert wird gemerkt und beim Wechsel auf "unchanged" zurueckgesetzt.
--- Nicht im Kampf aenderbar; nachgeholt bei Kampfende.
-function SkuMob:ApplyBlizzardTargetName()
+-- Forever: Blizzard's combat audio alert "Zielname ansagen" (CVar CAASayTargetName) speaks every target's name, with no
+-- difference between players, NPCs and enemies, next to Sku's announcement. Sku speaks the names itself now, secret ones
+-- in an instance too, so it switches Blizzard's announcement off, once per profile; whoever wants it back can switch
+-- it on again in the game's options. (Replaces the old switch "Blizzard Zielname automatisch regeln", which turned it
+-- on in every instance.)
+function SkuMob:SwitchOffBlizzardTargetName()
 	if not Sku.isForever or InCombatLockdown() then return end
 	local tDb = SkuSettings:Sub("SkuMob")
-	if not tDb or GetCVar("CAASayTargetName") == nil then return end
-	local tMode = (tDb.blizzardTargetNameAuto == false) and "unchanged" or "auto"
-	local tWanted
-	if tMode == "unchanged" then
-		local tOriginal = tDb.blizzardTargetNameOriginal
-		if tOriginal == nil or tOriginal == "" then return end
-		tWanted = tOriginal
-		-- Ein gemerkter Wert "0" kann schon von einer frueheren Abschaltung stammen: dann den Ausgangswert des Spiels nehmen.
-		if tOriginal == "0" then tWanted = tostring(GetCVarDefault("CAASayTargetName") or "1") end
-		tDb.blizzardTargetNameOriginal = ""
-	else
-		if tDb.blizzardTargetNameOriginal == nil or tDb.blizzardTargetNameOriginal == "" then
-			tDb.blizzardTargetNameOriginal = tostring(GetCVar("CAASayTargetName"))
-		end
-		tWanted = IsInInstance() and "1" or "0"
-	end
-	if GetCVar("CAASayTargetName") ~= tWanted then
-		local tOk, tErr = pcall(SetCVar, "CAASayTargetName", tWanted)
-		dprint("CAA target name set", tMode, tWanted, tostring(tOk), tostring(tErr), "readback", tostring(GetCVar("CAASayTargetName")))
-	end
+	if not tDb or tDb.blizzardTargetNameSwitchedOff == true or GetCVar("CAASayTargetName") == nil then return end
+	local tOk, tErr = pcall(SetCVar, "CAASayTargetName", "0")
+	dprint("CAA target name switched off", tostring(tOk), tostring(tErr), "readback", tostring(GetCVar("CAASayTargetName")))
+	if tOk then tDb.blizzardTargetNameSwitchedOff = true end
 end
 
 if Sku.isForever then
@@ -968,9 +1040,9 @@ if Sku.isForever then
 	tFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 	tFrame:SetScript("OnEvent", function(_, aEvent)
 		if aEvent == "PLAYER_ENTERING_WORLD" then
-			C_Timer.After(1, function() SkuMob:ApplyBlizzardTargetName() end)
+			C_Timer.After(1, function() SkuMob:SwitchOffBlizzardTargetName() end)
 		else
-			SkuMob:ApplyBlizzardTargetName()
+			SkuMob:SwitchOffBlizzardTargetName()
 		end
 	end)
 end

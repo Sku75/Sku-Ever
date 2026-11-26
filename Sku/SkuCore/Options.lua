@@ -1037,6 +1037,11 @@ local function tRebindCaptureKeyBind(self, aSecondary)
 						end)											
 end
 
+-- Ziel Ansage (SkuMob/Options.lua) offers "Taste belegen" for SKU_KEY_OUTPUTHARDTARGET with the same capture.
+function SkuCore:RebindSkuKey(aMenuEntry, aSecondary)
+	tRebindCaptureKeyBind(aMenuEntry, aSecondary)
+end
+
 local function KeyBindingKeyMenuEntryHelper(self, aValue, aName)
 	if aName == L["Neu belegen"] then
 		tRebindCaptureCommand(self, false)

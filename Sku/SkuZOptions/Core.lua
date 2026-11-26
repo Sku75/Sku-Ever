@@ -1885,7 +1885,7 @@ function SkuOptions:CreateMainFrame()
 			SkuMob:PLAYER_SOFT_INTERACT_CHANGED()
 		end
 		if SkuOptions:SkuKeyBindsMatchKey(a, "SKU_KEY_OUTPUTHARDTARGET") then
-			SkuMob:PLAYER_TARGET_CHANGED()
+			SkuMob:PLAYER_TARGET_CHANGED("QUERY")
 		end
 		-- [v43.2] Full tooltip of whatever unit is current, on demand. The two keys
 		-- above re-speak the SHORT automatic announce; this one adds everything that
