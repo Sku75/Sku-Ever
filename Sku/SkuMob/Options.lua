@@ -43,6 +43,13 @@ SkuMob.options = {
 			desc = "",
 			type = "toggle",
 		},
+		-- you, your pet and group members by their role ("du selbst", "dein begleiter", "party 2") instead of their name
+		genericNames = {
+			name = Sku.deEn("Generische Namen", "Generic names", "Noms génériques"),
+			order = 5,
+			desc = "",
+			type = "toggle",
+		},
 	}
 }
 ---------------------------------------------------------------------------------------------------------------------------------------
@@ -71,6 +78,7 @@ SkuSettings:Register("SkuMob", {
 	["autoSetSkuRaidTargetsToInCombatCreatures"]   = { scope = "profile", default = true , type = "boolean" },
 	["InCombatSound"]                              = { scope = "profile", default = "Interface\\AddOns\\Sku\\SkuMob\\assets\\Target_in_combat_low.mp3", type = "string" },
 	["enemyCombatStatusMode"]                      = { scope = "profile", default = "beep", type = "string" },
+	["genericNames"]                               = { scope = "profile", default = false, type = "boolean" },
 	["blizzardTargetNameAuto"]                    = { scope = "profile", default = true,  type = "boolean" },
 	["blizzardTargetNameOriginal"]                = { scope = "profile", default = "", type = "string" },
 })

@@ -906,13 +906,30 @@ function SkuMob:PLAYER_TARGET_CHANGED(event, aUnitId)
 			tUnitName = UnitName("softinteract")
 		end
 
-		-- the name as it is spoken: you and your pet by their role, a secret name as it is (SpeakSecretText)
+		-- the name as it is spoken; a secret name as it is (SpeakSecretText). With "Generische Namen" (Weitere
+		-- Zieloptionen, off by default) you, your pet and your group members are named by their role instead.
 		local tNameOut = tUnitName
 		local tNameReplaced = false
-		if UnitIsUnit("player", aUnitId) then
-			tNameOut, tNameReplaced = L["du selbst"], true
-		elseif UnitIsUnit("pet", aUnitId) then
-			tNameOut, tNameReplaced = L["dein begleiter"], true
+		if SkuSettings:Sub("SkuMob").genericNames == true then
+			if UnitIsUnit("player", aUnitId) then
+				tNameOut, tNameReplaced = L["du selbst"], true
+			elseif UnitIsUnit("pet", aUnitId) then
+				tNameOut, tNameReplaced = L["dein begleiter"], true
+			elseif IsInRaid() then
+				for x = 1, GetNumGroupMembers() do
+					if UnitIsUnit("raid"..x, aUnitId) then
+						tNameOut, tNameReplaced = "raid "..x, true
+						break
+					end
+				end
+			elseif IsInGroup() then
+				for x = 1, 4 do
+					if UnitIsUnit("party"..x, aUnitId) then
+						tNameOut, tNameReplaced = "party "..x, true
+						break
+					end
+				end
+			end
 		end
 		-- Forever: soft targeting spoke this unit's name moments ago -> do not say it again as hard target (not on request).
 		if Sku.isForever and aUnitId == "target" and not tIsQuery and tUnitGUID and tUnitGUID == tSoftSpokenGuid
