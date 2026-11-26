@@ -805,7 +805,10 @@ function SkuCore:Build_GuildBankFrame(aParentChilds)
 
 	OpenAllBagsHelper()
 
-	local tSelectedBankTab = 1
+	-- The game knows the open tab; the checked state of the tab buttons is not reliable in the
+	-- retail-style window (Forever), and a wrong tab meant reading the slots of tab 1.
+	local tSelectedBankTab = (GetCurrentGuildBankTab and GetCurrentGuildBankTab()) or 1
+	local tTabFromGame = GetCurrentGuildBankTab ~= nil
 	local inventoryTooltipTextCache = {}
 	local tgbf = _G["GuildBankFrame"]
 
@@ -825,7 +828,11 @@ function SkuCore:Build_GuildBankFrame(aParentChilds)
 		for x = 1, 20 do
 			if _G["GuildBankTab"..x] and _G["GuildBankTab"..x].Button.tooltip and _G["GuildBankTab"..x]:IsVisible() == true then
 				local tSelected = ""
-				if _G["GuildBankTab"..x].Button:GetChecked() == true then
+				if tTabFromGame then
+					if x == tSelectedBankTab then
+						tSelected = " ("..L["selected"]..")"
+					end
+				elseif _G["GuildBankTab"..x].Button:GetChecked() == true then
 					tSelected = " ("..L["selected"]..")"
 					tSelectedBankTab = x
 				end
@@ -887,7 +894,9 @@ function SkuCore:Build_GuildBankFrame(aParentChilds)
 				}   
 
 				--update blizzard container object
-				aParentChilds[friendlyName].childs[tSlotName].obj.info = aParentChilds[friendlyName].childs[tSlotName].obj.info or {}
+				-- Fresh every build: the info table lives on the Blizzard button, and a kept id made a slot
+				-- that was emptied (or belongs to another tab) still read as an item.
+				aParentChilds[friendlyName].childs[tSlotName].obj.info = {}
 				local tLink = GetGuildBankItemLink(tSelectedBankTab, slotIndex)
 				if tLink then
 					aParentChilds[friendlyName].childs[tSlotName].obj.info.id = Item:CreateFromItemLink(tLink):GetItemID()
@@ -911,10 +920,19 @@ function SkuCore:Build_GuildBankFrame(aParentChilds)
 				end
 				
 				if bagItemButton.obj.info.id then
-					GameTooltip:SetGuildBankItem(bagItemButton.obj.info.gbanktab, bagItemButton.obj.info.gbankslot) 
-					
+					GameTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+					GameTooltip:ClearLines()
+					GameTooltip:SetGuildBankItem(bagItemButton.obj.info.gbanktab, bagItemButton.obj.info.gbankslot)
+
 					local _, maybeText = GetButtonTooltipLines(nil, GameTooltip)
-					if maybeText then
+					GameTooltip:Hide()
+					-- An item the client has not loaded yet gives an empty tooltip; the link always carries
+					-- the name, so the slot is never spoken as just its number and count.
+					local tLinkName = tLink and string.match(tLink, "%[(.-)%]")
+					if (not maybeText or maybeText == "") and tLinkName and tLinkName ~= "" then
+						maybeText = tLinkName
+					end
+					if maybeText and maybeText ~= "" then
 						local tText = maybeText
 						local isEmpty = false
 						if bagItemButton.obj.info then

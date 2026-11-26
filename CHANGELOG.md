@@ -2,6 +2,19 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.54 (26.11.2026)
+
+### Kurzfassung
+- Behoben: Die Gildenbank sagte viele Plätze als leer an, obwohl dort etwas lag, und manche Gegenstände nur als Platznummer und Anzahl ohne Namen.
+
+### Behoben: Gildenbank, leere Plätze und Gegenstände ohne Namen
+Was: Im Gildenbankfach werden jetzt die Gegenstände des Fachs angesagt, das offen ist. Jeder belegte Platz nennt den Namen des Gegenstands, auch wenn das Spiel ihn noch nicht geladen hat. Ein geleerter Platz gilt sofort als leer.
+Wie: SkuCore/LocalMenu.lua, Build_GuildBankFrame: Das offene Fach kommt von GetCurrentGuildBankTab statt vom Haken der Reiter-Knöpfe, der im Fenster von Forever nicht stimmt; dadurch wurde oft Fach 1 gelesen. Die Platzdaten am Blizzard-Knopf werden bei jedem Aufbau neu angelegt statt weitergeführt. Der Tooltip bekommt vor SetGuildBankItem einen Besitzer; ist er leer, kommt der Name aus dem Gegenstands-Link.
+
+### Downloads
+- Sku-Ever-Spielordner.zip, Sku-Ever-0.54.zip: mit der Änderung.
+- Installer (1.7), SkuPacks und die 20 SkuEngine-Gruppen sind unverändert gegenüber 0.53.
+
 ## Sku-Ever 0.53 (26.11.2026)
 
 ### Kurzfassung
