@@ -596,7 +596,7 @@ end
 ---------------------------------------------------------------------------------------------------------------------------------------
 -- Ties the spawns that a data pack added in areas WITHOUT a route pack to the route network Sku already has there:
 -- each such creature / object waypoint with no link at all gets one link (both ways) to the nearest linked route
--- waypoint of the same area, up to ATTACH_MAX_DIST yards (up to ATTACH_FAR_DIST when none is that close). Runs at the end of the cache build, after the shipped links
+-- waypoint of the same zone (its area and, on Forever, its sub areas), up to ATTACH_MAX_DIST yards (up to ATTACH_FAR_DIST when none is that close). Runs at the end of the cache build, after the shipped links
 -- are in. Only spawns that came from a data pack are touched, Sku's own waypoints and links stay as they are.
 -- The link is a straight line (no walls), like Sku's own NPC links. aYield: the build's yield function.
 local ATTACH_MAX_DIST = 40
@@ -700,30 +700,71 @@ function SkuNav:AttachPackSpawns(aYield)
 			end
 		end
 	end
-	local tGrid = {}
+	-- [Sub area attach, Forever 26.11.2026] Sku gives route waypoints the id of the smallest area they lie in (a harbour,
+	-- a tavern, a hall of a city), data pack spawns carry the id of the zone. Looking at the zone id only skipped the
+	-- waypoints right next to a spawn and tied it across walls to a farther one (Menethil: the flight master spawn went
+	-- to an upper floor of the tavern). So spawns may also be tied to the waypoints of the sub areas of their zone.
+	-- Kept in a grid of its own: the ties of a nav pack's route waypoints stay exactly as they were.
+	local tZonesAboveCache = {}
+	local function tZonesAbove(aAreaId)
+		-- a waypoint without an area id has no parent areas (and nil is no table key)
+		if not aAreaId then
+			return false
+		end
+		local tList = tZonesAboveCache[aAreaId]
+		if tList == nil then
+			tList = false
+			local tId = aAreaId
+			for _ = 1, 6 do
+				local tArea = SkuDB.InternalAreaTable and SkuDB.InternalAreaTable[tId]
+				tId = tArea and tArea.ParentAreaID
+				if not tId or tId == 0 then
+					break
+				end
+				if tTodo[tId] then
+					tList = tList or {}
+					tList[#tList + 1] = tId
+				end
+			end
+			tZonesAboveCache[aAreaId] = tList
+		end
+		return tList
+	end
+	local tGrid, tSubGrid = {}, {}
+	local function tGridAdd(aGrid, aZones, aKey, aIdx)
+		for _, tZone in ipairs(aZones) do
+			local tArea = aGrid[tZone]
+			if not tArea then
+				tArea = {}
+				aGrid[tZone] = tArea
+			end
+			local tCell = tArea[aKey]
+			if not tCell then
+				tCell = {}
+				tArea[aKey] = tCell
+			end
+			tCell[#tCell + 1] = aIdx
+		end
+	end
 	for tIdx = 1, #tCache do
 		if aYield and tIdx % 20000 == 0 then
 			aYield()
 		end
 		local tRec = tCache[tIdx]
-		local tZones = tRec and tRec.typeId == 1 and tTarget[tRec.areaId]
-		if tZones and not rawget(tRec, "pack") then
-			local tLinks = rawget(tRec, "links")
-			if tLinks and tLinks.byId and next(tLinks.byId) then
-				local tCx, tCy = math.floor(tRec.worldX / ATTACH_CELL), math.floor(tRec.worldY / ATTACH_CELL)
-				local tKey = tCx * 65536 + tCy
-				for _, tZone in ipairs(tZones) do
-					local tArea = tGrid[tZone]
-					if not tArea then
-						tArea = {}
-						tGrid[tZone] = tArea
+		if tRec and tRec.typeId == 1 and not rawget(tRec, "pack") then
+			local tZones = tTarget[tRec.areaId]
+			local tAbove = Sku.isForever and tZonesAbove(tRec.areaId)
+			if tZones or tAbove then
+				local tLinks = rawget(tRec, "links")
+				if tLinks and tLinks.byId and next(tLinks.byId) then
+					local tCx, tCy = math.floor(tRec.worldX / ATTACH_CELL), math.floor(tRec.worldY / ATTACH_CELL)
+					local tKey = tCx * 65536 + tCy
+					if tZones then
+						tGridAdd(tGrid, tZones, tKey, tIdx)
 					end
-					local tCell = tArea[tKey]
-					if not tCell then
-						tCell = {}
-						tArea[tKey] = tCell
+					if tAbove then
+						tGridAdd(tSubGrid, tAbove, tKey, tIdx)
 					end
-					tCell[#tCell + 1] = tIdx
 				end
 			end
 		end
@@ -735,9 +776,13 @@ function SkuNav:AttachPackSpawns(aYield)
 	-- route at all. Both are counted per area (SkuNav.navPackAttach.areas, shown by /skupackdiag).
 	local tAttached, tDone = 0, 0
 	local tAreaStats = {}
-	local function tNearest(aArea, aRec, aRange, aMaxDist)
+	-- aBest / aBestD (optional): the best of an earlier grid, only a nearer waypoint replaces it
+	local function tNearest(aArea, aRec, aRange, aMaxDist, aBest, aBestD)
+		if not aArea then
+			return aBest, aBestD
+		end
 		local tCx, tCy = math.floor(aRec.worldX / ATTACH_CELL), math.floor(aRec.worldY / ATTACH_CELL)
-		local tBest, tBestD
+		local tBest, tBestD = aBest, aBestD
 		for dx = -aRange, aRange do
 			for dy = -aRange, aRange do
 				local tCell = aArea[(tCx + dx) * 65536 + (tCy + dy)]
@@ -756,10 +801,10 @@ function SkuNav:AttachPackSpawns(aYield)
 		return tBest, tBestD
 	end
 	for tZone, tList in pairs(tTodo) do
-		local tArea = tGrid[tZone]
-		local tS = {todo = #tList, near = 0, far = 0, none = 0, noRoutes = tArea == nil}
+		local tArea, tSub = tGrid[tZone], tSubGrid[tZone]
+		local tS = {todo = #tList, near = 0, far = 0, none = 0, noRoutes = tArea == nil and tSub == nil}
 		tAreaStats[tZone] = tS
-		if tArea then
+		if tArea or tSub then
 			for x = 1, #tList do
 				tDone = tDone + 1
 				if aYield and tDone % 2000 == 0 then
@@ -774,9 +819,13 @@ function SkuNav:AttachPackSpawns(aYield)
 				else
 					tBest, tBestD = tNearest(tArea, tRec, 1, ATTACH_MAX_DIST)
 				end
+				-- sub area waypoints: for spawns only, never for the route waypoints of a pack
+				local tSpawnSub = (not tBridge and tRec.typeId ~= 1) and tSub or nil
+				tBest, tBestD = tNearest(tSpawnSub, tRec, 1, ATTACH_MAX_DIST, tBest, tBestD)
 				local tKind = "near"
 				if not tBest and not tBridge then
 					tBest, tBestD = tNearest(tArea, tRec, math.ceil(ATTACH_FAR_DIST / ATTACH_CELL), ATTACH_FAR_DIST)
+					tBest, tBestD = tNearest(tSpawnSub, tRec, math.ceil(ATTACH_FAR_DIST / ATTACH_CELL), ATTACH_FAR_DIST, tBest, tBestD)
 					tKind = "far"
 				end
 				if tBest then

@@ -2,6 +2,28 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.56 (26.11.2026)
+
+### Kurzfassung
+- Neu: In den neuen Gebieten (Insel Zephras, Hyjal, Shendralas, Riverglades, Dalaran) führen Engine-Routen jetzt möglichst an Monstern vorbei. Abschaltbar unter Einstellungen, Navigation.
+- Behoben: Manche neuen NPCs, zum Beispiel am Greifenmeister im Hafen von Menethil, wurden an einen weit entfernten Wegpunkt hinter Wänden angehängt.
+- Engine 18.0.
+
+### Neu: Sichere Routen in den neuen Gebieten
+Was: Eine Route darf bis zu 50 Prozent länger sein als die kürzeste, wenn sie dafür seltener an Stellen vorbeiführt, an denen Monster stehen. Ist die sichere Route länger, kommt nach dem Start "Sichere Route, X Meter Umweg". Der Schalter heißt "Sichere Routen in neuen Gebieten", steht unter Einstellungen, Navigation, und ist eingeschaltet. Im Kampf wird die kürzeste Route berechnet. In der alten Welt ändert sich nichts, ausgenommen der Bereich Dalaran. Die Monsterdaten eines Gebiets werden nach dem Betreten in kleinen Schritten im Hintergrund vorbereitet; eine Route direkt nach dem Einloggen kann deshalb einige Sekunden dauern. In Testrechnungen ohne Spiel sank die Strecke in Monsternähe in den neuen Gebieten um etwa 55 bis 85 Prozent, bei etwa 15 bis 35 Prozent längerem Weg. In Hyjal, Shendralas und Riverglades fehlt bei den meisten Monstern die Höhenangabe.
+Wie: Die Sicherheitsfunktion stammt aus dem Wegenetz-Rechner von WowNav (SkuPacks/Engine_NavNetwork.lua, ergänzt um N.PrepareDanger). SkuNav/EngineRoute.lua schaltet sie nur in den neuen Gebieten ein und bereitet die Daten vor, etwa 3 Millisekunden pro Bild, nie im Kampf. Neu sind die Dateien Engine_Danger_*.lua in den Gruppen ZE, HY, SD, RG und NB. Der Schalter steht in SkuNav/Options.lua und SkuCore/Options.lua.
+
+### Behoben: neue NPCs an weit entfernten Wegpunkten
+Was: NPCs und Objekte aus den Datenpaketen werden jetzt an den nächsten Wegpunkt angehängt, auch wenn dieser in einem Untergebiet liegt, etwa in einem Hafen, einem Gasthaus oder einem Stadtteil. Vorher zählte nur die Zone selbst, und der Weg konnte unnötig durch Gebäude oder Stockwerke führen. Skus eigene Routen und Wegpunkte bleiben unverändert.
+Wie: SkuNav/Packs.lua, AttachPackSpawns: Für Spawns zählen auf Forever zusätzlich die Wegpunkte der Untergebiete der Zone.
+
+### Downloads
+- Sku-Ever-Spielordner.zip: komplett.
+- Sku-Ever-0.56.zip: Ordner Sku.
+- SkuPacks.zip und alle 20 SkuEngine-Gruppen: Engine 18.0.
+- Der Installer (1.7) ist unverändert gegenüber 0.55.
+- Nach dem Update das Spiel komplett neu starten, weil neue Dateien dazukommen.
+
 ## Sku-Ever 0.55 (26.11.2026)
 
 ### Kurzfassung

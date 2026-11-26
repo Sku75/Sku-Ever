@@ -3381,6 +3381,7 @@ function SkuCore:MenuBuilder(aParentEntry)
 						autoNextWaypoint                   = a.autoNextWaypoint,
 						outputDistance                     = a.outputDistance,
 						routesMaxDistance                  = a.routesMaxDistance,
+						engineSafeRoutes                   = a.engineSafeRoutes, -- Forever only (nil elsewhere): safe routes switch
 					}, self, SkuSettings:Sub("SkuNav"), "SkuNav")
 
 					-- Beacon subentry. NOTE: this is an explicit whitelist, not the whole

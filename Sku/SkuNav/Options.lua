@@ -305,6 +305,16 @@ SkuNav.options = {
 		},
 	}
 }
+-- [Safe routes, Forever 26.11.2026] switch for the engine's safe routes in the new areas (EngineRoute.lua); plain texts, no new L keys
+if Sku.isForever then
+	SkuNav.options.args.engineSafeRoutes = {
+		order = 21,
+		name = (Sku.Loc == "deDE") and "Sichere Routen in neuen Gebieten" or "Safe routes in new areas",
+		desc = "",
+		type = "toggle",
+	}
+end
+
 ---------------------------------------------------------------------------------------------------------------------------------------
 SkuNav.defaults = {
 	enable = true,
@@ -339,6 +349,7 @@ SkuNav.defaults = {
 	},
 	outputDistance = 0,
 	routesMaxDistance = Sku.isForever and 3000 or 5000,
+	engineSafeRoutes = true,
 }
 
 -- Settings schema for SkuNav (Sku 42 rework, W2 M-C1 / W1 Phase C). Single
@@ -374,6 +385,7 @@ SkuSettings:Register("SkuNav", {
 	["autoNextWaypoint.reachRange"]        = { scope = "profile", default = 3,          type = "number"  },
 	["outputDistance"]                     = { scope = "profile", default = 0,          type = "number"  },
 	["routesMaxDistance"]                  = { scope = "profile", default = Sku.isForever and 3000 or 5000, type = "number"  },
+	["engineSafeRoutes"]                   = { scope = "profile", default = true,       type = "boolean" },
 })
 
 local sfind = string.find

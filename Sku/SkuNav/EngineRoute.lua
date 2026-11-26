@@ -591,7 +591,62 @@ function Engine:TargetFloors(aX, aY)
 	return rZ
 end
 
+-- [Safe routes, Forever 26.11.2026] WowNav's "safe routes" (NavNetwork SetSafety): a route may be up to SAFE_PERCENT longer than the
+-- shortest one to pass fewer yards near the places where monsters usually stand (SkuEngineDanger, Engine_Danger_<group>.lua).
+-- Only in the new areas (group wv / inside a wvbox), only out of combat (several searches per route = more script time) and only
+-- with the setting SkuNav.engineSafeRoutes on. Everywhere else the engine plans exactly as before.
+local SAFE_PERCENT = 50
+local function tDangerSource(aZoneId)
+	local tRows = _G.SkuEngineDanger and _G.SkuEngineDanger[aZoneId]
+	if not tRows then return nil end
+	local tList = {}
+	for i = 1, #tRows do
+		local r = tRows[i]
+		tList[i] = {x = r[1], y = r[2], z = r[3] or nil, name = r[4]}
+	end
+	return tRows, tList
+end
+local function tSafeWanted(aGroup, aPx, aPy, aTx, aTy)
+	if SkuSettings:Sub("SkuNav").engineSafeRoutes == false then return false end
+	if InCombatLockdown and InCombatLockdown() then return false end
+	return tWvAt(aGroup, aPx, aPy) or tWvAt(aGroup, aTx, aTy)
+end
+
+-- [Safe routes, Forever 26.11.2026] The first safe route of an area had to prepare the monster data of its zones (BuildDanger), a wait
+-- of seconds. That is done in the background after the zones of the player's group are loaded: about 3 ms per frame, never in combat.
+local tDangerBusy
+local function tPrepareDanger(aGroup)
+	local N = tNet()
+	if tDangerBusy == aGroup.key or not N.PrepareDanger or not C_Timer then return end
+	if SkuSettings:Sub("SkuNav").engineSafeRoutes == false then return end
+	local tZones = {}
+	for _, z in ipairs(aGroup.zones) do
+		if _G.SkuEngineDanger and _G.SkuEngineDanger[z] and N.zones and N.zones[z] and not N.zones[z].danger then tZones[#tZones + 1] = N.zones[z] end
+	end
+	if #tZones == 0 then return end
+	N.DangerSource = tDangerSource
+	local tStart = 0
+	local function tPause()
+		if debugprofilestop() - tStart > 3 then coroutine.yield() end
+	end
+	local co = coroutine.create(function()
+		for _, zone in ipairs(tZones) do N.PrepareDanger(zone, tPause) end
+	end)
+	tDangerBusy = aGroup.key
+	local function tStep()
+		if InCombatLockdown and InCombatLockdown() then C_Timer.After(1, tStep) return end
+		tStart = debugprofilestop()
+		local ok, err = coroutine.resume(co)
+		if ok and coroutine.status(co) ~= "dead" then C_Timer.After(0, tStep) return end
+		tDangerBusy = nil
+		tLog("safe route", ok and "monster data prepared" or "prepare error", ok and aGroup.key or tostring(err), #tZones)
+	end
+	C_Timer.After(0, tStep)
+end
+Engine.PrepareDanger = function(_, aGroup) tPrepareDanger(aGroup) end
+
 function Engine:Route(aTx, aTy, aFloorZ, aName, aTargetZ)
+	self.lastSafeDetour = nil
 	if not self:Available() then return nil, "unavailable" end
 	local N = tNet()
 	local px, py = UnitPosition("player")
@@ -600,6 +655,19 @@ function Engine:Route(aTx, aTy, aFloorZ, aName, aTargetZ)
 	if not tGroup then return nil, "wrong_zone" end
 	if not tInGroup(tGroup, aTx, aTy) then return nil, "wrong_zone" end
 	tLoadGroup(tGroup)
+	-- safety is set for every call: off while the floor of the player is worked out (height question, "same start" rule)
+	local tSafe = N.SetSafety and tSafeWanted(tGroup, px, py, aTx, aTy)
+	local tPoints
+	local function tSetSafe(aOn, aStartZ)
+		if not N.SetSafety then return end
+		N.DangerSource = tDangerSource
+		N.SetSafety(aOn and SAFE_PERCENT or 0)
+		tPoints = aOn and {{x = px, y = py, z = aStartZ}, {x = aTx, y = aTy}} or nil
+	end
+	local function tSearch(aStart, aGoal)
+		return N.Route(aStart, aGoal, nil, nil, nil, nil, tPoints)
+	end
+	tSetSafe(false)
 	local pz, how, tLayers
 	if aFloorZ then
 		-- the player named the floor (floor question after the target pick): that height counts, and it is remembered as the last known one
@@ -630,7 +698,7 @@ function Engine:Route(aTx, aTy, aFloorZ, aName, aTargetZ)
 				end
 				for _, n in ipairs(tPick and {tPick} or tMulti) do
 					local goal = N.NodeTargetBinding(n.zone, n.i, t[1], t[2], "target_node")
-					local r = N.Route(start, goal)
+					local r = tSearch(start, goal)
 					if r and (not best or r.length < best.length) then best = r end
 				end
 			else
@@ -639,7 +707,7 @@ function Engine:Route(aTx, aTy, aFloorZ, aName, aTargetZ)
 					local i = zone and N.TargetNodeAt and N.TargetNodeAt(zone, t[1], t[2], nil, 3)
 					if i then
 						local goal = N.NodeTargetBinding(zone, i, t[1], t[2], "target_node")
-						local r = N.Route(start, goal)
+						local r = tSearch(start, goal)
 						if r and (not best or r.length < best.length) then best = r end
 						break
 					end
@@ -660,7 +728,7 @@ function Engine:Route(aTx, aTy, aFloorZ, aName, aTargetZ)
 			local tz = (band.zMin + band.zMax) / 2
 			local goal = N.Bind(aTx, aTy, tz)
 			if goal then
-				local r = N.Route(start, goal)
+				local r = tSearch(start, goal)
 				if r and (not best or r.length < best.length) then best = r end
 			end
 		end
@@ -670,6 +738,7 @@ function Engine:Route(aTx, aTy, aFloorZ, aName, aTargetZ)
 	if pz then
 		local start, why = N.Bind(px, py, pz)
 		if not start then return nil, why or "no_start" end
+		tSetSafe(tSafe, pz)
 		best = tBestFrom(start)
 	else
 		-- the floor of the player is not clear. Like the WowVision resolver: a question only where there is a choice. Every floor
@@ -693,8 +762,19 @@ function Engine:Route(aTx, aTy, aFloorZ, aName, aTargetZ)
 		end
 		best, pz = tAll[1].r, tAll[1].z
 		how = #tAll == 1 and "only floor" or "same start"
+		if tSafe then
+			-- the floor is decided (with the shortest routes), now the safer route from that floor
+			tSetSafe(true, pz)
+			local start = N.Bind(px, py, pz)
+			best = start and tBestFrom(start) or best
+		end
 	end
+	tSetSafe(false)
 	if not best then return nil, "no_route" end
+	if best.pass == "s" and best.lengthA then
+		self.lastSafeDetour = best.length - best.lengthA
+		tLog("safe route", "detour", math.floor(self.lastSafeDetour), "near monsters", math.floor(best.danger or 0), "shortest", math.floor(best.dangerA or 0))
+	end
 	local pts, zs = {}, {}
 	for _, id in ipairs(best.path) do
 		local x, y, z = N.Position(id)
@@ -892,7 +972,7 @@ local function tMaxDistance()
 	return type(tMax) == "number" and tMax or nil
 end
 
--- RULE (Lena, 13.11.2026): the radius test must not hide the targets that matter most. Sku makes a waypoint of EVERY object (braziers,
+-- RULE (13.11.2026): the radius test must not hide the targets that matter most. Sku makes a waypoint of EVERY object (braziers,
 -- banners ...), so some waypoint nearly always lies within TARGET_SKU_RADIUS.
 --   * kinds Sku's own data does not have at all (dungeon entrances, public transport = landings, ships, trams): always offered.
 --   * quest giver targets (kind "Questgeber...") and targets that are the goal of a quest (7th field = 1: monsters, objects, kill credits;
@@ -1124,6 +1204,11 @@ function Engine:PrepareFollow(aTarget)
 	for i, p in ipairs(pts) do tKeep[i] = {p[1], p[2]} end
 	self.lastRoute = {pts = tKeep, zs = tZs}
 	tHookReverse()
+	if not aTarget.points and self.lastSafeDetour and self.lastSafeDetour >= 1 then
+		local tDetour = math.floor(self.lastSafeDetour + 0.5)
+		SkuOptions.Voice:OutputStringBTtts((Sku.Loc == "deDE") and ("Sichere Route, " .. tDetour .. " Meter Umweg")
+			or ("Safe route, " .. tDetour .. " yards longer"), false, true, 0.3, true)
+	end
 	SkuSettings:Sub("SkuNav").metapathFollowingUnitDbWaypoint = true
 	SkuSettings:Sub("SkuNav").metapathFollowingUnitDbWaypointData = pts
 	SkuNav.engineWorldPoints = true
@@ -1183,6 +1268,7 @@ function Engine:Preload()
 		end)
 	end
 	C_Timer.After(#tGroup.zones * 0.5, function() tBuildGrid(tGroup) end)
+	C_Timer.After(#tGroup.zones * 0.5 + 1, function() Engine:PrepareDanger(tGroup) end)
 	-- the names of Sku's waypoints take ~0.4 s to collect: do it now, not when the first list is opened (kept 10 minutes)
 	C_Timer.After(#tGroup.zones * 0.5 + 6, function()
 		namedRetries = 0
