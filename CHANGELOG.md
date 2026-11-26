@@ -2,6 +2,34 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.53 (26.11.2026)
+
+### Kurzfassung
+- Neu: Monitor, Ziel Ansage. Was beim Anvisieren gesagt wird, ist wählbar für Spieler, freundliche NPCs, Gegner, Begleiter und Totems, im Kampf und außerhalb, und eigens für die Taste "Ziel ansagen". Blizzards eigene Zielnamen-Ansage schaltet Sku einmal aus.
+- Neu: Monitor, Gesundheit und Ressourcen (ganz oben). Blizzards Audiounterstützung nach eigener Gesundheit, Ressourcen, Ziel, Gruppe und Debuffs geordnet, dazu die Gesundheit des Begleiters mit Taste, Automatik und Hungerhinweis. Der Eintrag im Schnellmenü entfällt.
+- Behoben: Der Kampfmonitor sagte "Ziel gewonnen" und "Ziel verloren" im Kampf ununterbrochen an.
+- Behoben: Zwei Einheiten mit verborgener Kennung galten als dieselbe. Die weiche Zielerfassung und "Ziel des Ziels" arbeiten dadurch jetzt auch in Instanzen.
+
+### Neu: Monitor, Ziel Ansage
+Was: Aus "Ziel Optionen" wird "Ziel Ansage" mit dieser Reihenfolge: Auf Standard zurücksetzen; Zielansage im Kampf; Zielansage nicht im Kampf; Ziel auf Abfrage (oben die Taste "Ziel ansagen", früher "Aktuelles hard target ausgeben", darunter Im Kampf und Außerhalb des Kampfes); Weitere Zieloptionen (Ton bei Ziel im Kampf, Sku-Symbole automatisch setzen, Nur Schlachtzugsymbol, Schlachtzugsymbole wiederholen, Generische Namen, Gegnerstatus Kampf). In jedem Zweig gibt es Spieler, Freundliche NPCs, Gegner, Begleiter und Totems mit Schaltern je Angabe: Name, Titel, Realm, Gilde, Stufe, Selten/Elite/Boss, Rasse, Klasse, Geschlecht, Fraktion, Gruppenrolle, PvP, Abwesend, Nicht stören, Beherrscht, Reaktion, Kreaturentyp, Kreaturenfamilie, Quest-Boss, Questziel, Von anderen beansprucht, Passiv, Besitzer, Ziel im Kampf, Tot, je nach Art. Die Standardwerte werden je Profil einmal gesetzt; außerhalb des Kampfes sagt die Taste alles, im Kampf die mittlere Fassung. Ist ein Schlachtzugsymbol lesbar, kommt sein Name, ist es verborgen, nur die Zahl vor dem Namen. Sku-Symbole automatisch setzen ist jetzt standardmäßig an. Generische Namen ("du selbst", "dein Begleiter", "party 2") ist standardmäßig aus. Die Schalter "Freundliche und feindliche Spieler ansagen", "Spieler mit generischen Beschreibungen ansagen", "Im Kampf bei Spielern Reaktion und Stufe nicht ansagen" und "Blizzard Zielname automatisch regeln" entfallen. Die Blizzard-Ansage "Zielname ansagen" sprach in jeder Instanz jedes Ziel an, auch Gruppenmitglieder; Sku schaltet sie einmal je Profil aus und spricht verborgene Namen selbst.
+Wie: SkuMob/Options.lua: SkuMob.TA mit Teile-Liste, Standardwerten, gespeicherter Auswahl (profile.SkuMob.targetAnnounce) und Menü. SkuMob/Core.lua: PLAYER_TARGET_CHANGED setzt die Ansage aus den Lesern tTAReaders zusammen; verborgene Teile gehen über SpeakSecretText, sonst Sku-Stimme, wenn alle Wörter aufgenommen sind, sonst Blizzard-Stimme. Die Taste ruft PLAYER_TARGET_CHANGED("QUERY") (SkuZOptions/Core.lua). SkuMob:SwitchOffBlizzardTargetName ersetzt ApplyBlizzardTargetName. SkuCore:RebindSkuKey (SkuCore/Options.lua) für "Taste belegen". Menüeintrag in SkuCore/aq.lua, Startprofil angepasst, Tastenname in den drei Sprachdateien.
+
+### Neu: Monitor, Gesundheit und Ressourcen
+Was: Ganz oben im Monitor: Allgemeine Einstellungen (Audiounterstützung an/aus, Stimme, Geschwindigkeit, Lautstärke, Kampfbeginn, Kampfende, Ansage wenn du anvisiert wirst); Eigene Gesundheit Blizzard Monitor (mit Herzschlag bei niedriger Gesundheit); Eigene Ressource (Mana/Wut/Energie) Blizzard Monitor; Zweite Ressource Blizzard Monitor; Ziel Gesundheit Blizzard Monitor; Begleiter Gesundheit (Taste "Gesundheit des Pets ausgeben", automatische Ansage im Kampf und deren Abstand, Tier Hunger ansagen); Gruppen Gesundheit Blizzard Monitor; Eigene Debuffs Blizzard Monitor. "Optionen Audiounterstützung" im Schnellmenü und die beiden Begleiter-Einträge unter Einstellungen, Allgemein entfallen. Der Hungerhinweis war unter Forever bisher nicht erreichbar. Punkte, die der Client nicht anbietet, zeigen "Leer".
+Wie: SkuCore/gameOptions.lua: GameOptions:CAAGeneralMenuBuilder und CAASectionMenuBuilder (Abschnitte als Listen der Blizzard-Variablen, je mit den untergeordneten Zeilen) ersetzen AudioAssistMenuBuilder. SkuCore/aq.lua: neuer erster Eintrag in Aq:MonitorMenuBuilder (nur Forever). SkuCore:InjectSkuKeyEntry (SkuCore/Options.lua) für den Tasteneintrag.
+
+### Behoben: Kampfmonitor, Ziel gewonnen und verloren im Dauerton
+Was: Mit eingeschaltetem Kampfmonitor kamen im Kampf ununterbrochen "Ziel gewonnen" und "Ziel verloren". Jetzt kommen sie nur bei einem lesbaren Wechsel.
+Wie: SkuCore/aqCombat.lua: Derselbe Gegner wird pro Durchlauf über mehrere Einheiten gelesen (Ziel, Ziel des Begleiters, Ziel des Ziels ...), und Forever verbirgt die Bedrohungswerte auf manchen davon. Ein verborgener Wert galt als "tankt nicht" und kippte den gemerkten Zustand bei jedem Lesen. Jetzt gilt er als unbekannt (tThreatHidden): keine Warnung, der letzte bekannte Stand bleibt.
+
+### Behoben: Zwei verborgene Kennungen galten als dieselbe Einheit
+Was: Die weiche Zielerfassung blieb in Instanzen oft stumm, freundliche weiche Ziele mit verborgener Kennung wurden ganz übergangen, und "Ziel des Ziels" kam beim Zielwechsel in Instanzen nie.
+Wie: Core.lua: Sku.SameGUID (gleich nur, wenn beide Kennungen lesbar sind) und Sku.SameUnit (fragt das Spiel mit UnitIsUnit). SkuMob/Core.lua: weiche Ziele mit Sku.SameUnit gegen das feste Ziel, softfriend mit UnitExists. SkuCore/aqCombat.lua: Ziel des Ziels mit Sku.SameUnit, Elite-Prüfung auf den Gegner; Tode in der Gruppe und Begleiter mit Sku.SameGUID. SkuAuras/Core.lua: Zwischenspeicher der Auren mit Sku.SameGUID.
+
+### Downloads
+- Sku-Ever-Spielordner.zip, Sku-Ever-0.53.zip: mit den Änderungen.
+- Installer (1.7), SkuPacks und die 20 SkuEngine-Gruppen sind unverändert gegenüber 0.52.
+
 ## Sku-Ever 0.52 (25.11.2026)
 
 ### Kurzfassung
