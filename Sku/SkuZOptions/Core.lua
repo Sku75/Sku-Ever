@@ -3348,6 +3348,7 @@ function SkuOptions:CreateMenuFrame()
 					if string.len(SkuOptions.Filterstring) > 1  then
 						if tSorting then
 							SkuOptions:ApplyFilter(SkuOptions.Filterstring)
+							if SkuOptions.KeepOnlySkuView then SkuOptions:KeepOnlySkuView() end
 						else
 							SkuOptions:JumpToFilterMatch(SkuOptions.Filterstring)
 						end
@@ -3362,6 +3363,7 @@ function SkuOptions:CreateMenuFrame()
 					if aKey == "BACKSPACE" then
 						SkuOptions.Filterstring = ""
 						SkuOptions:ApplyFilter(SkuOptions.Filterstring)
+						if SkuOptions.KeepOnlySkuView then SkuOptions:KeepOnlySkuView() end
 						aKey = ""
 					end
 					if aKey == "LEFT" then
@@ -4772,9 +4774,11 @@ local function tIsEngineEntry(aNode)
 	return type(aNode.name) == "string" and string.sub(aNode.name, -7) == ";Engine"
 end
 
--- [Forever, 26.11.2026] The choice is remembered (profile, SkuNav.onlySkuRoutes): CTRL-DOWN switches it and says what is on now
--- ("Sku Routen" / "alle"); while it is on, every list entered with RIGHT opens without engine entries. RIGHT from or into a list
--- with engine entries says the status (SkuOptions:OnlySkuAfterRight).
+-- [Forever, 26.11.2026] CTRL-DOWN switches the choice and says what is on now ("Sku Routen" / "alle"); while it is on, every list
+-- entered with RIGHT opens without engine entries. RIGHT from or into a list with engine entries says the status
+-- (SkuOptions:OnlySkuAfterRight).
+-- [Forever, 27.11.2026] The choice holds only until the next login or reload (SkuOptions.onlySkuRoutes, not saved): the lists
+-- start with all routes. It also stays on while a search is typed or removed (SkuOptions:KeepOnlySkuView).
 -- Spoken with Sku's own voice (recorded words), so it runs alongside the list entry that Blizzard's voice reads.
 local function tOnlySkuText(aKey)
 	local tDe = (Sku.Loc == "deDE")
@@ -4784,7 +4788,7 @@ local function tOnlySkuText(aKey)
 end
 
 function SkuOptions:OnlySkuRoutesOn()
-	return Sku and Sku.isForever and SkuSettings:Sub("SkuNav").onlySkuRoutes == true
+	return Sku and Sku.isForever and SkuOptions.onlySkuRoutes == true
 end
 
 -- Hides the engine entries of the current level. Returns "shown" (view is on now), "noengine" (the list has none) or
@@ -4869,15 +4873,21 @@ end
 -- Switches the remembered choice and returns the status words; the key handler speaks them after the list entry.
 function SkuOptions:ToggleOnlySkuView()
 	if not (Sku and Sku.isForever) then return end
-	local tS = SkuSettings:Sub("SkuNav")
-	if tS.onlySkuRoutes == true then
-		tS.onlySkuRoutes = nil
+	if SkuOptions.onlySkuRoutes == true then
+		SkuOptions.onlySkuRoutes = nil
 		tShowAll()
 		return tOnlySkuText("off")
 	end
-	tS.onlySkuRoutes = true
+	SkuOptions.onlySkuRoutes = true
 	if tShowOnlySku() == "nosku" then return tOnlySkuText("none") end
 	return tOnlySkuText("on")
+end
+
+-- After a search was typed or removed (the list was rebuilt): hide the engine entries again.
+function SkuOptions:KeepOnlySkuView()
+	if SkuOptions:OnlySkuRoutesOn() then
+		tShowOnlySku()
+	end
 end
 
 -- Does this level hold engine entries (also ones the view hides right now)?

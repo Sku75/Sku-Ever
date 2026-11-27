@@ -295,6 +295,42 @@ function Engine:PlayerInZone()
 	return type(px) == "number" and type(py) == "number" and tPlayerGroupAt(px, py) ~= nil
 end
 
+-- [Buried terrain, Forever 27.11.2026] The map data of Stormwind also holds the terrain UNDER the city model (about 57-61 yd,
+-- below the streets). Nobody can walk there, but it counted as a floor: the player was put under the city and sent on long detours.
+-- Such a floor is dropped when a floor at least `above` yd higher lies at the same point. Alone it stays (terrain outside the walls).
+-- `keep` are boxes {x1, x2, y1, y2} where a low floor under a higher one is real (the way down to the harbour).
+local BURIED_TERRAIN = {
+	{ zone = 84, box = {-9140, -8330, 260, 1160}, zMin = 56.5, zMax = 61, above = 15, keep = { {-8560, -8440, 960, 1060} } },
+}
+local function tInBox(x, y, b)
+	return x >= b[1] and x <= b[2] and y >= b[3] and y <= b[4]
+end
+local function tFloorBands(N, x, y)
+	local bands = N.HeightBands(x, y) or {}
+	if #bands < 2 then return bands end
+	for _, tRule in ipairs(BURIED_TERRAIN) do
+		local tOn = N.zones and N.zones[tRule.zone] and tInBox(x, y, tRule.box)
+		for _, tKeep in ipairs(tRule.keep) do
+			if tInBox(x, y, tKeep) then tOn = false end
+		end
+		if tOn then
+			local tOut = {}
+			for _, band in ipairs(bands) do
+				local tBuried = false
+				if band.zMin >= tRule.zMin and band.zMax <= tRule.zMax then
+					for _, other in ipairs(bands) do
+						if other.zMin >= band.zMax + tRule.above then tBuried = true break end
+					end
+				end
+				if not tBuried then tOut[#tOut + 1] = band end
+			end
+			bands = tOut
+		end
+	end
+	return bands
+end
+Engine.FloorBands = function(_, x, y) return tFloorBands(tNet(), x, y) end
+
 -- Height of the player's floor. Forever gives no height, so: the floors the map has at (x, y) (engine bands) are matched with the
 -- floors of the Sku waypoints around (Engine_Heights): a band that no nearby Sku waypoint can stand on is out. Exactly one band
 -- left = the floor. Several left: the one nearest to the last known height (within 6 yd). Nothing clear: nil (no route).
@@ -303,7 +339,7 @@ function Engine:PlayerHeight(x, y, aGroup)
 	aGroup = aGroup or tGroupAt(x, y)
 	if not aGroup then return nil end
 	tLoadGroup(aGroup)
-	local bands = N.HeightBands(x, y) or {}
+	local bands = tFloorBands(N, x, y)
 	if #bands == 0 then return nil end
 	-- floors that count as one layer (bands at most 2 yd apart) are merged by the engine's own rule inside Bind; here: distinct bands
 	local grid = tBuildGrid(aGroup)
@@ -645,6 +681,111 @@ local function tPrepareDanger(aGroup)
 end
 Engine.PrepareDanger = function(_, aGroup) tPrepareDanger(aGroup) end
 
+-- [Stair repair, Forever 26.11.2026] Some links of the network climb a narrow stair in one long straight line. Walking with
+-- "turn to waypoint" (a rest error of up to 3 degrees stays) then ends beside the stair top, wedged in a corner. The network has
+-- nodes along those stairs: they are put back into the route as intermediate points. Matched by coordinates and heights, so a
+-- new data build that no longer has such a segment leaves the route untouched.
+--   top    = the upper end of the long segment
+--   chain  = nodes of the stair, from the bottom to the top (each neighbours linked in the network); the last one is always used
+--   offAxis = how far (yd) the lower end of the segment may lie beside the line from the first chain node to the top
+local STAIR_REPAIRS = {
+	-- Stormwind, Trade District, way up to the flight master (Dungar Longdrink)
+	{ top = {-8850.9, 525.8, 106.3}, chain = { {-8835.5, 542.6, 97.4}, {-8843.2, 532.2, 102.9}, {-8847.7, 527.0, 106.2} }, offAxis = 4 },
+}
+local function tStairBottom(aRepair, aPoint, aZ)
+	local tTop, tFirst = aRepair.top, aRepair.chain[1]
+	if aZ > tTop[3] - 1.5 then return false end
+	-- on the stair side of the top (not past it), close to the axis of the stair
+	local ax, ay = tFirst[1] - tTop[1], tFirst[2] - tTop[2]
+	local tLen = math.sqrt(ax * ax + ay * ay)
+	local px, py = aPoint[1] - tTop[1], aPoint[2] - tTop[2]
+	local tAlong = (px * ax + py * ay) / tLen
+	return tAlong > 3 and tAlong < 60 and math.abs(px * ay - py * ax) / tLen <= aRepair.offAxis
+end
+local function tRepairStairs(aPts, aZs)
+	for _, tRepair in ipairs(STAIR_REPAIRS) do
+		local tTop = tRepair.top
+		local function tIsTop(i)
+			return aZs[i] and math.abs(aZs[i] - tTop[3]) <= 1.5 and (aPts[i][1] - tTop[1]) ^ 2 + (aPts[i][2] - tTop[2]) ^ 2 <= 4 ^ 2
+		end
+		local i = 1
+		while i < #aPts do
+			local tUp = tIsTop(i + 1) and aZs[i] and tStairBottom(tRepair, aPts[i], aZs[i])
+			local tDown = not tUp and tIsTop(i) and aZs[i + 1] and tStairBottom(tRepair, aPts[i + 1], aZs[i + 1])
+			if tUp or tDown then
+				local tLow, tHigh = tUp and i or i + 1, tUp and i + 1 or i
+				local tAdd = {}
+				for n, c in ipairs(tRepair.chain) do
+					-- only the nodes above the lower end, and none that nearly coincides with an end of the segment
+					if (n == #tRepair.chain or c[3] > aZs[tLow] + 0.8)
+						and (c[1] - aPts[tLow][1]) ^ 2 + (c[2] - aPts[tLow][2]) ^ 2 >= 4
+						and (c[1] - aPts[tHigh][1]) ^ 2 + (c[2] - aPts[tHigh][2]) ^ 2 >= 4 then
+						tAdd[#tAdd + 1] = c
+					end
+				end
+				for n = 1, #tAdd do
+					local c = tUp and tAdd[n] or tAdd[#tAdd - n + 1]
+					table.insert(aPts, i + n, {c[1], c[2]})
+					table.insert(aZs, i + n, c[3])
+				end
+				if #tAdd > 0 then tLog("stair repair", tUp and "up" or "down", "points added", #tAdd) end
+				i = i + #tAdd
+			end
+			i = i + 1
+		end
+	end
+end
+Engine.RepairStairs = function(_, aPts, aZs) tRepairStairs(aPts, aZs) end
+
+-- [Walk-in portals, Forever 27.11.2026] After WoW_NavigationData 5a1290b (WowVision route.lua, Route.triggerPoint): a portal the
+-- player walks into is a link of the route, but its start node may lie outside the portal's trigger (Rut'theran to Darnassus:
+-- 11 yd from the centre of the 10 yd trigger). The route then goes on to the activation point of the data inside the trigger.
+local function tInVolume(v, x, y, z)
+	if type(v) ~= "table" or type(v.x) ~= "number" or type(v.y) ~= "number" or type(v.z) ~= "number" then return false end
+	local dx, dy, dz = x - v.x, y - v.y, z - v.z
+	if v.type == "sphere" or (v.type == nil and type(v.radius) == "number") then
+		return type(v.radius) == "number" and v.radius > 0 and dx * dx + dy * dy + dz * dz <= v.radius * v.radius
+	end
+	if v.half_x and v.half_y and v.half_z and v.yaw_radians then
+		local c, s = math.cos(v.yaw_radians), math.sin(v.yaw_radians)
+		return math.abs(c * dx + s * dy) <= v.half_x and math.abs(-s * dx + c * dy) <= v.half_y and math.abs(dz) <= v.half_z
+	end
+	return false
+end
+-- Sku counts a point as reached 1 yd before it, and the activation point lies only 0.4 yd inside the trigger. So a round
+-- trigger's point is moved towards its centre, to half the radius at most: the player is inside before the point is reached.
+local function tDeeper(v, c)
+	local x, y = c.x, c.y
+	local dx, dy = x - v.x, y - v.y
+	local d = math.sqrt(dx * dx + dy * dy)
+	if type(v.radius) == "number" and d > v.radius * 0.5 then
+		local f = v.radius * 0.5 / d
+		x, y = v.x + dx * f, v.y + dy * f
+	end
+	return {x = x, y = y, z = c.z}
+end
+-- The activation point of the walk-in portal that leads from node aFrom to node aTo, or nil.
+local function tPortalPoint(N, aFrom, aTo)
+	for _, zone in pairs(N.zones or {}) do
+		local tActions = zone.actionsFrom and zone.actionsFrom[aFrom - zone.base]
+		for _, action in ipairs(tActions or {}) do
+			if action.toNode == aTo and type(action.activation) == "table" and action.activation.mode == "walk_into_volume" then
+				local px, py = N.Position(aFrom)
+				local tTol = (N.TARGET_XY_TOLERANCE or 0.05) + 0.001
+				for _, c in ipairs(zone.captures or {}) do
+					if c.activationMode == "walk_into_trigger" and c.facilityRole == "entrance"
+						and type(c.activationPreX) == "number" and type(c.activationPreY) == "number"
+						and math.abs(c.activationPreX - px) <= tTol and math.abs(c.activationPreY - py) <= tTol
+						and type(c.x) == "number" and type(c.y) == "number" and type(c.z) == "number"
+						and tInVolume(action.sourceVolume, c.x, c.y, c.z) then
+						return tDeeper(action.sourceVolume, c)
+					end
+				end
+			end
+		end
+	end
+end
+
 function Engine:Route(aTx, aTy, aFloorZ, aName, aTargetZ)
 	self.lastSafeDetour = nil
 	if not self:Available() then return nil, "unavailable" end
@@ -714,7 +855,7 @@ function Engine:Route(aTx, aTy, aFloorZ, aName, aTargetZ)
 				end
 			end
 		end
-		local tBands = not best and N.HeightBands(aTx, aTy) or {}
+		local tBands = not best and tFloorBands(N, aTx, aTy) or {}
 		if tCat and tCat[8] and #tBands > 1 then
 			-- special target with its own floor: only the floor of that height (within 6 yd)
 			local tOne, tOneD
@@ -776,7 +917,7 @@ function Engine:Route(aTx, aTy, aFloorZ, aName, aTargetZ)
 		tLog("safe route", "detour", math.floor(self.lastSafeDetour), "near monsters", math.floor(best.danger or 0), "shortest", math.floor(best.dangerA or 0))
 	end
 	local pts, zs = {}, {}
-	for _, id in ipairs(best.path) do
+	for tIndex, id in ipairs(best.path) do
 		local x, y, z = N.Position(id)
 		if x and y then
 			local last = pts[#pts]
@@ -784,8 +925,16 @@ function Engine:Route(aTx, aTy, aFloorZ, aName, aTargetZ)
 				pts[#pts + 1] = {x, y}
 				zs[#pts] = z   -- height of the point (kept apart: Sku reads only x, y of the points)
 			end
+			local tNext = best.path[tIndex + 1]
+			local tPortal = tNext and tPortalPoint(N, id, tNext)
+			if tPortal then
+				pts[#pts + 1] = {tPortal.x, tPortal.y}
+				zs[#pts] = tPortal.z
+				tLog("portal point", math.floor(tPortal.x), math.floor(tPortal.y))
+			end
 		end
 	end
+	tRepairStairs(pts, zs)
 	tLog("route", "length", math.floor(best.length), "points", #pts, "height", pz, how)
 	return pts, nil, best.length, zs
 end

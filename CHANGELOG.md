@@ -2,6 +2,43 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.57 (27.11.2026)
+
+### Kurzfassung
+- Behoben: Engine-Routen in Sturmwind führen nicht mehr über das Gelände unter der Stadt; der Weg zum Hafen ist dadurch oft deutlich kürzer.
+- Behoben: Das Ziel "Am Schiff nach Auberdine" findet wieder eine Route.
+- Behoben: Die Route zum Greifenmeister in Sturmwind führt am Aufgang über die Treppe.
+- Neu: Engine-Routen durch begehbare Portale führen bis in das Portal hinein.
+- Geändert: Nach Einloggen oder Neuladen sind in den Routenlisten immer alle Routen aktiv.
+- Übersichtsseite: Spieler, Gruppe und Raid werden mit Nachnamen genannt.
+- Engine 18.3.
+
+### Sturmwind: Wege unter der Stadt (Engine 18.2)
+Was: Eine Route konnte auf dem Gelände unter der Stadt beginnen oder enden und dadurch sehr lange Umwege nehmen. An wenigen Stellen fragt die Route jetzt nach der Ebene. Manche längeren Routen können noch einzelne Zwischenpunkte unter der Stadt enthalten. Außerdem liegen die beiden Ziele am Schiff nach Auberdine wieder auf dem Anleger.
+Wie: SkuNav/EngineRoute.lua (BURIED_TERRAIN, tFloorBands) und SkuEngineEK/Engine_Targets_EK.lua.
+
+### Sturmwind: Aufgang zum Greifenmeister (Engine 18.1)
+Was: Die Route führte auf einem geraden Stück an einer Nische vorbei, in der man hängen blieb. Sie folgt jetzt dem Verlauf der Treppe.
+Wie: SkuNav/EngineRoute.lua (STAIR_REPAIRS).
+
+### Begehbare Portale (Engine 18.3)
+Was: Eine Engine-Route konnte kurz vor dem Auslöser eines Portals enden. Sie bekommt jetzt einen zusätzlichen Punkt im Portal, zum Beispiel in Sturmwind und zwischen Rut'theran und Darnassus. Bisher nur ohne Spiel geprüft. Skus eigene Routen sind nicht betroffen.
+Wie: SkuNav/EngineRoute.lua (tPortalPoint), nach der Portallogik von WowVision.
+
+### Routenlisten: Sku-Ansicht nur bis zum Neuladen
+Was: Strg und Pfeil runter schaltet weiterhin zwischen allen Routen und nur Sku-Routen. Die Wahl gilt jetzt bis zum nächsten Einloggen oder Neuladen. Die Sku-Ansicht bleibt außerdem erhalten, während man in der Liste sucht; vorher kamen dabei die Engine-Einträge zurück.
+Wie: SkuZOptions/Core.lua (SkuOptions.onlySkuRoutes, KeepOnlySkuView).
+
+### Übersichtsseite: ganzer Name
+Was: Auf Forever haben Charaktere einen Nachnamen. Die Übersicht nennt bei Spieler, Gruppe und Raid jetzt den ganzen Namen.
+Wie: SkuZOptions/Core.lua (tOverviewFullName).
+
+### Downloads
+- Sku-Ever-Spielordner.zip: komplett.
+- Sku-Ever-0.57.zip: Ordner Sku.
+- SkuPacks.zip und alle 20 SkuEngine-Gruppen: Engine 18.3.
+- Der Installer ist unverändert gegenüber 0.56.
+
 ## Sku-Ever 0.56 (26.11.2026)
 
 ### Kurzfassung
