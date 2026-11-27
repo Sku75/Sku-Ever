@@ -1980,7 +1980,9 @@ function SkuNav:GetAllMetaTargetsFromWp5(aStartWpName, aMaxDistance, aMaxWPs, aR
 		local tCurrentWP = WaypointCache[i]
 		-- what lies beyond the limit is only a passage found by the extended search above (or the start itself)
 		if (v < aMaxDistance or i == tStartIndex or tExtraPassages[i] == true or (aReturnPathForWp ~= nil and i == WaypointCacheLookupAll[aReturnPathForWp]))
-			and (tAuto == "" or ssub(tCurrentWP.name, 1, 4) ~= tAuto or aReturnPathForWp ~= nil) then
+			and (tAuto == "" or ssub(tCurrentWP.name, 1, 4) ~= tAuto or aReturnPathForWp ~= nil)
+			-- [Forever, 27.11.2026] lists only (no path asked for): new NPCs the engine takes over are no Sku target here
+			and not (aReturnPathForWp == nil and tCurrentWP.engineOnly and SkuNav:IsEngineOnlyRecord(tCurrentWP)) then
 			tcount = tcount + 1
 			local tDist = v
 			if tDist == 0 then

@@ -616,6 +616,11 @@ local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypoint
 				local tMaxAllowedDistanceToTargetWp = 500
 				-- an engine target (F9 entry ";Engine") is no Sku waypoint yet: Sku has no routes to it, only the engine way is offered
 				local tEnginePending = SkuNav.Engine and SkuNav.Engine.pendingWaypoints and SkuNav.Engine.pendingWaypoints[wpTable[1]]
+				-- [Forever, 27.11.2026] a new NPC the engine takes over (same engine area): offered like an engine target
+				if not tEnginePending and SkuNav:IsEngineOnlyWp(wpTable[1]) then
+					local tOnly = SkuNav:GetWaypointData2(wpTable[1])
+					tEnginePending = {x = tOnly.worldX, y = tOnly.worldY}
+				end
 				if tEnginePending then
 					if SkuNav.Engine:PlayerInZone() then
 						if SkuNav.AddEngineEntryPointsForTargets(self, {{name = wpTable[1], x = tEnginePending.x, y = tEnginePending.y}}, 6) == 0 then
@@ -626,7 +631,7 @@ local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypoint
 					end
 					return
 				end
-				local tSortedWaypointList = BuildSortedUniqueRouteWps(tRoutesInRange)
+				local tSortedWaypointList = BuildSortedUniqueRouteWps(SkuNav:SkuEntryCandidates(tRoutesInRange, wpTable))
 				local tFloors = SkuNav.Engine and SkuNav.Engine:FloorChoices()
 				-- Sku's way to the target from its nearest entry point? Otherwise the engine entry follows (same test as the engine entry
 				-- point of the route list: only where Sku has no route).
@@ -672,7 +677,7 @@ local function SkuNav_MenuBuilder_WaypointSelectionMenu(aParent, aSortedWaypoint
 
 									local tResults = {}
 									for wpIndex, wpName in pairs(wpTable) do
-										local tNearWps = SkuNav:GetNearestWpsWithLinksToWp(wpName, 10, tMaxAllowedDistanceToTargetWp)
+										local tNearWps = SkuNav:IsEngineOnlyWp(wpName) and {} or SkuNav:GetNearestWpsWithLinksToWp(wpName, 10, tMaxAllowedDistanceToTargetWp)
 										local tBestRouteWeightedLength = 100000
 										for x = 1, #tNearWps do
 											if tMetapaths[tNearWps[x].wpName] then
@@ -1063,7 +1068,7 @@ function SkuNav.RouteDestinationsBuildChildren(self)
 			local tPlayX, tPlayY = UnitPosition("player")
 			local tRoutesInRange = SkuNav:GetAllLinkedWPsInRangeToCoords(tPlayX, tPlayY, SkuNav.MaxMetaEntryRange)--SkuSettings:Sub("SkuNav").nearbyWpRange)
 
-			local tSortedWaypointList = BuildSortedUniqueRouteWps(tRoutesInRange)
+			local tSortedWaypointList = BuildSortedUniqueRouteWps(SkuNav:SkuEntryCandidates(tRoutesInRange))
 			local tFloors = SkuNav.Engine and SkuNav.Engine:FloorChoices()
 
 			-- [Engine route, Forever 13.11.2026] ALWAYS 4 Sku entry points on top and below them up to 3 engine entry points (the

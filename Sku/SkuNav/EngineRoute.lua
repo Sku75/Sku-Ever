@@ -288,6 +288,15 @@ function Engine:PlayerInWvGroup()
 	return tGroup and tWvAt(tGroup, px, py) or false
 end
 
+-- Can the engine route from where the player stands to (x, y), i.e. do both lie in the same engine group?
+function Engine:SameGroup(x, y)
+	if not self:Available() then return false end
+	local px, py = UnitPosition("player")
+	if type(px) ~= "number" or type(py) ~= "number" or type(x) ~= "number" then return false end
+	local tGroup = tPlayerGroupAt(px, py)
+	return (tGroup ~= nil and tInGroup(tGroup, x, y)) and true or false
+end
+
 -- Is the player in a zone the engine data covers?
 function Engine:PlayerInZone()
 	if not self:Available() then return false end
@@ -383,7 +392,8 @@ function Engine:PlayerHeight(x, y, aGroup)
 	end
 	-- [WV-only areas, 16.11.2026] as WV does (ReadMe, "Bind the start"): where the height is unknown and floors are stacked, the RUNNING
 	-- ROUTE decides first (the player stands on the floor of the point of the last route nearest to him), then the last known height,
-	-- then the floor question. Only for groups flagged wv.
+	-- then the floor question. Only for groups flagged wv (elsewhere the last known height, which follows the player along
+	-- an engine route, see Engine:TrackHeight).
 	if #layers > 1 and tWvAt(aGroup, x, y) then
 		local tRz = self:RouteHeightAt(x, y)
 		if tRz then
@@ -462,12 +472,17 @@ function Engine:EntryPoints(aMax)
 	-- player stands on the same spot (the result only depends on the position).
 	local px, py = UnitPosition("player")
 	local tC = self.entryPointsCache
-	if tC and tC.x == px and tC.y == py and tC.max == aMax and (GetTime() - tC.time) < 10 then
+	-- [Forever, 27.11.2026] at a new NPC the engine takes over there are no Sku entry points: then these stand for them,
+	-- so they are the NEAREST targets, those Sku knows included (else only far crates and wreckage were left, Menethil)
+	local tSpot = (SkuNav.AtEngineOnlySpot and SkuNav:AtEngineOnlySpot()) or false
+	if tC and tC.x == px and tC.y == py and tC.max == aMax and tC.spot == tSpot and (GetTime() - tC.time) < 10 then
 		return tC.list
 	end
 	local rList, tSeen = {}, {}
-	for _, t in ipairs(self:ListTargets(nil)) do
+	for _, t in ipairs(self:ListTargets(tSpot and {} or nil)) do
 		local tKey = string.lower(t.name)
+		-- at the spot a unit comes twice (catalog "Name (Role)" and Sku "Name;Role;..."): once is enough
+		if tSpot then tKey = string.match(tKey, "^[^;]*"):gsub("%s*%(.*$", "") end
 		if not tSeen[tKey] then
 			tSeen[tKey] = true
 			rList[#rList + 1] = t
@@ -475,7 +490,7 @@ function Engine:EntryPoints(aMax)
 		end
 	end
 	if type(px) == "number" and type(py) == "number" then
-		self.entryPointsCache = {x = px, y = py, max = aMax, time = GetTime(), list = rList}
+		self.entryPointsCache = {x = px, y = py, max = aMax, spot = tSpot, time = GetTime(), list = rList}
 	end
 	return rList
 end
@@ -1228,6 +1243,20 @@ local function tTargetsWithoutSku(aGroup, aGrid, px, py, aMaxDist, aNamed, aMult
 	return rOrder
 end
 
+-- [Forever, 27.11.2026] a new NPC the engine takes over: when its catalog target stands in the list already, its
+-- hidden Sku waypoint is not offered a second time
+local function tOfferedByCatalog(aList, w)
+	if not (SkuNav.IsEngineOnlyWp and SkuNav:IsEngineOnlyWp(w[3])) then return false end
+	local tKey = tNormName(string.match(w[3], "^([^;]*)"))
+	for _, t in ipairs(aList) do
+		if (t.x - w[1]) ^ 2 + (t.y - w[2]) ^ 2 <= 25
+			and (tNormName(t.name) == tKey or tNormName(string.match(t.name, "^(.-)%s*%(") or t.name) == tKey) then
+			return true
+		end
+	end
+	return false
+end
+
 -- Targets of this group that Sku cannot reach. aReachable = set of Sku waypoint names that Sku can reach from the player
 -- (from the route list's own search); a target counts as reachable by Sku when such a waypoint lies near it.
 function Engine:ListTargets(aReachable)
@@ -1260,7 +1289,8 @@ function Engine:ListTargets(aReachable)
 		local tBest, tOrder = {}, {}
 		for _, w in ipairs(tNamed) do
 			local d = (w[1] - px) ^ 2 + (w[2] - py) ^ 2
-			if not aReachable[w[3]] and not (tMaxDist and d > tMaxDist ^ 2) and not tWvAt(tGroup, w[1], w[2]) then
+			if not aReachable[w[3]] and not (tMaxDist and d > tMaxDist ^ 2) and not tWvAt(tGroup, w[1], w[2])
+				and not tOfferedByCatalog(rList, w) then
 				local tKey = string.gsub(w[3], ";%d+;[%d%.]+;[%d%.]+$", "")
 				local b = tBest[tKey]
 				if not b then
@@ -1320,6 +1350,48 @@ function Engine:ReverseFollow()
 	return true
 end
 
+-- [Height along the route, Forever 27.11.2026] As WowVision (HeightAnchor): while an engine route is followed, the height
+-- advances with the player along the current leg and is kept as the last known one after the route ends (arrival, or
+-- walking it only partly). So the next route or entry list starts on the right floor, wherever in the game. Without a
+-- route there is nothing to follow (the game gives no height).
+local TRACK_MAX_YD = 15
+local tTrackedRoute, tTrackTicker
+function Engine:TrackHeight()
+	local tLast = self.lastRoute
+	if not (tLast and tLast.pts and tLast.zs) then return end
+	local px, py = UnitPosition("player")
+	if type(px) ~= "number" or type(py) ~= "number" then return end
+	local function tDist(p) return math.sqrt((p[1] - px) ^ 2 + (p[2] - py) ^ 2) end
+	if SkuNav.IsFollowingEngineRoute and SkuNav:IsFollowingEngineRoute() then
+		local n = SkuSettings:Sub("SkuNav").metapathFollowingCurrentWp
+		local b, bz = n and tLast.pts[n], n and tLast.zs[n]
+		if not (b and bz) then return end
+		tTrackedRoute = tLast
+		local a, az = tLast.pts[n - 1], tLast.zs[n - 1]
+		if not (a and az) then
+			if tDist(b) <= 5 then tLastZ = bz end   -- first leg: the start height of the route counts until the first point
+			return
+		end
+		-- distance to the leg: a player who left the route keeps the last height
+		local dx, dy = b[1] - a[1], b[2] - a[2]
+		local l2 = dx * dx + dy * dy
+		local t = l2 > 0.0001 and math.max(0, math.min(1, ((px - a[1]) * dx + (py - a[2]) * dy) / l2)) or 1
+		if math.sqrt((a[1] + t * dx - px) ^ 2 + (a[2] + t * dy - py) ^ 2) > TRACK_MAX_YD then return end
+		local da, db = tDist(a), tDist(b)
+		tLastZ = (da + db > 0) and (az + (bz - az) * da / (da + db)) or bz
+	elseif tTrackedRoute == tLast then
+		tTrackedRoute = nil
+		local e, ez = tLast.pts[#tLast.pts], tLast.zs[#tLast.pts]
+		if e and ez and tDist(e) <= 8 then tLastZ = ez end   -- arrived
+	end
+end
+
+local function tStartTracking()
+	if not tTrackTicker and C_Timer and C_Timer.NewTicker then
+		tTrackTicker = C_Timer.NewTicker(0.5, function() Engine:TrackHeight() end)
+	end
+end
+
 function Engine:PrepareFollow(aTarget)
 	local pts, why, tZs
 	if aTarget.points then
@@ -1353,6 +1425,7 @@ function Engine:PrepareFollow(aTarget)
 	for i, p in ipairs(pts) do tKeep[i] = {p[1], p[2]} end
 	self.lastRoute = {pts = tKeep, zs = tZs}
 	tHookReverse()
+	tStartTracking()
 	if not aTarget.points and self.lastSafeDetour and self.lastSafeDetour >= 1 then
 		local tDetour = math.floor(self.lastSafeDetour + 0.5)
 		SkuOptions.Voice:OutputStringBTtts((Sku.Loc == "deDE") and ("Sichere Route, " .. tDetour .. " Meter Umweg")

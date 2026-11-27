@@ -2,6 +2,32 @@
 
 Neueste Version zuerst. Jede neue Version erhöht die Nummer um 0.01. Ab 0.29 beginnt jede Version mit einer Kurzfassung; danach steht zu jeder Änderung, was sich ändert und wie es umgesetzt ist.
 
+## Sku-Ever 0.58 (27.11.2026)
+
+### Kurzfassung
+- Neu: Bei 157 neuen Quest- und Dienst-NPCs bieten die Routenlisten im selben Gebiet die Engine-Route an, weil der Sku-Weg dorthin hängen bleiben kann.
+- Neu: Direkt an so einem NPC gibt es nur Engine-Einstiegspunkte, und zwar die nächstgelegenen Ziele.
+- Behoben: Nach einer Treppe beginnt die nächste Engine-Route auf der richtigen Ebene.
+- Engine 18.8.
+
+### Neue NPCs über die Engine
+Was: Neue Forever-NPCs sind mit Skus Wegenetz nur durch eine gerade Linie verbunden, die durch Wände oder über Höhen führen kann. Bei 157 solchen NPCs (191 Standorte), zu denen die Engine hinfindet, stehen im selben Engine-Gebiet nur noch die Engine-Einträge in den Listen. Aus anderen Gebieten bleibt Skus Route. In der Ansicht "nur Sku-Routen" fehlen diese NPCs dort. Skus eigene Routen sind unverändert. Im Spiel geprüft in Menethil, die übrigen Standorte nur ohne Spiel.
+Wie: SkuNav/Packs.lua (ENGINE_ONLY_SPAWNS), SkuNav/Core.lua, SkuNav/Options.lua, SkuQuest/Options.lua, SkuNav/EngineRoute.lua.
+
+### Einstiegspunkte bei diesen NPCs
+Was: Wer höchstens 15 Meter neben so einem NPC steht, bekommt in Shift-F10, "Nahe Routen" und den Questmenüs nur Engine-Einstiegspunkte. Das sind dort die nächstgelegenen Ziele, auch solche, die Sku kennt. Weiter weg bleiben Skus Einstiegspunkte, nur der NPC selbst ist keiner mehr. Kann die Engine das Ziel nicht erreichen, bleibt alles wie bisher.
+Wie: SkuNav/Packs.lua (SkuEntryCandidates, AtEngineOnlySpot), SkuNav/EngineRoute.lua (EntryPoints).
+
+### Richtige Ebene nach einer Engine-Route
+Was: Die Engine merkt sich jetzt beim Laufen die Höhe und behält sie nach Ankunft oder Abbruch. Vorher galt oft noch die Höhe vom Start, und die nächste Route lief zum Beispiel nach einer Treppe ins Hindernis. Wer ohne Engine-Route die Ebene wechselt, wird nicht erkannt. Nach dem Neuladen fragt die Engine bei mehreren Ebenen wie bisher.
+Wie: SkuNav/EngineRoute.lua (Engine:TrackHeight), nach dem Vorbild von WowVision.
+
+### Downloads
+- Sku-Ever-Spielordner.zip: komplett.
+- Sku-Ever-0.58.zip: Ordner Sku.
+- SkuPacks.zip und alle 20 SkuEngine-Gruppen: Engine 18.8.
+- Der Installer ist unverändert gegenüber 0.56.
+
 ## Sku-Ever 0.57 (27.11.2026)
 
 ### Kurzfassung

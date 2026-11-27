@@ -1347,7 +1347,9 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 				end
 				tNewMenuSubEntry1.BuildChildren = function(self)
 					SkuOptions.SkuNav_MenuBuilder_WaypointSelectionMenu_CloseRoute = nil
-					local tSortedWaypointList = BuildSortedUniqueRouteWps(tRoutesInRange)
+					local tSortedWaypointList = BuildSortedUniqueRouteWps(SkuNav:SkuEntryCandidates(tRoutesInRange, wpTable))
+					-- [Forever, 27.11.2026] only new NPCs the engine takes over: no Sku entry points, engine entries only
+					if SkuNav:AllEngineOnly(wpTable) then tSortedWaypointList = {} end
 
 					if #tSortedWaypointList == 0 then
 						if not (SkuNav.AddEngineEntryPointsForWpNames and SkuNav.AddEngineEntryPointsForWpNames(self, wpTable) > 0) then
@@ -1491,7 +1493,9 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 				end
 				tNewMenuSubEntry1.BuildChildren = function(self)
 					local tMaxAllowedDistanceToTargetWp = 500
-					local tSortedWaypointList = BuildSortedUniqueRouteWps(tRoutesInRange)
+					local tSortedWaypointList = BuildSortedUniqueRouteWps(SkuNav:SkuEntryCandidates(tRoutesInRange, wpTable))
+					-- [Forever, 27.11.2026] only new NPCs the engine takes over: no Sku entry points, engine entries only
+					if SkuNav:AllEngineOnly(wpTable) then tSortedWaypointList = {} end
 					if #tSortedWaypointList == 0 then
 						if not (SkuNav.AddEngineEntryPointsForWpNames and SkuNav.AddEngineEntryPointsForWpNames(self, wpTable) > 0) then
 							local tNewMenuEntry = SkuOptions:InjectMenuItems(self, {L["Empty;list"]}, SkuGenericMenuItem)
@@ -1518,7 +1522,7 @@ local function CreateRtWpSubmenu(aParent, aGroups, aQuestID)
 
 										local tResults = {}
 										for wpIndex, wpName in pairs(wpTable) do
-											local tNearWps = SkuNav:GetNearestWpsWithLinksToWp(wpName, 10, tMaxAllowedDistanceToTargetWp)
+											local tNearWps = SkuNav:IsEngineOnlyWp(wpName) and {} or SkuNav:GetNearestWpsWithLinksToWp(wpName, 10, tMaxAllowedDistanceToTargetWp)
 											local tBestRouteWeightedLength = 100000
 											for x = 1, #tNearWps do
 												if tMetapaths[tNearWps[x].wpName] then

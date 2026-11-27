@@ -599,11 +599,282 @@ end
 -- waypoint of the same zone (its area and, on Forever, its sub areas), up to ATTACH_MAX_DIST yards (up to ATTACH_FAR_DIST when none is that close). Runs at the end of the cache build, after the shipped links
 -- are in. Only spawns that came from a data pack are touched, Sku's own waypoints and links stay as they are.
 -- The link is a straight line (no walls), like Sku's own NPC links. aYield: the build's yield function.
+-- [New Forever NPCs engine only, Forever 27.11.2026] New Forever NPCs (data pack) are tied to Sku's route network by a
+-- straight line without any wall test, and the way to them can lead through places that cannot be walked. The spawns
+-- below were checked offline: the engine has its own target on them and finds the way from the Sku waypoints around.
+-- While the player is in the SAME engine area as such a spawn, the route lists offer the engine only; from farther away
+-- (where the engine cannot route) Sku's way stays. The ties are not touched. {areaId, mapX, mapY}.
+-- GENERATED (navpack/staging-27-11-neunpc/bauen.py): build again after every data pack or engine update.
+local ENGINE_ONLY_SPAWNS = {
+	[49808] = {{38, 36.52, 48.32}},
+	[208920] = {{85, 61.8, 52.0}},
+	[211022] = {{1497, 73.4, 33.0}},
+	[211653] = {{17, 61.8, 39.4}},
+	[214070] = {{1637, 51.6, 64.6}},
+	[214101] = {{1657, 59.2, 56.6}, {1657, 59.4, 56.0}, {1657, 59.8, 56.4}, {1657, 59.8, 56.6}},
+	[214529] = {{267, 67.48, 14.84}},
+	[214954] = {{33, 28.51, 75.76}},
+	[215643] = {{33, 26.98, 77.29}},
+	[216902] = {{1537, 32.4, 67.4}, {1537, 33.0, 68.6}, {1537, 33.4, 65.4}, {1537, 33.4, 66.4}, {1537, 33.4, 67.0}, {1537, 33.4, 67.6}, {1537, 33.6, 66.0}, {1537, 33.6, 66.8}, {1537, 33.6, 67.8}},
+	[216915] = {{36, 35.4, 72.4}, {36, 35.6, 72.0}, {36, 35.6, 72.6}},
+	[218115] = {{33, 31.2, 48.4}, {33, 31.2, 48.6}},
+	[218230] = {{33, 44.27, 7.9}},
+	[221471] = {{10, 45.4, 51.2}, {10, 45.6, 51.2}, {10, 46.4, 47.6}, {10, 46.6, 47.6}},
+	[221479] = {{47, 61.4, 34.4}, {47, 61.4, 34.6}},
+	[221480] = {{357, 48.4, 12.4}, {357, 48.6, 12.4}},
+	[222408] = {{361, 51.4, 82.0}},
+	[222684] = {{10, 45.6, 51.2}},
+	[222686] = {{47, 61.4, 34.4}, {47, 61.4, 34.6}},
+	[222687] = {{357, 48.4, 12.4}, {357, 48.4, 12.6}, {357, 48.6, 12.4}, {357, 48.6, 12.6}},
+	[230565] = {{1537, 42.4, 53.8}, {1537, 43.2, 52.4}, {1537, 43.2, 52.6}, {1537, 43.4, 51.2}, {1537, 43.6, 51.2}, {1537, 43.6, 52.2}},
+	[233428] = {{85, 31.4, 66.4}, {85, 31.4, 66.6}, {1497, 79.2, 19.4}, {1497, 79.4, 19.8}, {1497, 79.6, 19.4}, {1497, 79.6, 20.0}, {1497, 79.8, 20.6}},
+	[246152] = {{85, 60.22, 52.66}},
+	[246349] = {{85, 21.85, 45.23}},
+	[246378] = {{85, 22.09, 44.66}},
+	[246389] = {{85, 21.96, 47.25}},
+	[246393] = {{85, 22.69, 44.7}},
+	[246795] = {{36, 18.53, 62.43}},
+	[246797] = {{36, 17.72, 69.53}},
+	[247223] = {{12, 52.41, 43.87}},
+	[247226] = {{12, 47.18, 32.16}},
+	[247227] = {{12, 46.96, 39.92}},
+	[247229] = {{12, 49.48, 40.67}},
+	[247264] = {{267, 48.33, 60.04}},
+	[248242] = {{12, 65.1, 69.84}},
+	[248248] = {{12, 63.2, 72.6}},
+	[248265] = {{12, 76.54, 71.92}},
+	[248266] = {{12, 82.47, 63.83}},
+	[248277] = {{12, 84.75, 79.3}},
+	[248415] = {{12, 51.21, 40.8}},
+	[248755] = {{130, 65.55, 23.27}},
+	[248809] = {{33, 27.78, 77.17}},
+	[248840] = {{130, 43.4, 41.1}},
+	[249713] = {{40, 42.83, 72.76}},
+	[250686] = {{130, 44.52, 43.02}},
+	[251001] = {{85, 65.25, 60.2}},
+	[251493] = {{267, 46.43, 50.2}},
+	[251507] = {{12, 41.15, 66.23}},
+	[251953] = {{36, 19.83, 70.2}},
+	[251972] = {{36, 17.71, 60.26}},
+	[251973] = {{36, 17.61, 60.19}},
+	[251975] = {{36, 18.1, 62.0}},
+	[251976] = {{36, 18.06, 62.06}},
+	[251977] = {{36, 17.15, 61.09}},
+	[251978] = {{36, 16.78, 62.27}},
+	[251980] = {{36, 15.87, 65.24}},
+	[251981] = {{36, 16.46, 65.48}},
+	[251997] = {{36, 15.99, 65.55}},
+	[251999] = {{36, 15.39, 68.32}},
+	[252000] = {{36, 15.89, 68.7}},
+	[252020] = {{36, 13.19, 71.58}},
+	[252040] = {{36, 14.0, 63.48}},
+	[252080] = {{36, 12.89, 66.67}},
+	[252083] = {{36, 12.49, 65.94}},
+	[252085] = {{36, 14.15, 60.05}},
+	[253066] = {{405, 43.48, 78.98}},
+	[253092] = {{40, 52.48, 52.97}},
+	[253096] = {{405, 69.83, 77.96}},
+	[253139] = {{405, 66.25, 79.42}},
+	[253140] = {{405, 35.68, 92.23}},
+	[253163] = {{405, 69.83, 77.92}},
+	[253166] = {{405, 34.46, 86.93}},
+	[253279] = {{40, 38.68, 83.7}},
+	[253395] = {{40, 51.53, 32.31}},
+	[254770] = {{8, 26.51, 30.35}},
+	[254775] = {{8, 24.72, 32.64}},
+	[257281] = {{36, 38.4, 61.13}},
+	[257282] = {{36, 30.62, 61.02}},
+	[257296] = {{45, 48.68, 55.78}},
+	[257304] = {{45, 33.98, 23.32}},
+	[257655] = {{85, 21.916, 44.4979}},
+	[257663] = {{85, 86.73, 47.72}},
+	[257808] = {{38, 32.17, 65.97}},
+	[258043] = {{38, 41.76, 19.05}},
+	[258098] = {{1537, 47.1, 13.79}},
+	[258203] = {{11, 65.76, 76.52}},
+	[258306] = {{1537, 39.24, 33.63}},
+	[258415] = {{1497, 70.49, 29.82}},
+	[258463] = {{1637, 63.55, 50.54}},
+	[258548] = {{1537, 43.53, 27.89}},
+	[258572] = {{1657, 63.93, 21.33}},
+	[258785] = {{1537, 24.59, 10.0}},
+	[258930] = {{12, 41.79, 66.37}},
+	[259023] = {{45, 59.84, 27.57}},
+	[259084] = {{36, 12.3, 56.3}},
+	[259611] = {{130, 45.81, 41.88}},
+	[259620] = {{130, 43.4, 40.99}},
+	[260093] = {{1497, 47.52, 15.0}},
+	[262041] = {{618, 64.84, 33.22}},
+	[263399] = {{12, 44.9, 63.36}},
+	[263646] = {{1497, 60.34, 86.6}},
+	[264943] = {{1537, 33.01, 48.23}},
+	[265346] = {{11, 52.75, 80.33}},
+	[265575] = {{33, 28.34, 74.81}},
+	[265577] = {{618, 61.45, 38.62}},
+	[265730] = {{36, 14.37, 64.66}},
+	[265811] = {{141, 57.58, 56.64}},
+	[265812] = {{85, 57.28, 55.49}},
+	[265944] = {{85, 61.75, 51.44}},
+	[266484] = {{1497, 58.08, 89.51}},
+	[266508] = {{4, 66.73, 31.67}},
+	[266847] = {{45, 26.81, 64.44}},
+	[267000] = {{36, 20.82, 74.69}},
+	[267001] = {{36, 21.74, 74.37}},
+	[267008] = {{85, 22.03, 44.73}},
+	[267009] = {{85, 65.93, 61.13}},
+	[267324] = {{85, 32.6, 65.81}},
+	[267325] = {{85, 32.22, 65.82}},
+	[267326] = {{85, 32.46, 65.14}},
+	[267333] = {{141, 59.39, 38.63}},
+	[267334] = {{141, 58.16, 41.42}},
+	[267335] = {{141, 59.86, 41.31}},
+	[268238] = {{12, 42.01, 66.39}},
+	[268992] = {{33, 23.46, 12.79}},
+	[269153] = {{38, 31.78, 86.33}},
+	[269452] = {{1497, 57.23, 64.75}},
+	[269577] = {{3, 54.63, 12.87}},
+	[270038] = {{1497, 49.11, 70.14}},
+	[270263] = {{47, 14.4, 42.6}},
+	[270278] = {{47, 14.4, 43.0}},
+	[270280] = {{47, 14.6, 43.0}},
+	[270459] = {{36, 11.79, 56.6}},
+	[270513] = {{36, 17.75, 60.61}},
+	[270582] = {{1637, 46.14, 53.97}},
+	[270637] = {{11, 49.36, 42.13}},
+	[270844] = {{11, 7.92, 55.8}},
+	[271322] = {{11, 51.54, 9.01}},
+	[271613] = {{1497, 45.88, 61.7}},
+	[271866] = {{10, 17.0, 54.75}},
+	[272054] = {{493, 43.92, 73.44}},
+	[272526] = {{1497, 70.03, 47.31}},
+	[275210] = {{36, 22.9, 64.44}},
+	[275212] = {{36, 23.1, 65.07}},
+	[275243] = {{36, 10.41, 68.48}},
+	[275321] = {{36, 18.44, 63.18}},
+	[275322] = {{36, 18.54, 62.41}},
+	[275596] = {{36, 12.69, 70.99}},
+	[275598] = {{36, 12.63, 71.14}},
+	[275603] = {{36, 12.46, 71.11}},
+	[275622] = {{36, 14.73, 70.84}},
+	[275623] = {{36, 14.73, 71.26}},
+	[275625] = {{36, 14.7, 71.25}},
+	[275683] = {{141, 37.54, 36.81}},
+	[275744] = {{141, 44.66, 58.92}},
+	[275954] = {{85, 31.96, 46.35}},
+	[276170] = {{36, 11.66, 57.8}},
+	[277042] = {{1657, 58.85, 50.23}},
+}
+
+-- marks the waypoint records of the listed spawns; run after every build of the waypoint cache
+function SkuNav:MarkEngineOnlySpawns()
+	if not Sku.isForever then
+		return 0
+	end
+	local tCache, _, tLookupId = SkuNav:GetWpCacheInternals()
+	local tData = SkuDB.NpcData and SkuDB.NpcData.Data
+	local tSpawnKey = SkuDB.NpcData and SkuDB.NpcData.Keys and SkuDB.NpcData.Keys["spawns"]
+	local tCount = 0
+	for tId, tList in pairs(ENGINE_ONLY_SPAWNS) do
+		local tSpawns = tData and tData[tId] and tData[tId][tSpawnKey]
+		for _, t in ipairs(tList) do
+			for tNr, tSpawn in ipairs((tSpawns and tSpawns[t[1]]) or {}) do
+				-- the position must still be the checked one (a newer data pack may move a spawn)
+				if math.abs(t[2] - tSpawn[1]) < 0.05 and math.abs(t[3] - tSpawn[2]) < 0.05 then
+					local tIdx = tLookupId[SkuNav:BuildWpIdFromData(2, tId, tNr, t[1])]
+					if tIdx and tCache[tIdx] then
+						tCache[tIdx].engineOnly = true
+						tCount = tCount + 1
+					end
+				end
+			end
+		end
+	end
+	dprint("engine only spawns marked:", tCount)
+	return tCount
+end
+
+-- Is Sku's way to this waypoint (a record of the waypoint cache) hidden right now?
+function SkuNav:IsEngineOnlyRecord(aRecord)
+	return aRecord ~= nil and aRecord.engineOnly == true and Sku.isForever == true
+		and SkuNav.Engine ~= nil and SkuNav.Engine:SameGroup(aRecord.worldX, aRecord.worldY)
+end
+
+function SkuNav:IsEngineOnlyWp(aWpName)
+	return SkuNav:IsEngineOnlyRecord(SkuNav:GetWaypointData2(aWpName))
+end
+
+-- true when the list is not empty and every waypoint of it is hidden
+function SkuNav:AllEngineOnly(aWpNames)
+	local tAny = false
+	for _, tName in pairs(aWpNames or {}) do
+		if not SkuNav:IsEngineOnlyWp(tName) then
+			return false
+		end
+		tAny = true
+	end
+	return tAny
+end
+
+-- [Forever, 27.11.2026] The same rule for the entry points. A hidden waypoint is no Sku entry point. And standing AT such an
+-- NPC (within ENGINE_ONLY_STAND_DIST) there is no Sku entry point at all: the Sku waypoints right around it lead the same
+-- unwalkable way back (Menethil harbor), so the lists offer the engine entry points only. With aTargetNames (lists for a given
+-- target) nothing is taken away when the engine cannot route to any of the targets: Sku stays the only way there.
+local ENGINE_ONLY_STAND_DIST = 15
+function SkuNav:SkuEntryCandidates(aRoutes, aTargetNames)
+	if not (Sku.isForever and SkuNav.Engine) then
+		return aRoutes
+	end
+	if aTargetNames then
+		local tEngineCan = false
+		for _, tName in pairs(aTargetNames) do
+			local tData = SkuNav:GetWaypointData2(tName)
+			if tData and SkuNav.Engine:SameGroup(tData.worldX, tData.worldY) then
+				tEngineCan = true
+				break
+			end
+		end
+		if not tEngineCan then
+			return aRoutes
+		end
+	end
+	local rRoutes, tHidden = {}, false
+	for k, v in pairs(aRoutes) do
+		if SkuNav:IsEngineOnlyWp(v.nearestWP) then
+			if v.nearestWpRange <= ENGINE_ONLY_STAND_DIST then
+				dprint("engine only spot, no Sku entry points", v.nearestWP, v.nearestWpRange)
+				return {}
+			end
+			tHidden = true
+		else
+			rRoutes[k] = v
+		end
+	end
+	return tHidden and rRoutes or aRoutes
+end
+
+-- Does the player stand at such an NPC (so that SkuEntryCandidates takes all Sku entry points away)?
+function SkuNav:AtEngineOnlySpot()
+	if not (Sku.isForever and SkuNav.Engine) then
+		return false
+	end
+	local px, py = UnitPosition("player")
+	if type(px) ~= "number" then
+		return false
+	end
+	for _, v in pairs(SkuNav:GetAllLinkedWPsInRangeToCoords(px, py, ENGINE_ONLY_STAND_DIST + 1)) do
+		if v.nearestWpRange <= ENGINE_ONLY_STAND_DIST and SkuNav:IsEngineOnlyWp(v.nearestWP) then
+			return true
+		end
+	end
+	return false
+end
+
 local ATTACH_MAX_DIST = 40
 local ATTACH_FAR_DIST = 250
 local ATTACH_CELL = 50
 
 function SkuNav:AttachPackSpawns(aYield)
+	SkuNav:MarkEngineOnlySpawns()
 	local tCache, _, tLookupId = SkuNav:GetWpCacheInternals()
 	local tRoutePackAreas = SkuNav.navPackAreas or {}
 	local tSpawnKeys = {
